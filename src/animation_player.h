@@ -22,6 +22,10 @@ public:
     bool preparationRequired() const { return preparation_required_.load(); }
     void toggle(); // Video play/pause/replay; GIFs keep looping automatically.
     void setVolume(int percent) { audio_.setVolume(percent); }
+    int speed() const { return audio_.speed(); }
+    void setSpeed(int percent) {
+        if (canSeek() && percent != speed()) { audio_.setSpeed(percent); seekTo(positionUs()); }
+    }
     int seconds() const { return position_us_.load() / 1000000; }
     int64_t positionUs() const { return position_us_.load(); }
     bool playing() const { return video_ && !paused_ && !finished_; }

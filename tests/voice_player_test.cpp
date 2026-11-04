@@ -151,11 +151,19 @@ int main(int argc,char** argv) {
     avformat_free_context(video_format);
     video_input.release();
 
-    // The video-audio ring stays at 1x so changing voice/music speed cannot desynchronize video.
-    player.setSource(path,true,true); player.toggle();
-    wait_for([&] { return player.finished(); });
-    assert(player.error().empty() && player.seconds()==10);
-    player.setSource("");
+    // Video audio preserves the media timeline while the output duration follows tempo.
+    int normal_blocks = 0;
+    for (int rate : {100, 200, 50}) {
+        player.setSpeed(rate); output_blocks = 0;
+        player.setSource(path,true,true); player.toggle();
+        wait_for([&] { return player.finished(); });
+        assert(player.error().empty() && std::abs(player.positionUs()-10000000) < 250000);
+        if (rate == 100) normal_blocks = output_blocks;
+        else if (rate == 200) assert(output_blocks < normal_blocks*0.6);
+        else assert(output_blocks > normal_blocks*1.8);
+        player.setSource("");
+    }
+    player.setSpeed(100);
     const std::string large_path=std::string(argv[1])+"/large-audio.wav";
     write_wav(large_path,170*1024*1024);
     player.setSource(large_path,true,true); player.toggle();

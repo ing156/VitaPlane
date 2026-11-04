@@ -12,7 +12,7 @@ function localize() {
   document.documentElement.lang=language;$('language').value=language;
   data.strings={...data.languages.en,...data.languages[language]};
   document.body.style.fontFamily=data.cjk_fonts[language]?
-    `"Segoe UI","VitaGram CJK ${language}",system-ui,sans-serif`:'"Segoe UI",system-ui,sans-serif';
+    `"Segoe UI","VitaPlane CJK ${language}",system-ui,sans-serif`:'"Segoe UI",system-ui,sans-serif';
   for(const element of document.querySelectorAll('[data-i18n]'))element.textContent=t(element.dataset.i18n);
   for(const attr of ['aria-label','placeholder'])for(const element of document.querySelectorAll('[data-i18n-'+attr+']'))
     element.setAttribute(attr,t(element.getAttribute('data-i18n-'+attr)));
@@ -111,10 +111,10 @@ async function start() {
     try {localStorage.setItem('vitagram-studio-language',language);} catch {}
     localize();
   };
-  const face=new FontFace('VitaGram Noto','url(data:font/ttf;base64,'+data.font+')');
+  const face=new FontFace('VitaPlane Noto','url(data:font/ttf;base64,'+data.font+')');
   document.fonts.add(await face.load());
   await Promise.all(Object.entries(data.cjk_fonts).map(async([code,encoded])=>{
-    const font=new FontFace('VitaGram CJK '+code,'url(data:font/woff;base64,'+encoded+')');
+    const font=new FontFace('VitaPlane CJK '+code,'url(data:font/woff;base64,'+encoded+')');
     document.fonts.add(await font.load());
   }));
   $('font-license').textContent=data.font_license;
@@ -188,7 +188,7 @@ async function start() {
       const url=URL.createObjectURL(new Blob([text],{type:'application/json;charset=utf-8'}));
       const link=document.createElement('a');link.href=url;link.download=filename;link.click();
       setTimeout(()=>URL.revokeObjectURL(url),1000);dirty=false;
-      status('Сохранён {0}. Скопируйте в ux0:data/vitagram/palletes/ и перезапустите VitaGram.',filename);
+      status('Сохранён {0}. Скопируйте в ux0:data/vitagram/palletes/ и перезапустите VitaPlane.',filename);
     } catch(error){status('Ошибка: {0}',error.message);$('name').reportValidity();}
   };
   window.addEventListener('beforeunload',event=>{if(dirty){event.preventDefault();event.returnValue='';}});

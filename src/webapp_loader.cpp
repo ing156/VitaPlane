@@ -31,7 +31,7 @@ bool WebAppView::open(const std::string& url, bool same, bool enabled, const Pro
         module_id = sceKernelLoadStartModule(WebKitDownload::modulePath(), sizeof(start), &start, 0, nullptr, &status);
         if (status != SCE_KERNEL_START_SUCCESS) module_id = -1;
     }
-    if (!loaded()) { impl_->error = "WebKit module failed to start; restart VitaGram"; return false; }
+    if (!loaded()) { impl_->error = "WebKit module failed to start; restart VitaPlane"; return false; }
     engine.api.pump(diag_log::mask().load(), memory_hygiene::enabled());
     return engine.api.open(url.c_str(), same, static_cast<int>(proxy.kind), proxy.server.c_str(), proxy.port,
         proxy.username.c_str(), proxy.password.c_str(), enabled);

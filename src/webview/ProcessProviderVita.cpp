@@ -121,7 +121,7 @@ int64_t launch_process(void* data, wpe_process_type type, void* opaque)
         return -1;
     auto* launch = new Launch { type, process_socket, { } };
     std::snprintf(launch->identifier, sizeof(launch->identifier), "%s", options->process_identifier);
-    const char* name = type == WPE_PROCESS_TYPE_WEB ? "VitaGram Web" : "VitaGram Network";
+    const char* name = type == WPE_PROCESS_TYPE_WEB ? "VitaPlane Web" : "VitaPlane Network";
     SceUID thread = sceKernelCreateThread(name, process_thread, 0x60, 1024 * 1024, VITAGRAM_WK_THREAD_VM, 0, nullptr);
     if (thread < 0) {
         webapp_diagnostics::record(webapp_diagnostics::Stage::Failed, thread);

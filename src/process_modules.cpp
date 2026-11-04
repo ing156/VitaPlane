@@ -33,7 +33,7 @@ std::vector<std::string> foreign(const std::string& title_id) {
     SceUID ids[256];
     SceSize count = sizeof(ids) / sizeof(ids[0]);
     if (sceKernelGetModuleList(0xFF, ids, &count) < 0) return names;
-    // VitaGram's own executable, whatever path the firmware reports for it.
+    // VitaPlane's own executable, whatever path the firmware reports for it.
     const SceUID self = sceKernelGetModuleIdByAddr((void*)&foreign);
     for (SceSize i = 0; i < count; ++i) {
         if (ids[i] == self) continue;

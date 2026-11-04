@@ -3,6 +3,7 @@
 #include <cstdint>
 
 namespace audio_bar {
+inline constexpr int speeds[] = {50, 75, 100, 125, 150, 175, 200};
 // Defer single shoulder presses until release so entering the player never changes folders.
 struct Shoulders {
     unsigned pending = 0;
@@ -15,7 +16,7 @@ struct Shoulders {
     }
 };
 enum Control { Previous, Play, Next, Seek, Volume, Shuffle, Repeat, Speed, Close, Count, None = -1,
-               VolumeTrack = Count, Mute };
+               VolumeTrack = Count, Mute, SpeedFirst };
 struct Rect {
     float x, y, w, h;
     bool contains(float px, float py) const { return px >= x && px < x+w && py >= y && py < y+h; }
@@ -35,7 +36,11 @@ struct Layout {
     Rect popup() const { return {720, top()-88, 232, 80}; }
     Rect volumeTrack() const { return {784, top()-56, 152, 32}; }
     Rect mute() const { return {728, top()-56, 40, 40}; }
-    Control hit(float x, float y, bool volume_open) const {
+    Rect speedPopup() const { return {608, top()-100, 344, 92}; }
+    Rect speedCell(int i) const { return {616.f+i*47.f, top()-56, 44, 40}; }
+    Control hit(float x, float y, bool volume_open, bool speed_open = false) const {
+        if (speed_open) for (int i=0; i<7; ++i)
+            if (speedCell(i).contains(x,y)) return Control(SpeedFirst+i);
         if (volume_open && volumeTrack().contains(x, y)) return VolumeTrack;
         if (volume_open && mute().contains(x, y)) return Mute;
         for (int i = 0; i < Count; ++i) if (cell(Control(i)).contains(x, y)) return Control(i);
@@ -48,9 +53,8 @@ struct Layout {
     }
 };
 inline int nextSpeed(int speed, int direction = 1) {
-    constexpr int values[] = {50, 75, 100, 125, 150, 175, 200};
     int index = 2;
-    for (int i = 0; i < 7; ++i) if (values[i] == speed) index = i;
-    return values[(index+direction+7)%7];
+    for (int i = 0; i < 7; ++i) if (speeds[i] == speed) index = i;
+    return speeds[(index+direction+7)%7];
 }
 }

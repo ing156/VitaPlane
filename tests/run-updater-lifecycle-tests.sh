@@ -14,7 +14,7 @@ work = pathlib.Path(sys.argv[1]); fixtures = work / 'fixtures'
 # test-only key. Neither the source tree's release key nor the signature verifier is modified.
 (work / 'update_key.h').write_text('#define VITAGRAM_UPDATE_PUBLIC_KEY ' + json.dumps((work / 'pub.pem').read_text()) + '\n')
 def sfo(title_id):
-    fields = {'CATEGORY':'gd', 'TITLE':'VitaGram', 'TITLE_ID':title_id}
+    fields = {'CATEGORY':'gd', 'TITLE':'VitaPlane', 'TITLE_ID':title_id}
     entries = bytearray(); keys = bytearray(); values = bytearray()
     for key, value in fields.items():
         data = value.encode() + b'\0'

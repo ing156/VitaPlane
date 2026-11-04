@@ -8,8 +8,8 @@ const colors = {}, storage = {};
 const context = {
     console: {log() {}, warn() {}, error() {}},
     JSON, decodeURIComponent, encodeURIComponent, URL, Date, Math, setTimeout, clearTimeout,
-    location: {hash: '#tgWebAppVersion=8.0&tgWebAppPlatform=VitaGram'},
-    navigator: {userAgent: 'VitaGram'},
+    location: {hash: '#tgWebAppVersion=8.0&tgWebAppPlatform=VitaPlane'},
+    navigator: {userAgent: 'VitaPlane'},
     innerHeight: 392,
     addEventListener() {}, removeEventListener() {},
     document: {

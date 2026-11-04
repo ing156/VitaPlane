@@ -93,7 +93,7 @@ HttpsResult https_get(const std::string& start_url, const std::string& ca_file, 
         Connection conn;
         if (!connect_tls(conn, url, ca_file, result.error)) return result;
         std::string request = "GET " + url.path + " HTTP/1.1\r\nHost: " + url.host +
-            "\r\nUser-Agent: VitaGram/" VITAGRAM_VERSION "\r\nAccept: " + accept +
+            "\r\nUser-Agent: VitaPlane/" VITAGRAM_VERSION "\r\nAccept: " + accept +
             "\r\nAccept-Encoding: identity\r\nConnection: close\r\n\r\n";
         if (SSL_write(conn.ssl, request.data(), (int)request.size()) != (int)request.size()) { result.error = ssl_error_text("request failed"); return result; }
 

@@ -1,4 +1,4 @@
-// VitaGram UI PNG assets: minimal draw helpers for an existing vita2d renderer.
+// VitaPlane UI PNG assets: minimal draw helpers for an existing vita2d renderer.
 // Source reference: libvita2d/include/vita2d.h (check your own fork).
 // Example intentionally does NOT change your input or screen architecture.
 #include <vita2d.h>

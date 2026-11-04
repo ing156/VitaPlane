@@ -1,5 +1,5 @@
 {
-  "package": "VitaGram UI Assets",
+  "package": "VitaPlane UI Assets",
   "version": "1.2.0",
   "screen": [
     960,
@@ -2198,7 +2198,7 @@
       "url": "https://github.com/devnoname120/vhbb",
       "license": "CC BY-NC-SA 4.0",
       "notice": "themes/vhbb/NOTICE.txt",
-      "changes": "Panels and header adapted to 9-slice; new unbranded wallpaper; VitaGram icons and fonts."
+      "changes": "Panels and header adapted to 9-slice; new unbranded wallpaper; VitaPlane icons and fonts."
     }
   }
 }

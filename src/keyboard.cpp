@@ -42,14 +42,14 @@ void Keyboard::configure(bool custom, bool dark, const std::vector<std::string>&
     languages_ = keyboard_languages::normalize(languages);
 }
 
-void Keyboard::open(const std::string& title, bool secret, const std::string& initial, bool message) {
+void Keyboard::open(const std::string& title, bool secret, const std::string& initial, bool message, bool editing) {
     if (active_) return;
     caption_ = title; secret_ = secret;
     custom_active_ = prefer_custom_;
     if (custom_active_) {
         clear();
         custom_.setLanguages(languages_);
-        custom_.open(initial, secret, message, MaxTextLength, true);
+        custom_.open(initial, secret, message, MaxTextLength, true, true, editing);
         submitted_ = cancelled_ = false;
         suppress_opening_input_ = true;
         active_ = true;

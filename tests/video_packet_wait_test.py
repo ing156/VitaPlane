@@ -35,6 +35,7 @@ void run(bool paused_, bool had_frame) {
     bool video = true, direct_video = true;
     int job = 0; int64_t seek_base = paused_ ? 1000000 : 0, timeline_origin_us = 0;
     Packet held; Packet* packet = &held; Stream st; Stream* stream = &st;
+    if (paused_) held.dts = 5000000; // Four seconds beyond the paused seek target.
     VideoPacketPacer packet_pacer;
     unsigned frames_decoded = 2, packets_without_frame = 170;
     std::string frame_error = "hardware error";

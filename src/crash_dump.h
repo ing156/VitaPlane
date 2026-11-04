@@ -1,7 +1,7 @@
 #pragma once
 #include <string>
 
-// Crash dumps of VitaGram, removed while the data vault is on.
+// Crash dumps of VitaPlane, removed while the data vault is on.
 //
 // When an application crashes, the system writes ux0:data/psp2core-<time>-<id>-eboot.bin.psp2dmp: a
 // gzip-compressed ELF core file with thread stacks and parts of the heap - decrypted TDLib responses,

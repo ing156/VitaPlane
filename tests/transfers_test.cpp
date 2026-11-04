@@ -1579,6 +1579,97 @@ int main() {
         std::puts("Deletion permissions: stable cached reads, TTL refresh, direct delete, denial and album pending checks passed");
     }
 
+    // Text edits use TDLib permissions, never send a replacement message or truncate existing text.
+    {
+        TelegramClient editing;
+        editing.ready_ = true; editing.worker_started_ = true; editing.current_chat_id_ = 42;
+        auto* source = parse(R"({"@type":"message","id":77,"chat_id":42,"is_outgoing":true,"sender_id":{"@type":"messageSenderUser","user_id":99},"content":{"@type":"messageText","text":{"text":"Original я😀","entities":[]},"link_preview_options":{"@type":"linkPreviewOptions","is_disabled":true}}})");
+        auto item = editing.parseMessage(source); json_decref(source);
+        editing.history_items_ = {item}; editing.rebuildHistory();
+        assert(item.editable_text && !editing.canEditMessage(77, false));
+        editing.canEditMessage(77); assert(editing.outgoing_.size() == 1);
+        auto permission = [&](bool allowed) {
+            editing.process(json_pack("{s:s,s:b,s:{s:s,s:I,s:I,s:I}}", "@type", "messageProperties", "can_be_edited", allowed,
+                "@extra", "kind", "delete_permission", "chat", (json_int_t)42, "message", (json_int_t)77,
+                "generation", (json_int_t)editing.history_generation_));
+        };
+        permission(true);assert(editing.canEditMessage(77, false));
+        for (int i=0;i<600;++i) assert(editing.canEditMessage(77, false));
+        assert(editing.outgoing_.size() == 1); // Menu reads never issue per-frame network requests.
+        auto original = item;
+        for (int mode=0;mode<8;++mode) {
+            auto denied = original;
+            if(mode==0)denied.outgoing=false;
+            if(mode==1)denied.delivery=DeliveryState::Pending;
+            if(mode==2)denied.delivery=DeliveryState::Failed;
+            if(mode==3)denied.forwarded=true;
+            if(mode==4)denied.via_bot_user_id=12;
+            if(mode==5)denied.editable_text=false;
+            if(mode==6)denied.text=std::string(1024,'a');
+            if(mode==7)denied.media_album_id=8;
+            editing.history_items_={denied};assert(!editing.canEditMessage(77,false) && !editing.requestEdit(77));
+        }
+        editing.history_items_={original};permission(false);assert(!editing.requestEdit(77));permission(true);
+        editing.reply_target_=9;assert(editing.requestEdit(77));assert(editing.replyTarget()==0);
+        assert(editing.inputInitial()==original.text && editing.inputKind()==InputKind::Message);
+        auto count=editing.outgoing_.size();editing.cancelInput();assert(editing.outgoing_.size()==count && !editing.editingMessage());
+        assert(editing.requestEdit(77));editing.submitInput(original.text);assert(editing.outgoing_.size()==count && !editing.editingMessage());
+        assert(editing.requestEdit(77));
+        for(const auto& invalid : {std::string(), std::string(" \n\t"), std::string(1024,'x'), std::string("\xff")}) {
+            editing.submitInput(invalid);assert(editing.outgoing_.size()==count && editing.inputKind()==InputKind::Message);
+            assert(editing.inputInitial()==invalid && editing.history_items_[0].text==original.text);
+        }
+        editing.current_topic_=7; // Editing uses the message ID, without adding a reply/topic to the request.
+        editing.submitInput("Changed я😀");
+        assert(editing.edit_.pending && editing.inputKind()==InputKind::None && editing.outgoing_.size()==count+1);
+        auto* request=parse(editing.outgoing_.back().text.c_str());
+        assert(MediaUploads::string(request,"@type")=="editMessageText");
+        assert(json_integer_value(json_object_get(request,"chat_id"))==42 && json_integer_value(json_object_get(request,"message_id"))==77);
+        assert(!json_object_get(request,"topic_id") && !json_object_get(request,"reply_to"));
+        auto* content=json_object_get(request,"input_message_content");
+        assert(MediaUploads::string(content,"@type")=="inputMessageText" && json_is_false(json_object_get(content,"clear_draft")));
+        assert(json_is_true(json_object_get(json_object_get(content,"link_preview_options"),"is_disabled")));
+        auto* extra=json_deep_copy(json_object_get(request,"@extra"));json_decref(request);
+        editing.submitInput("duplicate");assert(editing.outgoing_.size()==count+1 && editing.edit_.draft=="Changed я😀");
+        assert(editing.history_items_[0].text==original.text); // No optimistic replacement on a failed edit.
+        editing.process(json_pack("{s:s,s:i,s:s,s:O}","@type","error","code",400,"message","MESSAGE_EDIT_TIME_EXPIRED","@extra",extra));
+        assert(!editing.edit_.pending && editing.inputInitial()=="Changed я😀" && editing.inputKind()==InputKind::Message);
+        editing.current_topic_=0;editing.submitInput("Changed я😀");
+        auto* retry=parse(editing.outgoing_.back().text.c_str());auto* retry_extra=json_deep_copy(json_object_get(retry,"@extra"));json_decref(retry);
+        editing.process(json_pack("{s:s,s:i,s:s,s:O}","@type","error","code",400,"message","old error","@extra",extra));
+        assert(editing.edit_.pending); // A late failure cannot cancel the retry.
+        auto* edited=parse(R"({"@type":"message","id":77,"chat_id":42,"is_outgoing":true,"edit_date":123,"content":{"@type":"messageText","text":{"text":"Changed я😀","entities":[]}}})");
+        json_object_set(edited,"@extra",retry_extra);editing.process(edited);
+        assert(!editing.editingMessage() && editing.messages()[0].text=="Changed я😀");
+        json_decref(extra);json_decref(retry_extra);
+        editing.history_items_={original};editing.rebuildHistory();assert(editing.requestEdit(77));
+        editing.history_items_[0].text="Changed on another device";count=editing.outgoing_.size();editing.submitInput("My draft");
+        assert(editing.outgoing_.size()==count && editing.inputInitial()=="My draft" && !editing.edit_.error.empty());editing.cancelInput();
+        editing.history_items_={original};assert(editing.requestEdit(77));editing.submitInput("Waiting");
+        editing.edit_.deadline=sceKernelGetSystemTimeWide()-1;editing.pump();
+        assert(editing.inputInitial()=="Waiting" && !editing.edit_.pending && !editing.edit_.error.empty());
+        editing.cancelInput();assert(editing.requestEdit(77));editing.submitInput("Stale draft");
+        auto* late=parse(editing.outgoing_.back().text.c_str());auto* late_extra=json_deep_copy(json_object_get(late,"@extra"));json_decref(late);
+        editing.cancelInput();editing.history_generation_++;editing.current_chat_id_=43;
+        auto* stale=parse(R"({"@type":"message","id":77,"chat_id":42,"is_outgoing":true,"content":{"@type":"messageText","text":{"text":"Stale draft"}}})");
+        json_object_set(stale,"@extra",late_extra);editing.process(stale);json_decref(late_extra);
+        assert(!editing.editingMessage() && editing.history_items_[0].text==original.text);
+        for(const char* entity : {"textEntityTypeBold","textEntityTypeTextUrl","textEntityTypeCustomEmoji","unknown"}) {
+            auto* message=parse(R"({"id":77,"is_outgoing":true,"content":{"@type":"messageText","text":{"text":"style","entities":[]}}})");
+            auto* entities=json_object_get(json_object_get(json_object_get(message,"content"),"text"),"entities");
+            json_array_append_new(entities,json_pack("{s:i,s:i,s:{s:s}}","offset",0,"length",1,"type","@type",entity));
+            assert(!editing.parseMessage(message).editable_text);json_decref(message);
+        }
+        auto* linked=parse(R"({"id":77,"is_outgoing":true,"content":{"@type":"messageText","text":{"text":"https://example.org","entities":[{"offset":0,"length":19,"type":{"@type":"textEntityTypeUrl"}}]}}})");
+        assert(editing.parseMessage(linked).editable_text);json_decref(linked);
+        for(const char* kind : {"messagePhoto","messagePoll","messageRichMessage","messageVideo","messageVoiceNote"}) {
+            auto* message=json_pack("{s:I,s:b,s:{s:s,s:{s:s}}}","id",(json_int_t)77,"is_outgoing",1,"content","@type",kind,"text","text","caption");
+            assert(!editing.parseMessage(message).editable_text);json_decref(message);
+        }
+        editing.worker_started_=false;editing.ready_=false;
+        std::puts("Text editing: ownership, Telegram rights, limits, preview settings, retry, conflict, timeout and stale replies passed");
+    }
+
     auto* video_message=parse(R"({"@type":"message","id":66,"chat_id":42,"content":{"@type":"messageVideo","video":{"width":1920,"height":1080,"duration":20,"video":{"id":100,"size":200000000,"local":{"is_downloading_completed":true,"path":"original.mp4"}}},"alternative_videos":[{"width":640,"height":360,"codec":"h264","video":{"id":101,"size":2000000}},{"width":320,"height":180,"codec":"h264","video":{"id":102,"size":1000000}},{"width":160,"height":90,"codec":"av1","video":{"id":103,"size":500000}},{"width":320,"height":180,"codec":"h264","video":{"id":104,"size":800000},"hls_file":{"id":999}}]}})");
     // Preference caps select the largest eligible raster; ties keep the smaller file.
     for (int quality = 1; quality <= 3; ++quality) {

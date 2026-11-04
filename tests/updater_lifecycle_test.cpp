@@ -21,6 +21,8 @@ static std::atomic<bool> download_entered{false}, release_download{false};
 static int helper_launches = 0, app_launches = 0, promotions = 0, deletions = 0;
 static bool fail_launch = false, fail_install = false, silent_install = false;
 static std::string last_promoted;
+static int release_mode = 0;
+static std::atomic<int> new_checks{0}, old_checks{0};
 static std::thread::id ui_thread;
 static std::string read(const std::string& path) {
     std::ifstream file(path, std::ios::binary); assert(file);
@@ -40,7 +42,17 @@ HttpsResult https_get(const std::string& url, const std::string&, const std::str
                      const std::function<bool(const char*, size_t)>& sink, const std::atomic<bool>* cancel,
                      const std::function<void(int64_t)>& length) {
     std::string data;
-    if (url.find("/releases/latest") != std::string::npos) data = read(fixtures + "/release.json");
+    if (url.find("/releases/latest") != std::string::npos) {
+        const bool newer_repo = url.find("/VitaPlane/") != std::string::npos;
+        assert(newer_repo || url.find("/VitaGram/") != std::string::npos);
+        if (newer_repo) ++new_checks; else ++old_checks;
+        if ((release_mode == 1 && newer_repo) || (release_mode == 2 && !newer_repo)) return {404, 0, "not found"};
+        data = read(fixtures + "/release.json");
+        if ((release_mode == 3 && newer_repo) || (release_mode == 4 && !newer_repo)) {
+            const auto at = data.find("9.9.9"); assert(at != std::string::npos); data.replace(at, 5, "8.8.8");
+        }
+        if (release_mode == 5) data = "{}";
+    }
     else if (url == "https://fixture/vitagram.vpk.sig") data = read(fixtures + "/good.sig");
     else {
         assert(url == "https://fixture/vitagram.vpk");
@@ -104,6 +116,15 @@ int main(int argc, char** argv) {
     assert(argc == 2); fixtures = argv[1]; ui_thread = std::this_thread::get_id();
     copy(fixtures + "/head.bin", "app0:sce_sys/package/head.bin");
     copy(fixtures + "/helper.vpk", "app0:updater/vitagram-updater.vpk");
+    for (release_mode = 0; release_mode <= 5; ++release_mode) {
+        new_checks = old_checks = 0;
+        Updater check("0.37.73", "unused-ca", primary, fallback);
+        check.check(); wait_for([&] { return !check.snapshot().busy(); });
+        assert(new_checks == 1 && old_checks == 1);
+        if (release_mode == 5) assert(check.snapshot().state == Updater::State::Failed);
+        else assert(check.snapshot().state == Updater::State::Available && check.snapshot().version == "9.9.9");
+    }
+    release_mode = 0;
     Updater updater("0.37.73", "unused-ca", primary, fallback);
     assert(updater.allowsLocalInstall());
     assert(download(updater).state == Updater::State::Installed);

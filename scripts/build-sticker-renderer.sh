@@ -6,7 +6,7 @@ root="$PWD/external/rlottie-vita"
 compatibility_script="$PWD/scripts/patch-rlottie.cmake"
 compatibility_header="$PWD/scripts/rlottie-vita-compat.h"
 mkdir -p "$root"
-# rlottie is a pinned git submodule (.gitmodules); VitaGram's changes are scripts/rlottie-vita.patch
+# rlottie is a pinned git submodule (.gitmodules); VitaPlane's changes are scripts/rlottie-vita.patch
 # (polygon/star point limits) and patch-rlottie.cmake (static loader, no embedded images).
 if ! test -e "$root/source/.git"; then
     echo "external/rlottie-vita/source is missing. Run: git submodule update --init" >&2

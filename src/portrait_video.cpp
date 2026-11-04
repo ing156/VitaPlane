@@ -113,7 +113,7 @@ bool prepare_portrait_video(const std::string& source, std::string& prepared,
 #else
         const long long system_us=0;
 #endif
-        std::fprintf(diagnostic,"VitaGram %s input=%lld output=432x768 cache=%016llx at_us=%lld\n",
+        std::fprintf(diagnostic,"VitaPlane %s input=%lld output=432x768 cache=%016llx at_us=%lld\n",
                      VITAGRAM_VERSION,(long long)input_size,(unsigned long long)key,system_us);
         std::fflush(diagnostic);
     }

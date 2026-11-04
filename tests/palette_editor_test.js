@@ -85,7 +85,7 @@ for(const text of ['null','[]','{}','{broken',JSON.stringify({colors:[]}),
  JSON.stringify({colors:[{hex:'#123'}]}),JSON.stringify({...catalogInput,note:{}}),
  JSON.stringify({colors:Array(10001).fill({hex:'#112233'})}),' '.repeat(2*1024*1024+1)])assert.throws(()=>C.parseCatalog(text));
 assert.equal(C.parseCatalog(JSON.stringify({brand:'<img src=x>',colors:[{name:'<script>',hex:'#112233'}]})).name,'<img src=x>');
-const document = fs.readFileSync(process.argv[2] || path.join(root,'build-modern/palette-editor/VitaGram Palette Editor.html'),'utf8');
+const document = fs.readFileSync(process.argv[2] || path.join(root,'build-modern/palette-editor/VitaPlane Palette Editor.html'),'utf8');
 const embedded=JSON.parse(document.match(/<script id="data" type="application\/json">([\s\S]*?)<\/script>/)[1]);
 assert.deepEqual(Object.keys(embedded.languages).sort(),fs.readdirSync(path.join(root,'assets/lang')).filter(file=>file.endsWith('.lang')).map(file=>file.slice(0,-5)).sort());
 assert.equal(Object.keys(embedded.languages).length,19);

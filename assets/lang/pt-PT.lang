@@ -1,4 +1,4 @@
-# VitaGram language file (format: see en.lang)
+# VitaPlane language file (format: see en.lang)
 @code = pt-PT
 @name = Português (Portugal)
 
@@ -23,7 +23,7 @@
 
 account.cleanup_blocked = Não foi possível apagar os dados da conta anterior. Liberte o acesso ao cartão de memória e reinicie a aplicação.
 account.delete_incomplete = Não foi possível apagar todos os dados. A limpeza será repetida na próxima abertura.
-account.deleted = Dados da conta apagados. Reinicie o VitaGram para iniciar sessão.
+account.deleted = Dados da conta apagados. Reinicie o VitaPlane para iniciar sessão.
 account.deleting = A apagar os dados da conta...
 account.logging_out = A terminar sessão...
 account.mark_failed = Não foi possível guardar a marca de limpeza da conta
@@ -528,7 +528,7 @@ voice.worker = Não foi possível iniciar a thread de saída de áudio
 # --- update ---
 settings.auto_update = Procurar e instalar atualizações ao iniciar
 settings.auto_update_proxy = Em pausa enquanto um proxy estiver ativo
-network.held_notice = Não foi possível verificar as suas definições: foram substituídas, danificadas ou eliminadas fora do VitaGram, por isso as definições de proxy são desconhecidas. O VitaGram não se ligou. Verifique as definições de proxy e guarde-as para se ligar (com ou sem proxy).
+network.held_notice = Não foi possível verificar as suas definições: foram substituídas, danificadas ou eliminadas fora do VitaPlane, por isso as definições de proxy são desconhecidas. O VitaPlane não se ligou. Verifique as definições de proxy e guarde-as para se ligar (com ou sem proxy).
 network.held = Sem ligação: guarde as definições de proxy para se ligar.
 settings.update = Atualização
 update.idle = {cross}: verificar (versão {0})
@@ -540,7 +540,7 @@ update.verifying = A verificar a assinatura...
 update.extracting = A descompactar {0}%
 update.installing = A instalar...
 update.applying = A instalar a atualização...
-update.applying_hint = Aguarde, não desligue a consola. O VitaGram será reiniciado.
+update.applying_hint = Aguarde, não desligue a consola. O VitaPlane será reiniciado.
 update.installed = {0} instalada - a reiniciar...
 update.hint = Atualização {0} disponível: {start} Definições
 update.err.network = Sem ligação ao GitHub - {cross}: repetir
@@ -556,7 +556,7 @@ update.direct = A verificação de atualizações liga-se ao GitHub diretamente,
 # Data encryption
 vault.title = Cifragem de dados
 vault.ask.title = Proteger os seus dados?
-vault.ask.body = O VitaGram guarda os seus dados localmente na consola: sessão do Telegram, base de dados, fotos, vídeos, stickers, mensagens de voz e definições. Pode cifrar esse armazenamento contra cópias não autorizadas.\n\nEscolha uma sequência de botões ou uma frase secreta para desbloquear. Recomenda-se uma frase para maior proteção.\n\n⚠ Se esquecer a chave, os dados locais não podem ser recuperados. Será necessário apagá-los e entrar novamente no Telegram.\n\nPode gerir a cifragem depois em Start > Definições.\n\nVerifique periodicamente nas definições se todos os ficheiros locais estão cifrados. Fechar a aplicação ou desligar a consola durante a gravação pode interromper a cifragem. Alguns ficheiros podem ficar sem cifragem até o próximo processamento ou verificação.\n\nO VitaGram não recolhe telemetria nem envia os seus dados a serviços de terceiros.\n\nApesar dos nossos esforços, a aplicação funciona numa consola modificada com os riscos associados. Programas com acesso ao sistema podem aceder a dados da aplicação em execução e à memória da consola. A cifragem local não garante proteção contra esse acesso.
+vault.ask.body = O VitaPlane guarda os seus dados localmente na consola: sessão do Telegram, base de dados, fotos, vídeos, stickers, mensagens de voz e definições. Pode cifrar esse armazenamento contra cópias não autorizadas.\n\nEscolha uma sequência de botões ou uma frase secreta para desbloquear. Recomenda-se uma frase para maior proteção.\n\n⚠ Se esquecer a chave, os dados locais não podem ser recuperados. Será necessário apagá-los e entrar novamente no Telegram.\n\nPode gerir a cifragem depois em Start > Definições.\n\nVerifique periodicamente nas definições se todos os ficheiros locais estão cifrados. Fechar a aplicação ou desligar a consola durante a gravação pode interromper a cifragem. Alguns ficheiros podem ficar sem cifragem até o próximo processamento ou verificação.\n\nO VitaPlane não recolhe telemetria nem envia os seus dados a serviços de terceiros.\n\nApesar dos nossos esforços, a aplicação funciona numa consola modificada com os riscos associados. Programas com acesso ao sistema podem aceder a dados da aplicação em execução e à memória da consola. A cifragem local não garante proteção contra esse acesso.
 vault.ask.footer = {cross} Cifrar    {circle} Agora não
 vault.setup.title = Criar uma chave
 vault.new.title = Nova chave
@@ -572,7 +572,7 @@ vault.unlock.hint_disabling = A cifragem está a ser desativada. Introduza a cha
 vault.entry.footer = Start: OK    L: apagar    R: limpar    Select: cancelar
 vault.unlock.footer = Start: desbloquear    L: apagar    R: limpar    Select: esqueci a chave
 vault.relock.footer = Start: desbloquear    L: apagar    R: limpar
-vault.relock.title = VitaGram está bloqueado
+vault.relock.title = VitaPlane está bloqueado
 vault.strength = {0} pressões, {1} bits
 vault.empty = Pressione alguns botões primeiro.
 vault.one_button = Prima um botão de cada vez.
@@ -586,18 +586,18 @@ vault.deriving = A derivar a chave... {0}%
 vault.no_memory = Memória insuficiente para derivar a chave.
 vault.unavailable = Esta chave foi criada em outra consola.
 vault.error = Não foi possível guardar a chave.
-vault.state_reset = As definições de encriptação foram alteradas fora do VitaGram. A encriptação continua ativa e todos os ficheiros serão verificados novamente. Se não começou a desativar a encriptação, alguém poderá ter tido acesso ao seu cartão de memória.
-vault.plugins_warning = Há plugins carregados no VitaGram: {0}. Podem ler a chave introduzida e as suas mensagens. Remova os que não forem de confiança de tai/config.txt.
+vault.state_reset = As definições de encriptação foram alteradas fora do VitaPlane. A encriptação continua ativa e todos os ficheiros serão verificados novamente. Se não começou a desativar a encriptação, alguém poderá ter tido acesso ao seu cartão de memória.
+vault.plugins_warning = Há plugins carregados no VitaPlane: {0}. Podem ler a chave introduzida e as suas mensagens. Remova os que não forem de confiança de tai/config.txt.
 vault.notice.footer = {cross} Continuar
 vault.changed = Chave alterada.
 vault.forgot.title = Apagar todos os dados?
-vault.forgot.body = Sem a chave, os dados cifrados não podem ser lidos.\n\nPode apagar todos os dados do VitaGram, incluindo o início de sessão no Telegram, e começar de novo.
+vault.forgot.body = Sem a chave, os dados cifrados não podem ser lidos.\n\nPode apagar todos os dados do VitaPlane, incluindo o início de sessão no Telegram, e começar de novo.
 vault.forgot.footer = {triangle} Apagar tudo    {circle} Voltar
 vault.erasing = A apagar dados...
 vault.migrate.encrypting = A cifrar dados... {0}/{1}
 vault.migrate.decrypting = A decifrar dados... {0}/{1}
 vault.migrate.hint = Mantenha a consola ligada. {circle} permite saltar; o processo continua no próximo arranque.
-vault.migrate.failed = Não foi possível converter {0} ficheiros. A sua chave é mantida e o VitaGram tentará novamente no próximo arranque. Se o cartão de memória estiver cheio, liberte espaço.
+vault.migrate.failed = Não foi possível converter {0} ficheiros. A sua chave é mantida e o VitaPlane tentará novamente no próximo arranque. Se o cartão de memória estiver cheio, liberte espaço.
 vault.settings.encryption = Cifragem de dados
 vault.settings.change_key = Alterar chave
 vault.settings.confirm_disable = Pressione {cross} novamente para desativar
@@ -831,20 +831,20 @@ logs.vault = Reprodução cifrada (vault-playback.log)
 logs.note = Os ficheiros ficam em ux0:data/vitagram e não são cifrados.
 logs.footer = {dpad}: selecionar    {cross} Ligar / desligar    {circle} Voltar
 
-# About VitaGram
+# About VitaPlane
 about.title = Sobre
 
 vault.ask.scroll = {dpad}: percorrer
-about.brand = VitaGram — Telegram para PS Vita
+about.brand = VitaPlane — Telegram para PS Vita
 about.version = Versão {0}
 about.description = Cliente não oficial e de código aberto do Telegram, baseado em VitaSDK, vita2d e TDLib. Converse, leia canais e veja multimédia na PS Vita com os botões e o ecrã tátil.
 about.development = O projeto está em desenvolvimento ativo. Nem todas as funcionalidades do Telegram estão disponíveis; algumas podem ter limitações ou erros.
 about.privacy_title = Privacidade
-about.privacy_servers = O VitaGram não envia mensagens, ficheiros nem registos de diagnóstico aos servidores do autor.
-about.privacy_logs = Os registos contêm informações técnicas e estão desativados por predefinição. O VitaGram não regista neles textos de mensagens, números de telefone nem palavras-passe. Permanecem na consola e nunca são enviados automaticamente. Em caso de problemas, pode enviá-los manualmente ao programador para diagnóstico.
+about.privacy_servers = O VitaPlane não envia mensagens, ficheiros nem registos de diagnóstico aos servidores do autor.
+about.privacy_logs = Os registos contêm informações técnicas e estão desativados por predefinição. O VitaPlane não regista neles textos de mensagens, números de telefone nem palavras-passe. Permanecem na consola e nunca são enviados automaticamente. Em caso de problemas, pode enviá-los manualmente ao programador para diagnóstico.
 about.privacy_connections = O cliente liga-se aos servidores do Telegram. A verificação e a transferência de atualizações usam o GitHub. A TDLib pode consultar serviços externos para resolver nomes de proxies e obter a configuração da ligação. Com um proxy, a ligação passa pelo servidor escolhido.
 about.security_title = Segurança e riscos
-about.security_intro = O VitaGram é um cliente não oficial. Erros e limitações da plataforma podem afetar a segurança.
+about.security_intro = O VitaPlane é um cliente não oficial. Erros e limitações da plataforma podem afetar a segurança.
 about.risk_data_title = Armazenamento local
 about.risk_data = O cliente armazena os dados na consola. A aplicação pode cifrar esse armazenamento contra cópias não autorizadas. Sem cifragem, pessoas ou programas com acesso ao cartão de memória podem aceder aos dados locais da conta e à multimédia descarregada.
 about.risk_encryption_title = Cifragem
@@ -857,13 +857,13 @@ about.risk_updates_title = Instalação e atualizações
 about.risk_updates = Instale a aplicação de uma fonte fiável. O atualizador integrado verifica a assinatura digital do VPK antes da instalação.
 about.author_title = Autor e código-fonte
 about.license_title = Licença
-about.license_mit = O código próprio do VitaGram usa a licença MIT. É permitido usar, modificar e distribuir, inclusive comercialmente, mantendo o aviso de direitos de autor e o texto da licença.
+about.license_mit = O código próprio do VitaPlane usa a licença MIT. É permitido usar, modificar e distribuir, inclusive comercialmente, mantendo o aviso de direitos de autor e o texto da licença.
 about.license_warranty = A aplicação é fornecida tal como está, sem garantias. Bibliotecas e tipos de letra de terceiros têm as suas próprias licenças.
-about.project_link = GitHub · ing156/VitaGram
+about.project_link = GitHub · ing156/VitaPlane
 about.author_link = Telegram · @Ing156
 about.footer = {dpad}: percorrer  {l}/{r}: página  ←/→: links  {cross}: abrir  {circle}: voltar
 about.telegram_unavailable = Inicie sessão no Telegram para abrir a conversa do autor.
-about.platform_risk = Apesar dos esforços para melhorar a segurança, o VitaGram funciona numa consola modificada com os riscos associados. Programas com acesso ao sistema podem aceder a dados da aplicação em execução e à memória da consola. A cifragem local não garante proteção contra esse acesso.
+about.platform_risk = Apesar dos esforços para melhorar a segurança, o VitaPlane funciona numa consola modificada com os riscos associados. Programas com acesso ao sistema podem aceder a dados da aplicação em execução e à memória da consola. A cifragem local não garante proteção contra esse acesso.
 
 menu.seek_time = Ir para o tempo
 media.seek_hint = {dpad}  Esquerda/direita: campo; cima/baixo: tempo (horas:minutos:segundos)
@@ -922,7 +922,7 @@ upload.sort_size_desc = Maiores primeiro
 # In-app text keyboard
 settings.keyboard = Teclado
 settings.keyboard_system = Sistema
-settings.keyboard_custom = VitaGram
+settings.keyboard_custom = VitaPlane
 keyboard.send = Enviar
 keyboard.help = {cross} Escrever   {square} Apagar   {triangle} Espaço   L/R Cursor   Start OK
 
@@ -935,7 +935,7 @@ vpk.installing = A instalar…
 vpk.success = Instalação concluída.
 vpk.failed = Falha na instalação: {0}
 vpk.invalid = Pacote de aplicação inválido ou não suportado.
-vpk.self = Use Atualização ou VitaShell para atualizar o VitaGram e o instalador.
+vpk.self = Use Atualização ou VitaShell para atualizar o VitaPlane e o instalador.
 vpk.header_failed = Não foi possível preparar o cabeçalho do pacote.
 vpk.dialog_failed = Não foi possível abrir a janela de instalação.
 vpk.thread_failed = Não foi possível iniciar o processo de instalação.
@@ -1017,7 +1017,7 @@ settings.view_combined = Combinado
 chat.focus_list = Conversas > mensagens
 chat.focus_history = < conversas | Mensagens
 chat.select_chat = Selecionar conversa
-webapp.payment_unavailable = Os pagamentos nas Mini Apps ainda não estão disponíveis no VitaGram.
+webapp.payment_unavailable = Os pagamentos nas Mini Apps ainda não estão disponíveis no VitaPlane.
 
 # --- Background audio player ---
 player.hint = L+R: leitor
@@ -1092,3 +1092,23 @@ calendar.weekday.5 = Sá
 calendar.weekday.6 = Do
 calendar.back = {circle} Voltar
 calendar.hint = L/R: mês · {dpad}: dia · {cross}: ir · {circle}: voltar
+
+settings.download_ask = Perguntar onde guardar as transferências
+picker.save_as = Guardar como
+picker.open_action = {cross} Abrir
+picker.select_action = {square} Escolher
+picker.create_action = {triangle} Nova pasta
+picker.back_action = {circle} Voltar
+picker.loading = A carregar
+
+# --- text editing ---
+menu.edit_message = Editar texto
+input.edit_message = Editar mensagem
+message.edit_failed = Não foi possível guardar: {0}
+message.edit_saved = Alterações guardadas
+message.edit_saving = A guardar alterações...
+message.edit_unavailable = Esta mensagem não pode ser editada neste cliente.
+message.edit_invalid = Introduza texto não vazio, até 1023 bytes UTF-8.
+message.edit_changed = A mensagem mudou. Cancele e abra novamente.
+message.edit_timeout = Sem resposta. Verifique a mensagem antes de tentar novamente.
+keyboard.save = Guardar

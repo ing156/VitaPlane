@@ -56,7 +56,7 @@ static std::vector<DrawnKey> letter_keys;
 struct RenderedText { int x, baseline; std::string label; unsigned color; };
 static std::vector<RenderedText> rendered_text;
 static std::vector<int> shortcut_badges;
-static std::vector<std::pair<int, int>> carets;
+static std::vector<std::pair<int, int>> carets, loupe_carets;
 static std::map<std::string,unsigned> palette;
 static int background_calls=0, header_calls=0, key_slices=0;
 static std::vector<unsigned> fills;
@@ -91,14 +91,16 @@ void vita2d_draw_array(SceGxmPrimitiveType primitive,const vita2d_color_vertex* 
 void vita2d_draw_rectangle(float x, float y, float w, float h, unsigned color) {
     fills.push_back(color);
     if (w == 2 && h == 22) carets.emplace_back(int(x), int(y));
+    if (w == 2 && h == 36) loupe_carets.emplace_back(int(x), int(y));
 }
 void vita2d_draw_fill_circle(float, float, float, unsigned) {}
 void vita2d_draw_line(float, float, float, float, unsigned) {}
 void vita2d_draw_texture_tint_part_scale(const vita2d_texture*, float, float, float, float, float, float, float, float, unsigned) {}
 static size_t width_calls=0;
 static unsigned font_revision=0;
+static int test_font_percent=100;
 unsigned rich_text_revision() { return font_revision; }
-int rich_text_width(vita2d_pgf*, float, const char* text) { ++width_calls; return std::strlen(text) * 10; }
+int rich_text_width(vita2d_pgf*, float, const char* text) { ++width_calls; return std::strlen(text) * 10 * test_font_percent / 100; }
 void rich_text_draw(vita2d_pgf*, int x, int baseline, unsigned color, float scale, const char* text) {
     drawn.emplace_back(text);
     rendered_text.push_back({x, baseline, text, color});
@@ -133,6 +135,9 @@ int main(int argc, char** argv) {
     };
     auto button = [&](unsigned b) { auto r = event(b, b); event(); return r; };
     auto tap = [&](int x, int y) { auto r = event(0, 0, true, x, y); event(); return r; };
+    kb.open("Existing",false,true,1023,false,false,true);
+    drawn.clear();kb.draw(nullptr,true,"Edit message");
+    assert(std::find(drawn.begin(),drawn.end(),tr("keyboard.save"))!=drawn.end() && kb.text()=="Existing");
     open("", false, true, 1023);
     button(SCE_CTRL_CROSS); assert(kb.text() == "q"); // short release
     event(SCE_CTRL_CROSS, SCE_CTRL_CROSS);
@@ -406,6 +411,92 @@ int main(int argc, char** argv) {
     // Passwords and non-message fields preserve their exact input case.
     kb.open("word. ", true, false, 128); assert(kb.setLanguage("en")); tap(48, 285); assert(kb.text() == "word. q");
     kb.open("", false, false, 1023); assert(kb.setLanguage("en")); tap(48, 285); assert(kb.text() == "q");
+    // Draft touch uses the rendered wrapping, visible scroll window and UTF-8 boundaries.
+    open("aя😀z\nnext", false, true, 1023);
+    kb.draw(nullptr,true,"draft");
+    tap(46,95); assert(kb.cursor()==1);
+    tap(66,95); assert(kb.cursor()==3);
+    tap(106,95); assert(kb.cursor()==7);
+    tap(36,121); assert(kb.cursor()==9);
+    tap(900,121); assert(kb.cursor()==13);
+    tap(950,95); assert(kb.cursor()==13); // Outside the text viewport.
+    open(std::string(100,'a'),false,true,1023); kb.draw(nullptr,true,"draft");
+    tap(36,121); assert(kb.cursor()==86); // Same soft-wrap width as drawing.
+    open("0\n1\n2\n3\n4\n5\n6",false,true,1023); kb.draw(nullptr,true,"draft");
+    tap(36,95); assert(kb.cursor()==4); // First visible line follows the caret window.
+    // Long press owns the contact, magnifies the insertion point and tracks UTF-8 boundaries.
+    open("aя😀z\nnext",false,true,1023); kb.draw(nullptr,true,"draft");
+    uint64_t drag_start=now+1000000;
+    at(drag_start,0,0,true,46,95); assert(kb.cursor()==1);
+    at(drag_start+349999,0,0,true,66,95);
+    loupe_carets.clear();kb.draw(nullptr,true,"draft");assert(loupe_carets.empty() && kb.cursor()==1);
+    at(drag_start+350000,0,0,true,66,95);
+    loupe_carets.clear();previews.clear();shapes.clear();record_shapes=true;
+    kb.draw(nullptr,true,"draft");record_shapes=false;
+    assert(kb.cursor()==3 && loupe_carets.size()==1);
+    assert(std::find(previews.begin(),previews.end(),"aя")!=previews.end());
+    const auto lens=std::find_if(shapes.begin(),shapes.end(),[](const auto& shape){return shape.w==240 && shape.h==64;});
+    assert(lens!=shapes.end() && lens->x>=12 && lens->x+lens->w<=948);
+    assert((lens->y+lens->h+12<=95 || lens->y>=129) && lens->y+lens->h<250 && (lens->color>>24)==255);
+    at(drag_start+366000,0,0,true,106,95);assert(kb.cursor()==7);
+    at(drag_start+382000,0,0,true,56,121);assert(kb.cursor()==11);
+    const auto untouched=kb.text();
+    at(drag_start+398000,0,0,true,48,285);assert(kb.text()==untouched);
+    loupe_carets.clear();kb.draw(nullptr,true,"draft");
+    assert(loupe_carets.size()==1 && loupe_carets[0].second+36<250);
+    at(drag_start+414000,0,0,false);
+    loupe_carets.clear();kb.draw(nullptr,true,"draft");assert(loupe_carets.empty());
+    // No inherited lens or touch action after controller input, cancellation, clear or reopen.
+    event(0,0,true,46,95);now+=350000;event(SCE_CTRL_LTRIGGER,SCE_CTRL_LTRIGGER,true,46,95);
+    loupe_carets.clear();kb.draw(nullptr,true,"draft");assert(loupe_carets.empty());event();
+    event(0,0,true,46,95);now+=350000;event(0,0,true,46,95);
+    assert(event(SCE_CTRL_CIRCLE,SCE_CTRL_CIRCLE,true,46,95)==Result::Cancelled);
+    kb.clear();loupe_carets.clear();kb.draw(nullptr,true,"draft");assert(loupe_carets.empty());event();
+    // The viewport stays anchored under the finger; edge scrolling is rate-limited in both directions.
+    open("0\n1\n2\n3\n4\n5\n6\n7\n8\n9",false,true,1023);kb.draw(nullptr,true,"draft");
+    drag_start=now+1000000;at(drag_start,0,0,true,36,95);kb.draw(nullptr,true,"draft");
+    assert(kb.cursor()==10);
+    at(drag_start+350000,0,0,true,36,80);assert(kb.cursor()==8);
+    kb.draw(nullptr,true,"draft");
+    at(drag_start+360000,0,0,true,36,80);assert(kb.cursor()==8);
+    at(drag_start+500000,0,0,true,36,80);assert(kb.cursor()==6);
+    at(drag_start+650000,0,0,true,36,217);assert(kb.cursor()==16);
+    at(drag_start+800000,0,0,true,2000,217);assert(kb.cursor()==19);
+    at(drag_start+950000,0,0,true,-200,80);assert(kb.cursor()==8);
+    event();
+    // Empty drafts and secret/covered fields never reveal hidden content in a lens.
+    open("",false,true,1023);kb.draw(nullptr,true,"draft");
+    event(0,0,true,36,95);now+=350000;event(0,0,true,36,95);assert(kb.cursor()==0);event();
+    for (bool keyboard_only : {false,true}) {
+        open("private",keyboard_only,false,128);kb.draw(nullptr,true,"draft",true);
+        event(0,0,true,46,95);now+=350000;event(0,0,true,66,95);
+        loupe_carets.clear();previews.clear();kb.draw(nullptr,true,"draft",keyboard_only);
+        assert(loupe_carets.empty());event();
+    }
+    open("private",true,false,128);kb.draw(nullptr,true,"unlock");
+    event(0,0,true,480,216);now+=400000;event(0,0,true,490,216);
+    loupe_carets.clear();previews.clear();kb.draw(nullptr,true,"unlock");
+    assert(loupe_carets.empty() && previews.empty());event();
+    // Light/dark/custom palettes, all seven font metrics and both horizontal lens edges.
+    for (int theme=0;theme<3;++theme) for (int size=70;size<=130;size+=10) for (int x : {36,903}) {
+        if (theme==2) palette={{"surface",RGBA8(42,12,52,80)},{"text",RGBA8(255,245,255,255)},
+            {"border",RGBA8(150,80,190,70)},{"accent",RGBA8(255,180,220,255)}};
+        test_font_percent=size;++font_revision;
+        open(std::string(100,'a'),false,true,1023);kb.draw(nullptr,theme!=0,"draft");
+        event(0,0,true,x,200);now+=350000;event(0,0,true,x,200);
+        shapes.clear();loupe_carets.clear();record_shapes=true;kb.draw(nullptr,theme!=0,"draft");record_shapes=false;
+        assert(loupe_carets.size()==1);
+        const auto face=std::find_if(shapes.begin(),shapes.end(),[](const auto& shape){return shape.w==236 && shape.h==60;});
+        assert(face!=shapes.end() && (face->color>>24)==255 && face->x>=14 && face->x+face->w<=946);
+        assert(face->y+face->h<200);
+        event();palette.clear();
+    }
+    test_font_percent=100;++font_revision;
+    // L/R must never reanimate the last Russian letter (or a default empty key).
+    open("",false,true,1023); assert(kb.setLanguage("ru")); tap(648,417);
+    assert(!kb.text().empty());
+    button(SCE_CTRL_LTRIGGER); previews.clear(); kb.draw(nullptr,true,"draft"); assert(previews.empty());
+    button(SCE_CTRL_RTRIGGER); previews.clear(); kb.draw(nullptr,true,"draft"); assert(previews.empty());
     // Shoulder buttons move the insertion point, square backspaces and triangle inserts space.
     open("aя😀z", false, true, 1023);
     assert(kb.cursor() == kb.text().size());
@@ -725,6 +816,19 @@ int main(int argc, char** argv) {
         gesture_now+=elapsed;
         return split_keyboard.handle(pressed,pressed,data.reportNum!=0,data.report[0].x/2,data.report[0].y/2,gesture_now,&data);
     };
+    split_keyboard.open("abcdef",false,true,1023,false,false);split_keyboard.draw(nullptr,true,"draft");
+    fingers({{1,46,95}});fingers({{1,66,95}},350000);
+    assert(split_keyboard.cursor()==3);
+    fingers({{2,48,285},{1,76,95}});assert(split_keyboard.cursor()==4 && split_keyboard.text()=="abcdef");
+    fingers({{2,48,285}});fingers({{2,48,285}},400000);fingers({});
+    assert(split_keyboard.text()=="abcdef"); // A second thumb cannot steal a cursor drag or type on release.
+    fingers({{3,48,285}});fingers({});assert(split_keyboard.text()=="abcdqef");
+    split_keyboard.open("abcdef",false,true,1023,false,false);split_keyboard.draw(nullptr,true,"draft");
+    fingers({{1,46,95},{2,48,285}});fingers({});assert(split_keyboard.text()=="abcdef");
+    fingers({{1,46,95}});fingers({{1,350,350},{2,610,350}},100000);
+    fingers({{1,250,350},{2,710,350}},100000);fingers({});
+    assert(!split_keyboard.split() && split_keyboard.text()=="abcdef"); // Cursor ownership excludes a split gesture.
+    split_keyboard.open("draft",false,true,1023,false,false);assert(split_keyboard.setLanguage("en"));
     fingers({{7,450,350}});assert(split_keyboard.text()=="draft"); // A plain letter waits for release.
     fingers({{7,450,350},{9,510,350}});
     fingers({{9,560,350},{7,400,350}});assert(!split_keyboard.split()); // Below threshold, reordered reports.

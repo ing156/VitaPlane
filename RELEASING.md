@@ -1,4 +1,4 @@
-# Releasing VitaGram / Выпуск VitaGram
+# Releasing VitaPlane / Выпуск VitaPlane
 
 [README](README.md) · [Build / Сборка](docs/building.md) · [Native checks / Проверки на ПК](tests/README.md)
 
@@ -34,14 +34,14 @@ are ignored.
 Публикуйте обычный релиз: черновики и предварительные релизы пропускаются.
 
 The VPK filename can vary, but must end in lowercase `.vpk`. Its signature
-must have exactly the same filename plus `.sig`, for example `vitagram.vpk`
-and `vitagram.vpk.sig`. Attach both files to the same release. If several signed
+must have exactly the same filename plus `.sig`, for example `VitaPlane.vpk`
+and `VitaPlane.vpk.sig`. Attach both files to the same release. If several signed
 VPK pairs are attached, the updater selects the first matching pair; attach
 only one signed application package.
 
 Имя VPK может быть любым, но расширение должно быть `.vpk` в нижнем регистре.
-Имя подписи — точно такое же, с добавлением `.sig`: например, `vitagram.vpk`
-и `vitagram.vpk.sig`. Приложите оба файла к одному релизу. При нескольких
+Имя подписи — точно такое же, с добавлением `.sig`: например, `VitaPlane.vpk`
+и `VitaPlane.vpk.sig`. Приложите оба файла к одному релизу. При нескольких
 подписанных парах выбирается первая найденная; публикуйте одну подписанную
 пару основного приложения.
 
@@ -54,17 +54,17 @@ then sign the package.
 
 ```bash
 release_version="X.Y.Z"
-bash scripts/sign-release.sh build-modern/vitagram.vpk "$release_version"
+bash scripts/sign-release.sh build-modern/VitaPlane.vpk "$release_version"
 ```
 
-Publish a **public** GitHub release in `ing156/VitaGram` tagged `v<release_version>` with `vitagram.vpk` and
-`vitagram.vpk.sig`. The private key defaults to
+Publish a **public** GitHub release in `ing156/VitaPlane` tagged `v<release_version>` with `VitaPlane.vpk` and
+`VitaPlane.vpk.sig`. The private key defaults to
 `~/.vitagram-release/update-signing.pem`; keep it out of Git and retain a backup.
 Replacing that key requires manually distributing a client with the new public key.
 The updater has no GitHub token and cannot access private releases.
 
-Создайте **публичный** релиз в `ing156/VitaGram` с тегом `v<release_version>` и приложите `vitagram.vpk`
-и `vitagram.vpk.sig`. Закрытый ключ по умолчанию:
+Создайте **публичный** релиз в `ing156/VitaPlane` с тегом `v<release_version>` и приложите `VitaPlane.vpk`
+и `VitaPlane.vpk.sig`. Закрытый ключ по умолчанию:
 `~/.vitagram-release/update-signing.pem`; не добавляйте его в Git и сохраните копию.
 Смена ключа требует ручного распространения клиента с новым открытым ключом.
 У приложения нет токена GitHub для доступа к приватным релизам.
@@ -80,19 +80,19 @@ See [module signing and device checks](docs/webkit-vita.md#сборка).
 
 ## Updater build details / Сборка вспомогательного установщика
 
-The helper **VitaGram Updater** (`VGUPDATE1`) is bundled under `app0:updater/`.
+The helper **VitaPlane Updater** (`VGUPDATE1`) is bundled under `app0:updater/`.
 Automatic helper installation needs `assets/updater-head.bin`, obtained from
 `ux0:app/VGUPDATE1/sce_sys/package/head.bin` after a one-time VitaShell installation.
 If automatic installation fails, the client exports `vitagram-updater.vpk` into
 its update directory for manual installation. The helper installs the verified
-package with `ScePromoterUtil` and relaunches VitaGram; the updated client removes
+package with `ScePromoterUtil` and relaunches VitaPlane; the updated client removes
 the helper after a successful update.
 
-**VitaGram Updater** (`VGUPDATE1`) входит в `app0:updater/`. Для его автоматической
+**VitaPlane Updater** (`VGUPDATE1`) входит в `app0:updater/`. Для его автоматической
 установки нужен `assets/updater-head.bin`, полученный из
 `ux0:app/VGUPDATE1/sce_sys/package/head.bin` после однократной установки через
 VitaShell. При ошибке клиент копирует `vitagram-updater.vpk` в папку обновления
-для ручной установки. Установщик использует `ScePromoterUtil`, запускает VitaGram
+для ручной установки. Установщик использует `ScePromoterUtil`, запускает VitaPlane
 и удаляется клиентом после успешного обновления.
 
 The signature covers the version and VPK contents and is checked at download
@@ -156,14 +156,14 @@ For an offline release asset / Для автономного файла рели
 ```bash
 python3 scripts/build-palette-editor.py build-modern/palette-site/index.html
 node tests/palette_editor_test.js build-modern/palette-site/index.html
-cp build-modern/palette-site/index.html build-modern/palette-site/VitaGram-Palette-Studio.html
+cp build-modern/palette-site/index.html build-modern/palette-site/VitaPlane-Palette-Studio.html
 ```
 
-Attach `VitaGram-Palette-Studio.html` alongside the signed application package.
+Attach `VitaPlane-Palette-Studio.html` alongside the signed application package.
 The HTML contains its own fonts, masks, MIT license and font-license notice. Do not attach
 local logs, crash dumps, API configuration, account data or signing keys.
 
-Приложите `VitaGram-Palette-Studio.html` к подписанному VPK. В HTML встроены
+Приложите `VitaPlane-Palette-Studio.html` к подписанному VPK. В HTML встроены
 маски, шрифты, лицензия MIT и уведомление о лицензии шрифта. Не включайте локальные журналы,
 дампы, API-конфигурацию, данные аккаунта и ключ подписи.
 

@@ -1,6 +1,6 @@
 # Features / Возможности
 
-[← VitaGram](../README.md)
+[← VitaPlane](../README.md)
 
 ## English
 
@@ -17,7 +17,7 @@
 - **Custom theme packs:** install one theme or a whole pack at once: extract/copy
   all theme `.json` files directly into `ux0:data/vitagram/palletes/`, restart,
   and select a theme by filename in Settings. Up to 64 valid files are loaded;
-  subfolders, ZIP archives and single colour-catalogue JSON files are not imported. Use [Palette Studio in your browser](https://ing156.github.io/VitaGram/) to edit
+  subfolders, ZIP archives and single colour-catalogue JSON files are not imported. Use [Palette Studio in your browser](https://ing156.github.io/VitaPlane/) to edit
   colors, preview the interface and download a JSON theme. The studio supports all 19 app languages. An
   [offline HTML edition and publishing instructions](../tools/palette-editor/README.md)
   are also available. The web address becomes available after GitHub Pages is enabled.
@@ -135,7 +135,7 @@ back to the default at startup. Font files remain ordinary, unencrypted user res
   распакуйте/скопируйте все файлы тем `.json` прямо в `ux0:data/vitagram/palletes/`,
   перезапустите приложение и выберите тему по имени файла в настройках.
   Загружаются до 64 корректных файлов; вложенные папки, ZIP и единый JSON-каталог
-  цветов не импортируются. [Откройте мастер дизайна в браузере](https://ing156.github.io/VitaGram/),
+  цветов не импортируются. [Откройте мастер дизайна в браузере](https://ing156.github.io/VitaPlane/),
   настройте цвета, проверьте предпросмотр и скачайте JSON темы. Мастер поддерживает
   все 19 языков приложения. Доступны также
   [автономный HTML и инструкция публикации](../tools/palette-editor/README.md).
@@ -261,3 +261,86 @@ menu and restores its selection and scroll position.
 Дата первого видимого сообщения закреплена над перепиской. Нажмите на неё или на разделитель дней, чтобы открыть календарь. L/R меняют месяц, стрелки выбирают день, {cross} переходит к последнему доступному сообщению не позднее выбранного дня, {circle} закрывает календарь. Можно нажать день на экране. Будущие даты недоступны; начало календаря — август 2013 года. Загружается небольшое окно истории, а не вся переписка. Доступ к удалённым сообщениям и скрытой истории определяется Telegram. В темах и комментариях поиск ограничен текущим обсуждением.
 
 Tap the floating date or a day separator to open the themed calendar. L/R change months, the D-pad selects a day, Cross jumps and Circle returns. Future days are disabled; the calendar starts in August 2013. A bounded history window opens at the last available message no later than the selected day; Telegram controls history availability. Topics and comments keep their current scope.
+
+### Downloads and background playback / Загрузки и фоновое воспроизведение
+
+Enable **Settings → Data and storage → Ask where to save downloads** to choose a
+folder for each document before downloading. The folder browser supports drives,
+subfolders and creating a folder. Square confirms the destination; Circle returns
+to the parent, then closes from the drive list. Cancelling starts no download and
+does not change the default download folder. The last confirmed destination is
+remembered across restarts. If it is unavailable, the picker opens the configured
+default folder. The list shows folders first and also shows files; files are
+informational, while Square saves into the current folder.
+
+Включите **Настройки → Данные и память → Спрашивать, куда сохранить**, чтобы перед
+скачиванием документа выбирать папку. В выборе папок доступны накопители,
+подпапки и создание папки. Square подтверждает папку; Circle поднимается на уровень
+выше и закрывает окно из списка накопителей. Отмена не запускает скачивание и не
+меняет папку по умолчанию. Последняя подтверждённая папка запоминается между
+запусками. Если она недоступна, открывается папка по умолчанию из настроек.
+Список показывает сначала подпапки, затем файлы. Файлы показаны для ориентира;
+Square сохраняет в текущую папку.
+
+Voice messages, music, video notes and videos keep playing while browsing chats.
+The bottom panel provides playback, seeking and volume controls. Tap the speed
+button to open a separate choice panel (0.5×–2×). L+R focuses the player; select
+speed with the D-pad, confirm with Cross and close with Circle. Video speed
+changes require a seekable source. In an open channel post, including a poll,
+SELECT opens the attachment menu containing Reactions.
+
+Голосовые, музыка, видеокружки и видео продолжают воспроизведение при просмотре
+чатов. Нижняя панель позволяет управлять воспроизведением, перемоткой и громкостью.
+Кнопка скорости открывает отдельную панель выбора (0,5×–2×). L+R переводит фокус
+на плеер; крестовина выбирает скорость, Cross подтверждает, Circle закрывает.
+Изменение скорости видео доступно для источников с перемоткой. В открытом посте
+канала, включая опрос, SELECT открывает меню вложений с пунктом «Реакции».
+
+In the custom keyboard, tap the visible draft text to place the insertion point.
+Hold for 350 ms to open a themed magnifier, then slide your finger to move the
+cursor. Hold at the top or bottom edge to scroll through long drafts. Lifting the
+finger closes the magnifier; controller input cancels the gesture. Password fields
+never show entered text in a magnifier. L/R still move the cursor by character.
+
+В кастомной клавиатуре касание видимого текста устанавливает курсор. Удерживайте
+палец 350 мс, чтобы открыть лупу в цветах темы, затем ведите его по тексту для
+перемещения курсора. У верхнего или нижнего края прокручивается длинный черновик.
+Лупа закрывается при отпускании пальца; нажатие кнопки отменяет жест. Поля пароля
+не показывают введённый текст в лупе. L/R по-прежнему перемещают курсор по символам.
+
+### Editing your text / Редактирование своего текста
+
+Select your sent text message or open its post, then choose **Edit text** in the
+right-hand menu (Start). The keyboard opens with the existing text; **Save** or
+Start applies the change, and Circle cancels. This uses Telegram's
+[editMessageText](https://core.telegram.org/tdlib/docs/classtd_1_1td__api_1_1edit_message_text.html)
+and `messageProperties.can_be_edited`, so Telegram determines current rights and
+editing deadlines. No fixed editing time window is assumed by the client.
+
+The supported subset is ordinary outgoing text up to **1023 UTF-8 bytes**, with
+automatically detected links, mentions and similar entities. This keeps the whole
+original inside the existing keyboard. Media captions, albums, polls, rich-message
+blocks, forwarded/bot messages and manual formatting/custom emoji are excluded;
+the client has no entity editor and must not strip them. Link preview options are
+preserved. Sending/failed messages cannot be edited. Errors and timeouts retain
+the typed draft for retry; changes appear after Telegram confirms them. If the
+original changes elsewhere, cancel and reopen editing to avoid overwriting it.
+Leaving the chat/topic or starting another composition cancels the local editor;
+a request already sent to Telegram may still complete on the server.
+
+Выберите своё отправленное текстовое сообщение или откройте пост и нажмите
+**Редактировать текст** в правом меню (Start). В клавиатуре появится исходный текст;
+**Сохранить** или Start применяет правки, Circle отменяет. Права и допустимый срок
+редактирования определяет Telegram через TDLib; фиксированный срок клиент не задаёт.
+
+Поддерживается обычный исходящий текст до **1023 байт UTF-8**, включая автоматически
+распознаваемые ссылки и упоминания. Исходный текст должен целиком помещаться в
+текущую клавиатуру. Подписи медиа, альбомы, опросы, блоки rich message, пересылки,
+сообщения через ботов, ручное форматирование и пользовательские эмодзи исключены:
+редактора сущностей в клиенте нет, поэтому оформление не удаляется. Настройки
+предпросмотра ссылки сохраняются. Сообщения в процессе отправки или с ошибкой
+отправки недоступны для редактирования. Ошибка сервера или тайм-аут сохраняет
+набранные правки для повтора; текст обновляется после подтверждения Telegram.
+При изменении исходника на другом устройстве отмените и откройте редактор заново.
+Выход из чата/темы или начало другого сообщения отменяет локальный редактор;
+уже отправленный запрос Telegram всё ещё может выполнить.

@@ -47,6 +47,7 @@ int main() {
     bool seek_open = false, seek_touch_release = false, unsupported_video_prompt = false;
     bool spoiler_prompt = false, bot_panel = false, confirm_leave = false, calendar_open = false;
     std::string pending_web_link;
+    struct { bool active = false; } folder_picker;
     Active upload_picker, circle_recorder, recorder, kb, qr_scanner, compose_wheel;
 '''
 fixture += '\n'.join(predicates)
@@ -66,7 +67,7 @@ fixture += r'''
     bool* events[] = {&search_open, &stickers_open, &gifs_open, &reactions_open,
         &upload_picker.on, &circle_recorder.on, &recorder.on, &kb.on, &qr_scanner.on,
         &seek_open, &seek_touch_release, &unsupported_video_prompt, &spoiler_prompt,
-        &bot_panel, &confirm_leave, &compose_wheel.on, &calendar_open};
+        &bot_panel, &confirm_leave, &compose_wheel.on, &calendar_open, &folder_picker.active};
     const auto base = chat_view::layout(true, true);
     int transitions = 0;
     for (bool combined : {false, true}) for (int chat : {0, 1}) {

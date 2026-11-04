@@ -94,6 +94,8 @@ struct MessageItem {
     int64_t date = 0, edit_date = 0;
     int64_t media_album_id = 0;
     bool outgoing = false;
+    bool editable_text = false;
+    std::string edit_preview_options;
     DeliveryState delivery = DeliveryState::Sent;
     std::string send_error;
     std::vector<StyleSpan> styles;
@@ -241,6 +243,8 @@ public:
 
     InputKind inputKind() const { return input_kind_; }
     std::string inputPrompt() const;
+    std::string inputInitial() const { return edit_.message ? edit_.draft : std::string(); }
+    bool editingMessage() const { return edit_.message != 0; }
     bool inputSecret() const { return input_kind_ == InputKind::Password; }
     void submitInput(const std::string& value);
     const bot_buttons::Markup& botMenu() const;
@@ -415,6 +419,8 @@ public:
     int64_t replyTarget() const { return reply_target_; }
     // Forward: remember a message, then copy it into any chat where posting is possible.
     // refresh=false reads cached rights without issuing requests or expiring the visible action.
+    bool canEditMessage(int64_t message_id, bool refresh = true);
+    bool requestEdit(int64_t message_id);
     bool canDeleteMessage(int64_t message_id, bool refresh = true);
     bool deletePermissionPending(int64_t message_id) const;
     void deleteMessage(int64_t message_id);
@@ -614,11 +620,23 @@ private:
     struct PostRights { bool member = false, admin = false; };
     std::unordered_map<int64_t, PostRights> supergroup_rights_, basic_group_rights_;
     static PostRights postRightsOf(void* status);
-    struct DeletePermission { bool allowed = false, revoke = false, pending = false; uint64_t checked = 0; };
+    struct DeletePermission { bool allowed = false, revoke = false, pending = false, edit = false; uint64_t checked = 0; };
     int64_t account_user_id_ = 0;
     std::map<int64_t, DeletePermission> delete_permissions_;
     bool message_delete_pending_ = false;
     uint64_t message_delete_deadline_ = 0;
+    struct TextEdit {
+        int64_t chat = 0, message = 0;
+        unsigned history = 0;
+        std::string original, draft, preview_options;
+        i18n::Text error;
+        bool pending = false;
+        uint64_t deadline = 0;
+    } edit_;
+    unsigned message_edit_generation_ = 0;
+    static bool editableText(const MessageItem& message);
+    void submitEdit(const std::string& value);
+    void editError(const i18n::Text& reason);
     int64_t reply_target_ = 0, forward_chat_ = 0, forward_message_ = 0;
     static Membership membershipOf(void* status);
     bool membership_pending_ = false;

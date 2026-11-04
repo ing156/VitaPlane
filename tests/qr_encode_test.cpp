@@ -54,7 +54,7 @@ static bool roundtrip(const std::string& text, int* version_out = nullptr, QrEcc
 
 int main() {
     int version = 0;
-    assert(roundtrip("https://github.com/ing156/VitaGram", &version));
+    assert(roundtrip("https://github.com/ing156/VitaPlane", &version));
     assert(roundtrip("tg://login?token=AbCdEfGhIjKlMnOpQrStUvWxYz0123456789_-AbCdEfGhIj", &version));
     // Every length from 1 byte up to the version-10 capacity must decode (checks every table entry).
     for (size_t n = 1; n <= 213; ++n) {

@@ -33,8 +33,8 @@ static void release() {
     std::string error;
     const char* good = R"({"tag_name":"v0.36.0","draft":false,"prerelease":false,"assets":[
         {"name":"notes.txt","browser_download_url":"https://x/notes.txt","size":1},
-        {"name":"VitaGram-0.36.0.vpk.sig","browser_download_url":"https://x/s","size":71},
-        {"name":"VitaGram-0.36.0.vpk","browser_download_url":"https://x/v","size":1234}]})";
+        {"name":"VitaPlane-0.36.0.vpk.sig","browser_download_url":"https://x/s","size":71},
+        {"name":"VitaPlane-0.36.0.vpk","browser_download_url":"https://x/v","size":1234}]})";
     assert(parse_release(good, r, error));
     assert(r.version == "0.36.0" && r.vpk_url == "https://x/v" && r.sig_url == "https://x/s" && r.vpk_size == 1234);
     assert(!parse_release(R"({"tag_name":"v1.0.0","prerelease":true,"assets":[]})", r, error));

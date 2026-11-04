@@ -35,7 +35,7 @@ bool QrScanner::start() {
     if (!decoder_ || quirc_resize(decoder_, Width, Height) < 0)
         return fail(i18n::text("qr.err.memory"), -1);
     // Camera DMA needs physically contiguous, uncached memory, aligned to 1 MiB.
-    memory_ = sceKernelAllocMemBlock("VitaGramCamera", SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_PHYCONT_NC_RW,
+    memory_ = sceKernelAllocMemBlock("VitaPlaneCamera", SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_PHYCONT_NC_RW,
                                      1024 * 1024, nullptr);
     if (memory_ < 0) return fail(i18n::text("cam.memory"), memory_);
     void* buffer = nullptr;

@@ -17,7 +17,7 @@ def package(module, notices, output, openssl_notice):
                 archive.write(path, 'licenses/' + path.relative_to(notices).as_posix())
         root = pathlib.Path(__file__).resolve().parents[1]
         for name, path in {
-            'VitaGram': root / 'LICENSE',
+            'VitaPlane': root / 'LICENSE',
             'Vita-adapter': root / 'src/webview/LICENSE',
             'Jansson': root / 'external/jansson/LICENSE',
             'SQLCipher': root / 'external/tdlib-upstream/sqlite/sqlite/LICENSE',

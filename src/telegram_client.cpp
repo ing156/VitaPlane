@@ -1036,7 +1036,7 @@ void TelegramClient::applyProxy() {
     json_t* request;
     if (proxy_enabled_) {
         request = json_pack("{s:s,s:o,s:b,s:s}", "@type", "addProxy", "proxy", proxy_json(proxy_), "enable", true,
-                            "comment", "VitaGram");
+                            "comment", "VitaPlane");
     } else request = json_pack("{s:s}", "@type", "disableProxy");
     json_object_set_new(request, "@extra", json_pack("{s:s,s:i}", "kind", "proxy_config", "generation", ++proxy_generation_));
     proxy_status_ = i18n::text("proxy.applying");
@@ -1107,7 +1107,7 @@ void TelegramClient::sendJson(void* opaque) {
     if (!std::strncmp(kind, "poll_", 5) || !std::strncmp(kind, "reaction_", 9) || !std::strncmp(kind, "sticker_", 8) || !std::strncmp(kind, "forum_", 6) || !std::strcmp(kind, "proxy_check")) priority = 4;
     if (!std::strcmp(method, "getChatHistory") || !std::strcmp(method, "getForumTopicHistory") || !std::strcmp(method, "getMessageThreadHistory") || !std::strcmp(method, "getForumTopics")) priority = 9;
     else if (!std::strcmp(method, "downloadFile")) priority = json_i53(root, "priority") >= 32 ? 4 : 1;
-    else if (!std::strcmp(method, "cancelDownloadFile") || !std::strcmp(method, "sendMessage") ||
+    else if (!std::strcmp(method, "cancelDownloadFile") || !std::strcmp(method, "sendMessage") || !std::strcmp(method, "editMessageText") ||
              !std::strcmp(method, "openChat") || !std::strcmp(method, "closeChat")) priority = 4;
     else if (!std::strncmp(kind, "refresh_main", 12)) priority = refresh_manual_ ? 3 : 0;
     else if (!std::strncmp(kind,"post_",5) || !std::strncmp(kind,"bot_",4)) priority = 4;
@@ -1141,7 +1141,10 @@ std::string TelegramClient::inputPrompt() const {
         case InputKind::FirstName: return tr("input.first_name");
         case InputKind::Email: return tr("input.email");
         case InputKind::EmailCode: return tr("input.email_code");
-        case InputKind::Message: return tr("input.message");
+        case InputKind::Message:
+            if (!edit_.message) return tr("input.message");
+            if (edit_.error.empty()) return tr("input.edit_message");
+            return i18n::text("message.edit_failed", {edit_.error});
         default: return "";
     }
 }
@@ -1183,10 +1186,12 @@ void TelegramClient::resendCode() {
 
 void TelegramClient::cancelInput() {
     if (input_kind_ == InputKind::Message) input_kind_ = InputKind::None;
-    reply_target_ = 0;
+    reply_target_ = 0; edit_ = TextEdit{}; ++message_edit_generation_;
 }
 
 void TelegramClient::submitInput(const std::string& value) {
+    if (edit_.message && !ready_) cancelInput();
+    if (edit_.message) { submitEdit(value); return; }
     if (value.empty()) return;
     InputKind kind = input_kind_;
     input_kind_ = InputKind::None;
@@ -1449,6 +1454,69 @@ bool TelegramClient::setCompositionReply(int64_t message_id) {
 
 void TelegramClient::replyTo(int64_t message_id) {
     if (message_id && setCompositionReply(message_id)) requestCompose();
+}
+
+bool TelegramClient::editableText(const MessageItem& message) {
+    // shortcut: editing fits the custom keyboard's 1023-byte capacity, raise only with that limit.
+    return message.editable_text && message.outgoing && message.id > 0 && !message.forwarded && !message.via_bot_user_id && !message.media_album_id && !message.service_message &&
+        (message.delivery == DeliveryState::Sent || message.delivery == DeliveryState::Read) &&
+        !message.text.empty() && message.text.size() <= 1023 && message.buttons.empty();
+}
+
+bool TelegramClient::canEditMessage(int64_t id, bool refresh) {
+    if (!ready_ || !current_chat_id_ || topics_open_ || edit_.pending || message_delete_pending_) return false;
+    const auto item = std::find_if(history_items_.begin(), history_items_.end(), [&](const MessageItem& m) { return m.id == id; });
+    if (item == history_items_.end() || !editableText(*item)) return false;
+    canDeleteMessage(id, refresh); // Reuse the same scoped messageProperties request and TTL.
+    const auto permission = delete_permissions_.find(id);
+    return permission != delete_permissions_.end() && permission->second.edit;
+}
+
+bool TelegramClient::requestEdit(int64_t id) {
+    if (edit_.message || !canEditMessage(id, false)) return false;
+    const auto item = std::find_if(history_items_.begin(), history_items_.end(), [&](const MessageItem& m) { return m.id == id; });
+    edit_.chat = current_chat_id_; edit_.message = id; edit_.history = history_generation_;
+    edit_.original = edit_.draft = item->text; edit_.preview_options = item->edit_preview_options;
+    reply_target_ = 0;
+    setInput(InputKind::Message, i18n::text("input.edit_message"));
+    return true;
+}
+
+void TelegramClient::editError(const i18n::Text& reason) {
+    edit_.pending = false; edit_.deadline = 0; edit_.error = reason;
+    notice_ = i18n::text("message.edit_failed", {reason}); notice_until_ = sceKernelGetSystemTimeWide() + 10000000;
+    setInput(InputKind::Message, notice_);
+}
+
+void TelegramClient::submitEdit(const std::string& value) {
+    if (edit_.pending) return;
+    if (edit_.chat != current_chat_id_ || edit_.history != history_generation_) { cancelInput(); return; }
+    edit_.draft = value;
+    if (!ready_) { editError(i18n::text("message.edit_unavailable")); return; }
+    if (value.size() > 1023 || value.find_first_not_of(" \t\r\n") == std::string::npos || value.find('\0') != std::string::npos) {
+        editError(i18n::text("message.edit_invalid")); return;
+    }
+    const auto item = std::find_if(history_items_.begin(), history_items_.end(), [&](const MessageItem& m) { return m.id == edit_.message; });
+    if (item == history_items_.end() || !editableText(*item)) { editError(i18n::text("message.edit_unavailable")); return; }
+    if (value == item->text) { cancelInput(); return; }
+    if (item->text != edit_.original) { editError(i18n::text("message.edit_changed")); return; }
+    if (!canEditMessage(edit_.message, false)) { editError(i18n::text("message.edit_unavailable")); return; }
+    auto* text = json_stringn(value.data(), value.size());
+    if (!text) { editError(i18n::text("message.edit_invalid")); return; }
+    auto* content = json_pack("{s:s,s:{s:s,s:o,s:[]},s:b}", "@type", "inputMessageText",
+        "text", "@type", "formattedText", "text", text, "entities", "clear_draft", 0);
+    auto* preview = json_loads(edit_.preview_options.c_str(), JSON_REJECT_DUPLICATES, nullptr);
+    if (json_is_object(preview)) json_object_set_new(content, "link_preview_options", preview);
+    else json_decref(preview);
+    auto* request = json_pack("{s:s,s:I,s:I,s:n,s:o}", "@type", "editMessageText",
+        "chat_id", (json_int_t)edit_.chat, "message_id", (json_int_t)edit_.message,
+        "reply_markup", "input_message_content", content);
+    json_object_set_new(request, "@extra", json_pack("{s:s,s:I,s:I,s:I,s:i}", "kind", "text_edit",
+        "chat", (json_int_t)edit_.chat, "message", (json_int_t)edit_.message,
+        "history", (json_int_t)edit_.history, "generation", ++message_edit_generation_));
+    edit_.pending = true; edit_.deadline = sceKernelGetSystemTimeWide() + 30000000;
+    input_kind_ = InputKind::None; status_ = i18n::text("message.edit_saving");
+    sendJson(request);
 }
 
 // Resolve permissions for every member of a displayed album; cached history carries no rights.
@@ -2045,6 +2113,10 @@ MessageItem TelegramClient::parseMessage(void* opaque) {
                 out.media_label.replaceTranslation(photo_label, i18n::text("media.photos_count", {std::to_string(out.photos.size())}));
         }
     } else if (!std::strcmp(type, "messageText")) {
+        out.editable_text = true;
+        if (auto* options = json_object_get(content, "link_preview_options")) {
+            if (char* json = json_dumps(options, JSON_COMPACT)) { out.edit_preview_options = json; std::free(json); }
+        }
         json_t* ft = json_object_get(content, "text");
         out.text = json_is_object(ft) ? json_str(ft, "text", "") : "";
         auto* preview = json_object_get(content, "link_preview");
@@ -2367,6 +2439,11 @@ MessageItem TelegramClient::parseMessage(void* opaque) {
         json_array_foreach(entities, i, entity) {
             json_t* entity_type = json_object_get(entity, "type");
             const char* kind = json_str(entity_type, "@type");
+            const bool automatic = !std::strcmp(kind, "textEntityTypeMention") || !std::strcmp(kind, "textEntityTypeHashtag") ||
+                !std::strcmp(kind, "textEntityTypeCashtag") || !std::strcmp(kind, "textEntityTypeBotCommand") ||
+                !std::strcmp(kind, "textEntityTypeUrl") || !std::strcmp(kind, "textEntityTypeEmailAddress") ||
+                !std::strcmp(kind, "textEntityTypePhoneNumber") || !std::strcmp(kind, "textEntityTypeBankCardNumber");
+            if (!automatic) out.editable_text = false;
             if (!std::strcmp(kind, "textEntityTypeCustomEmoji")) {
                 const auto id = json_i53(entity_type, "custom_emoji_id");
                 if (id) out.custom_emoji_ids.push_back(id);
@@ -3019,6 +3096,11 @@ void TelegramClient::process(void* opaque) {
     }
     json_t* list_extra = json_object_get(root, "@extra");
     const char* request_kind = json_str(list_extra, "kind");
+    if (!std::strcmp(request_kind, "text_edit") && (!edit_.pending ||
+        json_i53(list_extra, "chat") != current_chat_id_ || json_i53(list_extra, "message") != edit_.message ||
+        json_i53(list_extra, "history") != history_generation_ || json_i53(list_extra, "generation") != message_edit_generation_)) {
+        retire_td_json(root, wire_bytes); return;
+    }
     const bool refresh_reply = !std::strcmp(request_kind, "refresh_main_ids") || !std::strcmp(request_kind, "refresh_main_chat");
     if ((refresh_reply || !std::strcmp(request_kind, "load_main_chats")) &&
         (json_i53(list_extra, "list_generation") != list_generation_ ||
@@ -3333,7 +3415,22 @@ void TelegramClient::process(void* opaque) {
                 found->second.pending = false;
                 found->second.allowed = permission.allowed;
                 found->second.revoke = permission.revoke;
+                found->second.edit = properties && json_is_true(json_object_get(root, "can_be_edited"));
             }
+        }
+        retire_td_json(root, wire_bytes); return;
+    }
+    if (!std::strcmp(json_str(extra, "kind"), "text_edit")) {
+        if (edit_.message && edit_.pending && json_i53(extra, "chat") == current_chat_id_ &&
+            json_i53(extra, "message") == edit_.message && json_i53(extra, "history") == history_generation_ &&
+            json_i53(extra, "generation") == message_edit_generation_) {
+            const bool unchanged = !std::strcmp(type, "error") && !std::strcmp(json_str(root, "message"), "MESSAGE_NOT_MODIFIED");
+            if ((!std::strcmp(type, "message") && json_i53(root, "id") == edit_.message && json_i53(root, "chat_id") == edit_.chat) || unchanged) {
+                if (!unchanged) storeMessage(root);
+                cancelInput();
+                notice_ = i18n::text("message.edit_saved"); notice_until_ = sceKernelGetSystemTimeWide() + 10000000;
+                status_ = notice_;
+            } else editError(!std::strcmp(type, "error") ? i18n::Text(json_str(root, "message")) : i18n::text("message.edit_unavailable"));
         }
         retire_td_json(root, wire_bytes); return;
     }
@@ -4144,7 +4241,7 @@ void TelegramClient::process(void* opaque) {
     } else if (!std::strcmp(type, "updateChatActiveStories") ||
                !std::strcmp(type, "updateStory") ||
                !std::strcmp(type, "updateStoryDeleted")) {
-        // Stories are intentionally outside VitaGram's lightweight chat UI.
+        // Stories are intentionally outside VitaPlane's lightweight chat UI.
     } else if (!std::strcmp(type, "updateNewMessage")) {
         json_t* msg = json_object_get(root, "message");
         if (json_is_object(msg)) noteLastMessage(json_i53(msg, "chat_id"), msg);
@@ -4158,6 +4255,10 @@ void TelegramClient::process(void* opaque) {
 }
 
 void TelegramClient::pump(bool interactive) {
+    if (edit_.message && (!ready_ || edit_.chat != current_chat_id_ || edit_.history != history_generation_)) cancelInput();
+    if (edit_.pending && sceKernelGetSystemTimeWide() >= edit_.deadline) {
+        ++message_edit_generation_; editError(i18n::text("message.edit_timeout"));
+    }
     applyDocumentExports();
     serviceStreamTails();
     performance::Scope measurement(performance::Metric::Pump);
@@ -4822,6 +4923,7 @@ void TelegramClient::resolveHistoryAnchor() {
 }
 
 void TelegramClient::openChat(int64_t id, const i18n::Text& title) {
+    cancelInput();
     closeBotWebApp();
     delete_permissions_.clear(); message_delete_pending_ = false; message_delete_deadline_ = 0;
     current_thread_ = pending_thread_; pending_thread_ = 0;
@@ -5375,7 +5477,10 @@ bool TelegramClient::sendGif(size_t index) {
 }
 
 void TelegramClient::requestCompose() {
-    if (current_chat_id_ && ready_ && !topics_open_) setInput(InputKind::Message, i18n::text("input.compose"));
+    if (current_chat_id_ && ready_ && !topics_open_) {
+        if (edit_.message) { edit_ = TextEdit{}; ++message_edit_generation_; }
+        setInput(InputKind::Message, i18n::text("input.compose"));
+    }
 }
 
 bool TelegramClient::sendVideoNoteFile(const std::string& path, int duration, int64_t chat, int32_t topic) {
@@ -5661,6 +5766,7 @@ void TelegramClient::toggleReaction(int64_t id, const std::string& emoji) {
 }
 
 void TelegramClient::leaveChat() {
+    cancelInput();
     closeBotWebApp();
     delete_permissions_.clear(); message_delete_pending_ = false; message_delete_deadline_ = 0;
     closeGifs();
@@ -5702,6 +5808,7 @@ void* TelegramClient::cleanupEntry(void* opaque) {
 }
 
 void TelegramClient::clearAccountMemory() {
+    cancelInput();
     stopDocumentExports();
     document_downloads_.clear();
     saved_documents_.clear();
@@ -5845,7 +5952,7 @@ void TelegramClient::openBotWebApp(void* theme) {
         bot_webapp_.topic != current_topic_ || bot_webapp_.thread != current_thread_ || restricted_bots_.count(bot_webapp_.bot)) return;
     auto* request = json_pack("{s:s,s:I,s:s,s:{s:s,s:s,s:{s:s}}}", "@type", bot_webapp_.keyboard ? "getWebAppUrl" : "openWebApp",
         "bot_user_id", (json_int_t)bot_webapp_.bot, "url", bot_webapp_.url.c_str(), "parameters", "@type", "webAppOpenParameters",
-        "application_name", "VitaGram", "mode", "@type", bot_webapp_.mode.c_str());
+        "application_name", "VitaPlane", "mode", "@type", bot_webapp_.mode.c_str());
     if (bot_webapp_.source != BotWebApp::Button) {
         json_object_set_new(request, "@type", json_string(bot_webapp_.source == BotWebApp::MainLink ? "getMainWebApp" : "getWebAppLinkUrl"));
         json_object_del(request, "url");

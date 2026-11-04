@@ -62,7 +62,7 @@ inline bool walk(json_t* node, int depth, Walk& w) {
 }
 }  // namespace detail
 
-// True when `json` is a Lottie document VitaGram is willing to hand to rlottie. `why` (optional)
+// True when `json` is a Lottie document VitaPlane is willing to hand to rlottie. `why` (optional)
 // receives a short English reason otherwise.
 inline bool acceptable(const std::string& json, std::string* why = nullptr) {
     auto refuse = [&](const char* reason) { if (why) *why = reason; return false; };

@@ -17,14 +17,14 @@ const output=process.env.EDITOR_TEST_OUTPUT || '/tmp/vitagram-editor-test';
     page.on('pageerror',error=>errors.push(error.message));
     page.on('request',request=>{if(/^https?:/.test(request.url()))network.push(request.url());});
     page.on('dialog',dialog=>dialog.accept());
-    await page.goto(pathToFileURL(path.resolve(process.argv[2] || path.join(root,'build-modern/palette-editor/VitaGram Palette Editor.html'))).href);
+    await page.goto(pathToFileURL(path.resolve(process.argv[2] || path.join(root,'build-modern/palette-editor/VitaPlane Palette Editor.html'))).href);
     await page.waitForFunction(()=>!document.getElementById('export').disabled);
     assert.match(await page.locator('#app-license').textContent(),/MIT License/);
     assert.equal(await page.locator('#preset option').count(),6);
     assert.equal(await page.locator('#roles .role').count(),31);
     assert.equal(await page.locator('.border-settings').count(),0);
     assert.equal(await page.locator('#view option').count(),9);
-    assert(await page.evaluate(()=>document.fonts.check('25px "VitaGram Noto"')));
+    assert(await page.evaluate(()=>document.fonts.check('25px "VitaPlane Noto"')));
     assert.match(await page.locator('#checks').innerText(),/Контраст.*проверен/);
     const geometry=async view=>{
       await page.selectOption('#view',view);
@@ -231,7 +231,7 @@ const output=process.env.EDITOR_TEST_OUTPUT || '/tmp/vitagram-editor-test';
       assert(localized,code);
     }
     await englishPage.selectOption('#language','ja');
-    assert(await englishPage.evaluate(()=>document.fonts.check('25px "VitaGram CJK ja"')));
+    assert(await englishPage.evaluate(()=>document.fonts.check('25px "VitaPlane CJK ja"')));
     await englishPage.screenshot({path:path.join(output,'editor-i18n-ja.png'),fullPage:true});
     await englishPage.selectOption('#language','ru');await englishPage.reload();
     await englishPage.waitForFunction(()=>!document.getElementById('export').disabled);

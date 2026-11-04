@@ -15,11 +15,14 @@
 #endif
 
 #ifndef VITAGRAM_UPDATE_REPO
-#define VITAGRAM_UPDATE_REPO "ing156/VitaGram"
+#define VITAGRAM_UPDATE_REPO "ing156/VitaPlane"
 #endif
 
 namespace {
-const char kLatestRelease[] = "https://api.github.com/repos/" VITAGRAM_UPDATE_REPO "/releases/latest";
+const char* const kLatestReleases[] = {
+    "https://api.github.com/repos/" VITAGRAM_UPDATE_REPO "/releases/latest",
+    "https://api.github.com/repos/ing156/VitaGram/releases/latest"
+};
 constexpr size_t kMaxJson = 512 * 1024;
 constexpr size_t kMaxSignature = 1024;
 constexpr uint64_t kMaxPackage = 256ull << 20;
@@ -162,22 +165,31 @@ void* Updater::checkEntry(void* self) { static_cast<Updater*>(self)->runCheck();
 void* Updater::installEntry(void* self) { static_cast<Updater*>(self)->runInstall(); return nullptr; }
 
 void Updater::runCheck() {
-    std::string json;
-    update::HttpsResult http = update::https_get(kLatestRelease, ca_file_, "application/vnd.github+json",
-        [&](const char* data, size_t size) {
-            if (json.size() + size > kMaxJson) return false;
-            json.append(data, size);
-            return true;
-        }, &cancel_);
-    if (cancel_) { fail(Error::Cancelled, "cancelled"); return; }
-    if (!http.error.empty()) {
-        // 404 = the repository has no published release yet (or is private): not a network fault.
-        fail(http.status == 404 ? Error::NoRelease : Error::Network, http.error);
-        return;
-    }
     update::Release release;
+    bool found = false;
+    Error failure = Error::NoRelease;
     std::string error;
-    if (!update::parse_release(json, release, error)) { fail(Error::NoRelease, error); return; }
+    for (const char* url : kLatestReleases) {
+        std::string json;
+        const auto http = update::https_get(url, ca_file_, "application/vnd.github+json",
+            [&](const char* data, size_t size) {
+                if (json.size() + size > kMaxJson) return false;
+                json.append(data, size);
+                return true;
+            }, &cancel_);
+        if (cancel_) { fail(Error::Cancelled, "cancelled"); return; }
+        if (!http.error.empty()) {
+            if (http.status != 404) failure = Error::Network;
+            error = http.error;
+            continue;
+        }
+        update::Release candidate;
+        if (!update::parse_release(json, candidate, error)) continue;
+        if (!found || update::compare_versions(candidate.version, release.version) > 0)
+            release = std::move(candidate);
+        found = true;
+    }
+    if (!found) { fail(failure, error); return; }
     if (update::compare_versions(current_, release.version) >= 0) { set(State::UpToDate); return; }
     std::lock_guard<std::mutex> lock(mutex_);
     snap_.version = release.version;
@@ -353,32 +365,32 @@ bool Updater::handoffConfirmedPackage(const std::string& package_dir, const Hand
     }
     std::string bytes;
     if (!read_small(package_dir + "/sce_sys/param.sfo", 1024 * 1024, bytes)) {
-        detail = "cannot read local VitaGram package metadata"; return false;
+        detail = "cannot read local VitaPlane package metadata"; return false;
     }
     vpk::Metadata metadata;
     if (!vpk::parse_sfo(std::vector<uint8_t>(bytes.begin(), bytes.end()), metadata) || metadata.title_id != "VITAGRM01") {
-        detail = "local package is not VitaGram"; return false;
+        detail = "local package is not VitaPlane"; return false;
     }
     if (!startInstaller(kHandoffDir, package_dir, text, detail)) return false;
     return true;
 }
 
-// Hands the unpacked package to the VitaGram Updater app. The running application cannot be replaced,
-// so the updater app (a separate title) closes VitaGram and installs the package after this process ends.
+// Hands the unpacked package to the VitaPlane Updater app. The running application cannot be replaced,
+// so the updater app (a separate title) closes VitaPlane and installs the package after this process ends.
 bool Updater::prepareInstaller(const std::string& work_dir, std::string& detail) {
     update::make_directories(work_dir);
     struct stat info;
     const std::string updater_eboot = std::string(kUpdaterApp) + "/eboot.bin";
     if (stat(updater_eboot.c_str(), &info) != 0) {
         // First update: install the updater app packaged inside this VPK. It is a different title, so the
-        // console accepts it while VitaGram runs.
+        // console accepts it while VitaPlane runs.
         const std::string package = kUpdaterPackageDir;
         update::remove_tree(package);
         std::string reason, error;
         bool installed = update::extract_zip(kUpdaterVpk, package, nullptr, error);
         if (!installed) reason = "package: " + error;
         // head.bin carries the content id of its own title: the updater app's one comes from its package
-        // (assets/updater-head.bin), VitaGram's own would not match this title id.
+        // (assets/updater-head.bin), VitaPlane's own would not match this title id.
         struct stat head_info;
         const bool own_head = stat(kUpdaterHead, &head_info) == 0;
         if (installed) installed = stageHead(package, reason, own_head ? kUpdaterHead : "app0:sce_sys/package/head.bin");
@@ -413,7 +425,7 @@ bool Updater::prepareInstaller(const std::string& work_dir, std::string& detail)
             // Leave the updater's own VPK next to the update so it can be installed from VitaShell.
             const std::string target = work_dir + "/vitagram-updater.vpk";
             const bool copied = copy_file(kUpdaterVpk, target);
-            detail = "helper: the VitaGram Updater app could not be installed automatically (" + reason +
+            detail = "helper: the VitaPlane Updater app could not be installed automatically (" + reason +
                      "); install " + (copied ? target : std::string(kUpdaterVpk)) + " with VitaShell";
             return false;
         }
@@ -538,7 +550,7 @@ void Updater::removeUpdaterApp(const std::string& work_dir, const std::string& f
     }
     struct stat info;
     if (!flagged || stat((std::string(kUpdaterApp) + "/eboot.bin").c_str(), &info) != 0) return;
-    // The updater app exits a moment after starting VitaGram; the promoter cannot delete a running title.
+    // The updater app exits a moment after starting VitaPlane; the promoter cannot delete a running title.
     sceAppMgrDestroyOtherApp();
     std::string detail;
     delete_package(kUpdaterTitle, detail);

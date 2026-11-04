@@ -409,7 +409,6 @@ index c42a432..7e6a4b2 100644
      switch (log_level) {
        case VERBOSITY_NAME(FATAL):
 diff --git a/tdutils/td/utils/port/FileFd.cpp b/tdutils/td/utils/port/FileFd.cpp
-index 8927647..e56ea5e 100644
 --- a/tdutils/td/utils/port/FileFd.cpp
 +++ b/tdutils/td/utils/port/FileFd.cpp
 @@ -5,6 +5,7 @@
@@ -420,18 +419,19 @@ index 8927647..e56ea5e 100644
 
  #if TD_PORT_WINDOWS
  #include "td/utils/port/FromApp.h"
-@@ -26,6 +27,10 @@
+@@ -26,6 +27,11 @@
  #include "td/utils/SliceBuilder.h"
  #include "td/utils/StringBuilder.h"
 
 +#if TD_VITA || defined(VITAGRAM_TD_SCEIO_TEST)
 +#include <psp2/io/fcntl.h>
++#include <psp2/io/stat.h>
 +#endif
 +#include <climits>
  #include <cstring>
  #include <mutex>
  #include <utility>
-@@ -36,7 +41,9 @@
+@@ -36,7 +42,9 @@
  #include <fcntl.h>
  #include <sys/file.h>
  #include <sys/types.h>
@@ -441,7 +441,7 @@ index 8927647..e56ea5e 100644
  #include <unistd.h>
  #else
  #include <limits>
-@@ -105,6 +112,20 @@ namespace detail {
+@@ -105,6 +113,21 @@
  class FileFdImpl {
   public:
    PollableFdInfo info_;
@@ -457,12 +457,13 @@ index 8927647..e56ea5e 100644
 +  }
 +#if TD_VITA || defined(VITAGRAM_TD_SCEIO_TEST)
 +  int positioned_fd_ = -1;
++  int64 known_size_ = -1;
 +  ~FileFdImpl() { if (positioned_fd_ >= 0) sceIoClose(positioned_fd_); }
 +#endif
  };
  }  // namespace detail
 
-@@ -117,6 +138,8 @@ FileFd::FileFd(unique_ptr<detail::FileFdImpl> impl) : impl_(std::move(impl)) {
+@@ -117,6 +140,8 @@
  }
 
  Result<FileFd> FileFd::open(CSlice filepath, int32 flags, int32 mode) {
@@ -471,7 +472,7 @@ index 8927647..e56ea5e 100644
    if (flags & ~(Write | Read | Truncate | Create | Append | CreateNew | Direct | WinStat)) {
      return Status::Error(PSLICE() << "File \"" << filepath << "\" has failed to be " << PrintFlags{flags});
    }
-@@ -175,7 +198,11 @@ Result<FileFd> FileFd::open(CSlice filepath, int32 flags, int32 mode) {
+@@ -175,7 +200,11 @@
        }
        continue;
      }
@@ -484,7 +485,7 @@ index 8927647..e56ea5e 100644
    }
  #elif TD_PORT_WINDOWS
    // TODO: support modes
-@@ -265,7 +292,24 @@ FileFd FileFd::from_native_fd(NativeFd native_fd) {
+@@ -265,7 +294,24 @@
    return FileFd(std::move(impl));
  }
 
@@ -509,7 +510,7 @@ index 8927647..e56ea5e 100644
    auto native_fd = get_native_fd().fd();
  #if TD_PORT_POSIX
    auto bytes_written = detail::skip_eintr([&] { return ::write(native_fd, slice.begin(), slice.size()); });
-@@ -283,7 +327,8 @@ Result<size_t> FileFd::write(Slice slice) {
+@@ -283,7 +329,8 @@
  }
 
  Result<size_t> FileFd::writev(Span<IoSlice> slices) {
@@ -519,7 +520,7 @@ index 8927647..e56ea5e 100644
    auto native_fd = get_native_fd().fd();
    TRY_RESULT(slices_size, narrow_cast_safe<int>(slices.size()));
    auto bytes_written = detail::skip_eintr([&] { return ::writev(native_fd, slices.begin(), slices_size); });
-@@ -318,6 +363,8 @@ Result<size_t> FileFd::writev(Span<IoSlice> slices) {
+@@ -318,6 +365,8 @@
  }
 
  Result<size_t> FileFd::read(MutableSlice slice) {
@@ -528,7 +529,7 @@ index 8927647..e56ea5e 100644
    auto native_fd = get_native_fd().fd();
  #if TD_PORT_POSIX
    auto bytes_read = detail::skip_eintr([&] { return ::read(native_fd, slice.begin(), slice.size()); });
-@@ -351,9 +398,21 @@ Result<size_t> FileFd::read(MutableSlice slice) {
+@@ -351,9 +400,31 @@
  }
 
  Result<size_t> FileFd::pwrite(Slice slice, int64 offset) {
@@ -539,18 +540,28 @@ index 8927647..e56ea5e 100644
 +  impl_->trace_file(get_native_fd().fd(), offset, slice.size());
 +#if TD_VITA || defined(VITAGRAM_TD_SCEIO_TEST)
 +  if (impl_->positioned_fd_ >= 0) {
++    if (offset > impl_->known_size_) {
++      SceIoStat stat{};
++      if (impl_->known_size_ < 0 && sceIoGetstatByFd(impl_->positioned_fd_, &stat) >= 0) impl_->known_size_ = stat.st_size;
++      // Vita exFAT zero-fills a gap written past EOF (~48 s for 200 MB); setting the size first takes ~0.1 s.
++      if (offset > impl_->known_size_) {
++        stat.st_size = offset;
++        if (sceIoChstatByFd(impl_->positioned_fd_, &stat, 0x0004) >= 0) impl_->known_size_ = offset;  // SCE_CST_SIZE
++      }
++    }
 +    int result;
 +    do { result = sceIoPwrite(impl_->positioned_fd_, slice.begin(),
 +        static_cast<unsigned>(std::min<size_t>(slice.size(), INT_MAX)), offset); }
 +    while (static_cast<uint32>(result) == 0x80010004u);
 +    if (result < 0) return Status::Error(PSLICE() << "Vita pwrite failed at " << offset << ": " << result);
++    impl_->known_size_ = std::max(impl_->known_size_, offset + result);
 +    return static_cast<size_t>(result);
 +  }
 +#endif
    auto native_fd = get_native_fd().fd();
  #if TD_PORT_POSIX
    TRY_RESULT(offset_off_t, narrow_cast_safe<off_t>(offset));
-@@ -377,9 +436,21 @@ Result<size_t> FileFd::pwrite(Slice slice, int64 offset) {
+@@ -377,9 +448,21 @@
  }
 
  Result<size_t> FileFd::pread(MutableSlice slice, int64 offset) const {
@@ -572,7 +583,7 @@ index 8927647..e56ea5e 100644
    auto native_fd = get_native_fd().fd();
  #if TD_PORT_POSIX
    TRY_RESULT(offset_off_t, narrow_cast_safe<off_t>(offset));
-@@ -426,6 +497,12 @@ static Status create_local_lock(const string &path, int32 &max_tries) {
+@@ -426,6 +509,12 @@
  }
 
  Status FileFd::lock(LockFlags flags, const string &path, int32 max_tries) {
@@ -585,7 +596,7 @@ index 8927647..e56ea5e 100644
    if (max_tries <= 0) {
      return Status::Error("Can't lock file: wrong max_tries");
    }
-@@ -514,9 +591,14 @@ Status FileFd::lock(LockFlags flags, const string &path, int32 max_tries) {
+@@ -514,9 +603,14 @@
      need_local_unlock = false;
    }
    return Status::OK();
@@ -600,7 +611,7 @@ index 8927647..e56ea5e 100644
    if (path.empty() || ExitGuard::is_exited()) {
      return;
    }
-@@ -524,6 +606,7 @@ void FileFd::remove_local_lock(const string &path) {
+@@ -524,6 +618,7 @@
    std::unique_lock<std::mutex> lock(in_process_lock_mutex);
    auto erased_count = locked_files.erase(path);
    CHECK(erased_count > 0 || path.empty() || ExitGuard::is_exited());
@@ -608,7 +619,7 @@ index 8927647..e56ea5e 100644
  }
 
  void FileFd::close() {
-@@ -634,7 +717,9 @@ Result<Stat> FileFd::stat() const {
+@@ -634,7 +729,9 @@
  }
 
  Status FileFd::sync() {
@@ -618,6 +629,7 @@ index 8927647..e56ea5e 100644
  #if TD_PORT_POSIX
  #if TD_DARWIN
    if (detail::skip_eintr([&] { return fcntl(get_native_fd().fd(), F_FULLFSYNC); }) == -1) {
+
 diff --git a/tdutils/td/utils/port/IPAddress.cpp b/tdutils/td/utils/port/IPAddress.cpp
 index 8a08d34..2108476 100644
 --- a/tdutils/td/utils/port/IPAddress.cpp

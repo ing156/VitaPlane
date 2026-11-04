@@ -13,7 +13,10 @@ namespace {
 std::atomic<bool> prepared{false};
 constexpr uint64_t max_package = 96ull << 20, max_unpacked = 160ull << 20;
 const char directory[] = "ux0:data/vitagram/webkit/" VITAGRAM_WEBKIT_ID;
-const char release_url[] = "https://api.github.com/repos/ing156/VitaGram/releases/tags/" VITAGRAM_WEBKIT_ID;
+const char* const release_urls[] = {
+    "https://api.github.com/repos/ing156/VitaPlane/releases/tags/" VITAGRAM_WEBKIT_ID,
+    "https://api.github.com/repos/ing156/VitaGram/releases/tags/" VITAGRAM_WEBKIT_ID
+};
 const char asset_name[] = "vitagram-" VITAGRAM_WEBKIT_ID ".zip";
 const char ca_file[] = "app0:certs/cacert.pem";
 std::string path(const char* name) { return std::string(directory) + "/" + name; }
@@ -111,10 +114,15 @@ void WebKitDownload::run(bool download) {
         if (unpack()) { std::lock_guard<std::mutex> lock(mutex_); state_.state = State::Ready; return; }
         if (cancel_) { fail("Cancelled"); return; }
         std::string json;
-        const auto http = update::https_get(release_url, ca_file, "application/vnd.github+json", [&](const char* data, size_t size) {
-            if (json.size() + size > 512 * 1024) return false;
-            json.append(data, size); return true;
-        }, &cancel_);
+        update::HttpsResult http;
+        for (const char* release_url : release_urls) {
+            json.clear();
+            http = update::https_get(release_url, ca_file, "application/vnd.github+json", [&](const char* data, size_t size) {
+                if (json.size() + size > 512 * 1024) return false;
+                json.append(data, size); return true;
+            }, &cancel_);
+            if (cancel_ || http.error.empty()) break;
+        }
         if (!http.error.empty() || cancel_) { fail(http.error); return; }
         auto* root = json_loads(json.c_str(), JSON_REJECT_DUPLICATES, nullptr);
         const auto* tag = json_string_value(json_object_get(root, "tag_name"));

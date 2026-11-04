@@ -7,13 +7,13 @@ inline constexpr int rows[][9] = {
     {0, 28, 3, 33, 17, 18, 30, 4},
     {27, 19, 23},
     {24, 25, 22, 16},
-    {29, 7, 1, 2, 32},
+    {29, 7, 34, 1, 2, 32},
     {8, 6},
     {11, 14, 15, 12, 13},
     {10, 9, 26},
     {21, 5, 20},
 };
-inline constexpr int counts[] = {9, 8, 3, 4, 5, 2, 5, 3, 3};
+inline constexpr int counts[] = {9, 8, 3, 4, 6, 2, 5, 3, 3};
 inline constexpr const char* titles[] = {
     "settings.title", "settings.section.interface", "settings.section.chats",
     "settings.section.controls", "settings.section.data", "settings.section.connection",

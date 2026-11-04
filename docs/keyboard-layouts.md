@@ -113,7 +113,7 @@ Character relationships were checked against the public HeliBoard
 (`da`, `de`, `es`, `fi`, `fr`, `it`, `nb`, `nl`, `pl`, `pt`, `sv`, `tr`, `ru`),
 the common `more_popups_main` Latin set, and its
 [QWERTY/QWERTZ/AZERTY layouts](https://github.com/HeliBorg/HeliBoard/tree/main/app/src/main/assets/layouts/main).
-VitaGram retains its previously requested modern Russian е → ё / 4 and ь → ъ
+VitaPlane retains its previously requested modern Russian е → ё / 4 and ь → ъ
 choices rather than adding HeliBoard's historical letters. Quote variants are
 available on the symbol layer for the locales that define them. Android source
 implementation, dictionaries and composition engines were not copied.
@@ -126,7 +126,7 @@ availability, touch precision and GPU rendering still need device verification.
 ## Custom .lang files / Пользовательские .lang
 
 Copy a catalog from `assets/lang/` to `ux0:data/vitagram/lang/<code>.lang`
-(`/data/vitagram/lang` on the memory card), then restart VitaGram. Set `@code`
+(`/data/vitagram/lang` on the memory card), then restart VitaPlane. Set `@code`
 to the filename without `.lang` and `@name` to the name shown in Settings →
 Language. A new code adds an interface language; a matching code overrides the
 bundled catalog. Missing translations retain the bundled language's text, then

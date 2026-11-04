@@ -84,7 +84,7 @@ def build(output):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('output', nargs='?', type=Path,
-                        default=ROOT / 'build-modern/palette-editor/VitaGram Palette Editor.html')
+                        default=ROOT / 'build-modern/palette-editor/VitaPlane Palette Editor.html')
     args = parser.parse_args()
     data = build(args.output)
     print(f'{args.output}: {len(data["presets"])} patterns, {len(data["catalogs"])} catalogs, offline')

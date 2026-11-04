@@ -1,4 +1,4 @@
-# VitaGram language file (format: see en.lang)
+# VitaPlane language file (format: see en.lang)
 @code = ko
 @name = 한국어
 
@@ -17,7 +17,7 @@
 
 account.cleanup_blocked = 이전 계정의 데이터를 삭제하지 못했습니다. 메모리 카드 접근을 해제하고 앱을 다시 시작하세요.
 account.delete_incomplete = 모든 데이터를 삭제하지 못했습니다. 다음 실행 때 정리를 다시 시도합니다.
-account.deleted = 계정 데이터를 삭제했습니다. 로그인하려면 VitaGram을 다시 시작하세요.
+account.deleted = 계정 데이터를 삭제했습니다. 로그인하려면 VitaPlane을 다시 시작하세요.
 account.deleting = 계정 데이터 삭제 중...
 account.logging_out = 로그아웃 중...
 account.mark_failed = 계정 정리 표시를 저장하지 못했습니다
@@ -522,7 +522,7 @@ voice.worker = 오디오 출력 스레드를 시작할 수 없습니다
 # --- update ---
 settings.auto_update = 시작할 때 업데이트 확인 및 설치
 settings.auto_update_proxy = 프록시 사용 중에는 일시 중지됨
-network.held_notice = 설정을 확인할 수 없습니다. VitaGram 밖에서 교체·손상·삭제되어 프록시 설정을 알 수 없습니다. VitaGram은 아직 연결하지 않았습니다. 프록시 설정을 확인하고 저장하면 연결합니다(프록시 사용 여부와 관계없이).
+network.held_notice = 설정을 확인할 수 없습니다. VitaPlane 밖에서 교체·손상·삭제되어 프록시 설정을 알 수 없습니다. VitaPlane은 아직 연결하지 않았습니다. 프록시 설정을 확인하고 저장하면 연결합니다(프록시 사용 여부와 관계없이).
 network.held = 연결 안 됨: 연결하려면 프록시 설정을 저장하세요.
 settings.update = 업데이트
 update.idle = {cross}: 확인 (버전 {0})
@@ -534,7 +534,7 @@ update.verifying = 서명 확인 중...
 update.extracting = 압축 해제 중 {0}%
 update.installing = 설치 중...
 update.applying = 업데이트 설치 중...
-update.applying_hint = 잠시만 기다려 주세요. 본체 전원을 끄지 마세요. VitaGram이 자동으로 다시 시작됩니다.
+update.applying_hint = 잠시만 기다려 주세요. 본체 전원을 끄지 마세요. VitaPlane이 자동으로 다시 시작됩니다.
 update.installed = {0} 설치 완료 - 다시 시작 중...
 update.hint = 업데이트 {0} 사용 가능: {start} 설정
 update.err.network = GitHub에 연결할 수 없습니다 - {cross}: 다시 시도
@@ -550,7 +550,7 @@ update.direct = 업데이트 확인은 프록시를 거치지 않고 GitHub에 �
 # Data encryption
 vault.title = 데이터 암호화
 vault.ask.title = 데이터를 보호할까요?
-vault.ask.body = VitaGram은 Telegram 세션, 데이터베이스, 사진, 동영상, 스티커, 음성 메시지, 설정을 콘솔에 저장합니다. 무단 복사를 막도록 저장소를 암호화할 수 있습니다.\n\n잠금 해제에는 버튼 순서 또는 암호문구를 선택하세요. 더 나은 보호를 위해 암호문구를 권장합니다.\n\n⚠ 키를 잊으면 로컬 데이터를 복구할 수 없습니다. 데이터를 지우고 Telegram에 다시 로그인해야 합니다.\n\n나중에 Start > 설정에서 암호화를 관리할 수 있습니다.\n\n설정에서 모든 로컬 파일이 암호화되었는지 정기적으로 확인하세요. 기록 중 앱을 닫거나 콘솔을 끄면 암호화가 중단될 수 있습니다. 일부 파일은 다음 처리나 검사까지 암호화되지 않은 상태로 남을 수 있습니다.\n\nVitaGram은 원격 측정 정보를 수집하거나 데이터를 제삼자 서비스로 보내지 않습니다.\n\n노력에도 불구하고 앱은 개조된 콘솔에서 작동하며 관련 위험이 있습니다. 시스템 접근 권한이 있는 프로그램은 실행 중인 앱의 데이터와 콘솔 메모리에 접근할 수 있습니다. 로컬 저장소 암호화는 이런 접근으로부터 보호를 보장하지 않습니다.
+vault.ask.body = VitaPlane은 Telegram 세션, 데이터베이스, 사진, 동영상, 스티커, 음성 메시지, 설정을 콘솔에 저장합니다. 무단 복사를 막도록 저장소를 암호화할 수 있습니다.\n\n잠금 해제에는 버튼 순서 또는 암호문구를 선택하세요. 더 나은 보호를 위해 암호문구를 권장합니다.\n\n⚠ 키를 잊으면 로컬 데이터를 복구할 수 없습니다. 데이터를 지우고 Telegram에 다시 로그인해야 합니다.\n\n나중에 Start > 설정에서 암호화를 관리할 수 있습니다.\n\n설정에서 모든 로컬 파일이 암호화되었는지 정기적으로 확인하세요. 기록 중 앱을 닫거나 콘솔을 끄면 암호화가 중단될 수 있습니다. 일부 파일은 다음 처리나 검사까지 암호화되지 않은 상태로 남을 수 있습니다.\n\nVitaPlane은 원격 측정 정보를 수집하거나 데이터를 제삼자 서비스로 보내지 않습니다.\n\n노력에도 불구하고 앱은 개조된 콘솔에서 작동하며 관련 위험이 있습니다. 시스템 접근 권한이 있는 프로그램은 실행 중인 앱의 데이터와 콘솔 메모리에 접근할 수 있습니다. 로컬 저장소 암호화는 이런 접근으로부터 보호를 보장하지 않습니다.
 vault.ask.footer = {cross} 암호화    {circle} 나중에
 vault.setup.title = 키 만들기
 vault.new.title = 새 키
@@ -566,7 +566,7 @@ vault.unlock.hint_disabling = 암호화를 끄는 중입니다. 복호화를 완
 vault.entry.footer = Start: 확인    L: 삭제    R: 비우기    Select: 취소
 vault.unlock.footer = Start: 잠금 해제    L: 삭제    R: 비우기    Select: 키 분실
 vault.relock.footer = Start: 잠금 해제    L: 삭제    R: 비우기
-vault.relock.title = VitaGram이 잠겼습니다
+vault.relock.title = VitaPlane이 잠겼습니다
 vault.strength = {0}회 입력, {1}비트
 vault.empty = 먼저 버튼을 누르세요.
 vault.one_button = 버튼을 하나씩 누르세요.
@@ -580,12 +580,12 @@ vault.deriving = 키 유도 중... {0}%
 vault.no_memory = 키 유도에 필요한 메모리가 부족합니다.
 vault.unavailable = 다른 콘솔에서 만든 키입니다.
 vault.error = 키를 저장하지 못했습니다.
-vault.state_reset = 암호화 설정이 VitaGram 밖에서 변경되었습니다. 암호화는 켜진 상태로 유지되며 모든 파일을 다시 확인합니다. 암호화 해제를 시작하지 않았다면 누군가 메모리 카드에 접근했을 수 있습니다.
-vault.plugins_warning = VitaGram에 플러그인이 로드되어 있습니다: {0}. 입력하는 키와 메시지를 읽을 수 있습니다. 신뢰할 수 없는 플러그인은 tai/config.txt에서 제거하세요.
+vault.state_reset = 암호화 설정이 VitaPlane 밖에서 변경되었습니다. 암호화는 켜진 상태로 유지되며 모든 파일을 다시 확인합니다. 암호화 해제를 시작하지 않았다면 누군가 메모리 카드에 접근했을 수 있습니다.
+vault.plugins_warning = VitaPlane에 플러그인이 로드되어 있습니다: {0}. 입력하는 키와 메시지를 읽을 수 있습니다. 신뢰할 수 없는 플러그인은 tai/config.txt에서 제거하세요.
 vault.notice.footer = {cross} 계속
 vault.changed = 키가 변경되었습니다.
 vault.forgot.title = 모든 데이터를 지울까요?
-vault.forgot.body = 키 없이는 암호화된 데이터를 읽을 수 없습니다.\n\nTelegram 로그인 정보 등 모든 VitaGram 데이터를 지우고 다시 시작할 수 있습니다.
+vault.forgot.body = 키 없이는 암호화된 데이터를 읽을 수 없습니다.\n\nTelegram 로그인 정보 등 모든 VitaPlane 데이터를 지우고 다시 시작할 수 있습니다.
 vault.forgot.footer = {triangle} 모두 지우기    {circle} 뒤로
 vault.erasing = 데이터 삭제 중...
 vault.migrate.encrypting = 데이터 암호화 중... {0}/{1}
@@ -825,20 +825,20 @@ logs.vault = 암호화된 미디어 재생 (vault-playback.log)
 logs.note = 파일은 ux0:data/vitagram에 저장되며 암호화되지 않습니다.
 logs.footer = {dpad}: 선택    {cross} 켜기 / 끄기    {circle} 뒤로
 
-# About VitaGram
+# About VitaPlane
 about.title = 프로젝트 정보
 
 vault.ask.scroll = {dpad}: 스크롤
-about.brand = VitaGram — PS Vita용 Telegram
+about.brand = VitaPlane — PS Vita용 Telegram
 about.version = 버전 {0}
 about.description = VitaSDK, vita2d, TDLib 기반의 비공식 오픈 소스 Telegram 클라이언트입니다. PS Vita의 버튼과 터치스크린으로 대화하고 채널과 미디어를 볼 수 있습니다.
 about.development = 활발히 개발 중입니다. 모든 Telegram 기능이 지원되지는 않으며 일부 기능에는 제한이나 오류가 있을 수 있습니다.
 about.privacy_title = 개인정보 보호
-about.privacy_servers = VitaGram은 메시지, 파일, 진단 로그를 개발자의 서버로 보내지 않습니다.
+about.privacy_servers = VitaPlane은 메시지, 파일, 진단 로그를 개발자의 서버로 보내지 않습니다.
 about.privacy_logs = 진단 로그에는 기술 정보가 포함되며 기본적으로 꺼져 있습니다. 메시지 내용, 전화번호, 비밀번호는 기록하지 않습니다. 로그는 콘솔에만 남고 자동 전송되지 않습니다. 문제 발생 시 원하면 진단을 위해 개발자에게 직접 보낼 수 있습니다.
 about.privacy_connections = 클라이언트는 Telegram 서버에 연결합니다. 업데이트 확인과 다운로드는 GitHub를 사용합니다. TDLib은 프록시 호스트 이름 확인과 연결 설정을 위해 외부 서비스에 접속할 수 있습니다. 프록시 사용 시 선택한 서버를 거칩니다.
 about.security_title = 보안과 위험
-about.security_intro = VitaGram은 비공식 클라이언트입니다. 앱 오류와 플랫폼 제한이 보안에 영향을 줄 수 있습니다.
+about.security_intro = VitaPlane은 비공식 클라이언트입니다. 앱 오류와 플랫폼 제한이 보안에 영향을 줄 수 있습니다.
 about.risk_data_title = 로컬 저장소
 about.risk_data = 클라이언트는 데이터를 콘솔에 저장합니다. 무단 복사를 막도록 앱에서 저장소를 암호화할 수 있습니다. 암호화하지 않으면 메모리 카드에 접근하는 사람이나 프로그램이 로컬 계정 데이터와 다운로드한 미디어에 접근할 수 있습니다.
 about.risk_encryption_title = 암호화
@@ -851,13 +851,13 @@ about.risk_updates_title = 설치와 업데이트
 about.risk_updates = 신뢰하는 출처에서 설치하세요. 내장 업데이트 기능은 설치 전에 VPK 디지털 서명을 검증합니다.
 about.author_title = 개발자와 소스 코드
 about.license_title = 라이선스
-about.license_mit = VitaGram 자체 코드는 MIT 라이선스입니다. 저작권 고지와 라이선스 내용을 유지하면 상업적 용도를 포함해 사용, 수정, 배포할 수 있습니다.
+about.license_mit = VitaPlane 자체 코드는 MIT 라이선스입니다. 저작권 고지와 라이선스 내용을 유지하면 상업적 용도를 포함해 사용, 수정, 배포할 수 있습니다.
 about.license_warranty = 앱은 보증 없이 현재 상태로 제공됩니다. 외부 라이브러리와 글꼴에는 별도의 라이선스가 적용됩니다.
-about.project_link = GitHub · ing156/VitaGram
+about.project_link = GitHub · ing156/VitaPlane
 about.author_link = Telegram · @Ing156
 about.footer = {dpad}: 스크롤  {l}/{r}: 페이지  ←/→: 링크  {cross}: 열기  {circle}: 뒤로
 about.telegram_unavailable = 개발자의 채팅을 열려면 Telegram에 로그인하세요.
-about.platform_risk = 보안을 개선하려는 노력에도 불구하고 VitaGram은 개조된 콘솔에서 작동하며 관련 위험이 있습니다. 시스템 접근 권한이 있는 프로그램은 실행 중인 앱의 데이터와 콘솔 메모리에 접근할 수 있습니다. 로컬 저장소 암호화는 이런 접근으로부터 보호를 보장하지 않습니다.
+about.platform_risk = 보안을 개선하려는 노력에도 불구하고 VitaPlane은 개조된 콘솔에서 작동하며 관련 위험이 있습니다. 시스템 접근 권한이 있는 프로그램은 실행 중인 앱의 데이터와 콘솔 메모리에 접근할 수 있습니다. 로컬 저장소 암호화는 이런 접근으로부터 보호를 보장하지 않습니다.
 
 menu.seek_time = 시간으로 이동
 media.seek_hint = {dpad}  좌우: 항목; 위아래: 시간 (시:분:초)
@@ -916,7 +916,7 @@ upload.sort_size_desc = 크기 내림차순
 # In-app text keyboard
 settings.keyboard = 키보드
 settings.keyboard_system = 시스템
-settings.keyboard_custom = VitaGram
+settings.keyboard_custom = VitaPlane
 keyboard.send = 보내기
 keyboard.help = {cross} 입력   {square} 삭제   {triangle} 공백   L/R 커서   Start OK
 
@@ -929,7 +929,7 @@ vpk.installing = 설치 중…
 vpk.success = 설치가 완료되었습니다.
 vpk.failed = 설치 실패: {0}
 vpk.invalid = 잘못되었거나 지원하지 않는 앱 패키지입니다.
-vpk.self = VitaGram과 설치 프로그램은 업데이트 또는 VitaShell로 업데이트하세요.
+vpk.self = VitaPlane과 설치 프로그램은 업데이트 또는 VitaShell로 업데이트하세요.
 vpk.header_failed = 패키지 헤더를 준비하지 못했습니다.
 vpk.dialog_failed = 설치 대화 상자를 열지 못했습니다.
 vpk.thread_failed = 설치 작업을 시작하지 못했습니다.
@@ -1011,7 +1011,7 @@ settings.view_combined = 분할 보기
 chat.focus_list = 채팅 > 기록
 chat.focus_history = < 채팅 | 기록
 chat.select_chat = 채팅을 선택하세요
-webapp.payment_unavailable = VitaGram에서는 아직 Mini Apps 결제를 사용할 수 없습니다.
+webapp.payment_unavailable = VitaPlane에서는 아직 Mini Apps 결제를 사용할 수 없습니다.
 
 # --- Background audio player ---
 player.hint = L+R: 플레이어
@@ -1086,3 +1086,23 @@ calendar.weekday.5 = 토
 calendar.weekday.6 = 일
 calendar.back = {circle} 뒤로
 calendar.hint = L/R: 월 · {dpad}: 날짜 · {cross}: 이동 · {circle}: 뒤로
+
+settings.download_ask = 다운로드 저장 위치 묻기
+picker.save_as = 다른 이름으로 저장
+picker.open_action = {cross} 열기
+picker.select_action = {square} 선택
+picker.create_action = {triangle} 새 폴더
+picker.back_action = {circle} 뒤로
+picker.loading = 불러오는 중
+
+# --- text editing ---
+menu.edit_message = 텍스트 편집
+input.edit_message = 메시지 편집
+message.edit_failed = 저장 실패: {0}
+message.edit_saved = 변경 사항 저장됨
+message.edit_saving = 변경 사항 저장 중...
+message.edit_unavailable = 이 클라이언트에서 편집할 수 없는 메시지입니다.
+message.edit_invalid = 빈 텍스트는 안 됩니다. UTF-8 기준 최대 1023바이트입니다.
+message.edit_changed = 메시지가 변경되었습니다. 취소한 뒤 다시 여세요.
+message.edit_timeout = 응답이 없습니다. 재시도 전에 메시지를 확인하세요.
+keyboard.save = 저장

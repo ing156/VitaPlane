@@ -27,3 +27,9 @@ python3 "$root/tests/settings_menu_test.py"
 "${CXX:-c++}" -std=c++17 -Wall -Wextra -Werror -I "$root/src" \
   "$root/tests/chat_calendar_test.cpp" -o "$build_dir/chat_calendar_test"
 "$build_dir/chat_calendar_test"
+"${CXX:-c++}" -std=c++17 -O1 -Wall -Wextra -Werror -pthread \
+  -I "$root/src" -idirafter "${VITASDK:-/usr/local/vitasdk}/arm-vita-eabi/include" \
+  "$root/src/download_folder_picker.cpp" "$root/src/i18n.cpp" "$root/tests/download_folder_picker_test.cpp" \
+  -Wl,--wrap=pthread_create -o "$build_dir/download_folder_picker_test"
+"$build_dir/download_folder_picker_test" "$root/assets/lang"
+python3 "$root/tests/message_edit_ui_test.py"

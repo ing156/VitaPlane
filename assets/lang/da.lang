@@ -1,4 +1,4 @@
-# VitaGram language file (format: see en.lang)
+# VitaPlane language file (format: see en.lang)
 @code = da
 @name = Dansk
 
@@ -22,7 +22,7 @@
 
 account.cleanup_blocked = Den tidligere kontos data kunne ikke slettes. Frigør adgangen til hukommelseskortet, og genstart appen.
 account.delete_incomplete = Ikke alle data kunne slettes. Oprydningen gentages ved næste start.
-account.deleted = Kontodata slettet. Genstart VitaGram for at logge ind.
+account.deleted = Kontodata slettet. Genstart VitaPlane for at logge ind.
 account.deleting = Sletter kontodata...
 account.logging_out = Logger ud...
 account.mark_failed = Oprydningsmarkeringen for kontoen kunne ikke gemmes
@@ -527,7 +527,7 @@ voice.worker = Lydudgangstråden kan ikke startes
 # --- update ---
 settings.auto_update = Søg efter og installer opdateringer ved start
 settings.auto_update_proxy = Sat på pause, mens en proxy er slået til
-network.held_notice = Dine indstillinger kunne ikke bekræftes: de blev erstattet, beskadiget eller slettet uden for VitaGram, så proxyindstillingerne er ukendte. VitaGram har ikke oprettet forbindelse. Kontroller proxyindstillingerne, og gem dem for at oprette forbindelse (med eller uden proxy).
+network.held_notice = Dine indstillinger kunne ikke bekræftes: de blev erstattet, beskadiget eller slettet uden for VitaPlane, så proxyindstillingerne er ukendte. VitaPlane har ikke oprettet forbindelse. Kontroller proxyindstillingerne, og gem dem for at oprette forbindelse (med eller uden proxy).
 network.held = Ikke forbundet: gem proxyindstillingerne for at oprette forbindelse.
 settings.update = Opdatering
 update.idle = {cross}: tjek (version {0})
@@ -539,7 +539,7 @@ update.verifying = Kontrollerer signatur...
 update.extracting = Pakker ud {0}%
 update.installing = Installerer...
 update.applying = Installerer opdatering...
-update.applying_hint = Vent venligst, sluk ikke konsollen. VitaGram genstarter.
+update.applying_hint = Vent venligst, sluk ikke konsollen. VitaPlane genstarter.
 update.installed = {0} installeret - genstarter...
 update.hint = Opdatering {0} tilgængelig: {start} Indstillinger
 update.err.network = Ingen forbindelse til GitHub - {cross}: prøv igen
@@ -555,7 +555,7 @@ update.direct = Opdateringstjek forbinder direkte til GitHub, ikke gennem proxye
 # Data encryption
 vault.title = Datakryptering
 vault.ask.title = Beskyt dine data?
-vault.ask.body = VitaGram gemmer data lokalt på konsollen: Telegram-session, database, billeder, videoer, klistermærker, talebeskeder og indstillinger. Appen kan kryptere lageret mod uautoriseret kopiering.\n\nVælg en knapsekvens eller adgangssætning til oplåsning. En adgangssætning anbefales for bedre beskyttelse.\n\n⚠ Hvis du glemmer nøglen, kan lokale data ikke gendannes. Du skal slette dem og logge ind på Telegram igen.\n\nKryptering kan styres senere under Start > Indstillinger.\n\nKontroller jævnligt i indstillingerne, at alle lokale filer er krypterede. Lukning af appen eller konsollen under skrivning kan afbryde kryptering. Filer kan forblive ukrypterede indtil næste behandling eller kontrol.\n\nVitaGram indsamler ikke telemetri og sender ikke dine data til tredjepartstjenester.\n\nTrods vores indsats kører appen på en modificeret konsol med tilhørende risici. Software med systemadgang kan læse data i den kørende app og konsollens hukommelse. Lokal kryptering garanterer ikke beskyttelse mod denne adgang.
+vault.ask.body = VitaPlane gemmer data lokalt på konsollen: Telegram-session, database, billeder, videoer, klistermærker, talebeskeder og indstillinger. Appen kan kryptere lageret mod uautoriseret kopiering.\n\nVælg en knapsekvens eller adgangssætning til oplåsning. En adgangssætning anbefales for bedre beskyttelse.\n\n⚠ Hvis du glemmer nøglen, kan lokale data ikke gendannes. Du skal slette dem og logge ind på Telegram igen.\n\nKryptering kan styres senere under Start > Indstillinger.\n\nKontroller jævnligt i indstillingerne, at alle lokale filer er krypterede. Lukning af appen eller konsollen under skrivning kan afbryde kryptering. Filer kan forblive ukrypterede indtil næste behandling eller kontrol.\n\nVitaPlane indsamler ikke telemetri og sender ikke dine data til tredjepartstjenester.\n\nTrods vores indsats kører appen på en modificeret konsol med tilhørende risici. Software med systemadgang kan læse data i den kørende app og konsollens hukommelse. Lokal kryptering garanterer ikke beskyttelse mod denne adgang.
 vault.ask.footer = {cross} Krypter    {circle} Ikke nu
 vault.setup.title = Opret en nøgle
 vault.new.title = Ny nøgle
@@ -571,7 +571,7 @@ vault.unlock.hint_disabling = Kryptering slås fra. Indtast nøglen for at afslu
 vault.entry.footer = Start: OK    L: slet    R: ryd    Select: annuller
 vault.unlock.footer = Start: lås op    L: slet    R: ryd    Select: glemt nøgle
 vault.relock.footer = Start: lås op    L: slet    R: ryd
-vault.relock.title = VitaGram er låst
+vault.relock.title = VitaPlane er låst
 vault.strength = {0} tryk, {1} bit
 vault.empty = Tryk først på nogle knapper.
 vault.one_button = Tryk på én knap ad gangen.
@@ -585,18 +585,18 @@ vault.deriving = Udleder nøglen... {0}%
 vault.no_memory = Ikke nok hukommelse til at udlede nøglen.
 vault.unavailable = Nøglen blev oprettet på en anden konsol.
 vault.error = Kunne ikke gemme nøglen.
-vault.state_reset = Krypteringsindstillingerne blev ændret uden for VitaGram. Krypteringen forbliver slået til, og alle filer kontrolleres igen. Hvis du ikke begyndte at slå krypteringen fra, kan nogen have haft adgang til dit hukommelseskort.
-vault.plugins_warning = Der er indlæst plugins i VitaGram: {0}. De kan læse den nøgle, du indtaster, og dine beskeder. Fjern dem, du ikke har tillid til, fra tai/config.txt.
+vault.state_reset = Krypteringsindstillingerne blev ændret uden for VitaPlane. Krypteringen forbliver slået til, og alle filer kontrolleres igen. Hvis du ikke begyndte at slå krypteringen fra, kan nogen have haft adgang til dit hukommelseskort.
+vault.plugins_warning = Der er indlæst plugins i VitaPlane: {0}. De kan læse den nøgle, du indtaster, og dine beskeder. Fjern dem, du ikke har tillid til, fra tai/config.txt.
 vault.notice.footer = {cross} Fortsæt
 vault.changed = Nøgle ændret.
 vault.forgot.title = Slet alle data?
-vault.forgot.body = Uden nøglen kan krypterede data ikke læses.\n\nDu kan slette alle VitaGram-data, inklusive Telegram-login, og begynde forfra.
+vault.forgot.body = Uden nøglen kan krypterede data ikke læses.\n\nDu kan slette alle VitaPlane-data, inklusive Telegram-login, og begynde forfra.
 vault.forgot.footer = {triangle} Slet alt    {circle} Tilbage
 vault.erasing = Sletter data...
 vault.migrate.encrypting = Krypterer data... {0}/{1}
 vault.migrate.decrypting = Dekrypterer data... {0}/{1}
 vault.migrate.hint = Hold konsollen tændt. {circle} springer over; processen fortsætter ved næste start.
-vault.migrate.failed = {0} filer kunne ikke konverteres. Din nøgle bevares, og VitaGram prøver igen ved næste start. Frigør plads, hvis hukommelseskortet er fuldt.
+vault.migrate.failed = {0} filer kunne ikke konverteres. Din nøgle bevares, og VitaPlane prøver igen ved næste start. Frigør plads, hvis hukommelseskortet er fuldt.
 vault.settings.encryption = Datakryptering
 vault.settings.change_key = Skift nøgle
 vault.settings.confirm_disable = Tryk på {cross} igen for at slå fra
@@ -830,20 +830,20 @@ logs.vault = Krypteret afspilning (vault-playback.log)
 logs.note = Filer gemmes i ux0:data/vitagram og krypteres ikke.
 logs.footer = {dpad}: vælg    {cross} Til / fra    {circle} Tilbage
 
-# About VitaGram
-about.title = Om VitaGram
+# About VitaPlane
+about.title = Om VitaPlane
 
 vault.ask.scroll = {dpad}: rul
-about.brand = VitaGram — Telegram til PS Vita
+about.brand = VitaPlane — Telegram til PS Vita
 about.version = Version {0}
 about.description = En uofficiel Telegram-klient med åben kildekode, baseret på VitaSDK, vita2d og TDLib. Chat, læs kanaler og se medier på PS Vita med knapperne og berøringsskærmen.
 about.development = Projektet udvikles aktivt. Ikke alle Telegram-funktioner er tilgængelige endnu; nogle kan have begrænsninger eller fejl.
 about.privacy_title = Privatliv
-about.privacy_servers = VitaGram sender ikke dine beskeder, filer eller diagnoselogge til forfatterens servere.
-about.privacy_logs = Logge indeholder tekniske oplysninger og er slået fra som standard. VitaGram gemmer ikke beskedtekst, telefonnumre eller adgangskoder i dem. De bliver på konsollen og sendes aldrig automatisk. Ved problemer kan du frivilligt sende dem manuelt til udvikleren til fejlfinding.
+about.privacy_servers = VitaPlane sender ikke dine beskeder, filer eller diagnoselogge til forfatterens servere.
+about.privacy_logs = Logge indeholder tekniske oplysninger og er slået fra som standard. VitaPlane gemmer ikke beskedtekst, telefonnumre eller adgangskoder i dem. De bliver på konsollen og sendes aldrig automatisk. Ved problemer kan du frivilligt sende dem manuelt til udvikleren til fejlfinding.
 about.privacy_connections = Klienten forbinder til Telegrams servere. Opdateringskontrol og hentning bruger GitHub. TDLib kan kontakte eksterne tjenester for at slå proxyværtsnavne op og hente forbindelsesindstillinger. Med proxy går forbindelsen gennem den valgte server.
 about.security_title = Sikkerhed og risici
-about.security_intro = VitaGram er en uofficiel klient. Programfejl og platformens begrænsninger kan påvirke sikkerheden.
+about.security_intro = VitaPlane er en uofficiel klient. Programfejl og platformens begrænsninger kan påvirke sikkerheden.
 about.risk_data_title = Lokal lagring
 about.risk_data = Klienten gemmer brugerdata på konsollen. Appen kan kryptere lageret mod uautoriseret kopiering. Uden kryptering kan personer eller programmer med adgang til hukommelseskortet læse lokale kontodata og hentede medier.
 about.risk_encryption_title = Kryptering
@@ -856,13 +856,13 @@ about.risk_updates_title = Installation og opdateringer
 about.risk_updates = Installer fra en betroet kilde. Den indbyggede opdatering kontrollerer VPK-pakkens digitale signatur før installation.
 about.author_title = Forfatter og kildekode
 about.license_title = Licens
-about.license_mit = VitaGrams egen kode bruger MIT-licensen. Brug, ændring og distribution, også kommercielt, er tilladt med bevarelse af ophavsretsmeddelelsen og licensteksten.
+about.license_mit = VitaPlanes egen kode bruger MIT-licensen. Brug, ændring og distribution, også kommercielt, er tilladt med bevarelse af ophavsretsmeddelelsen og licensteksten.
 about.license_warranty = Appen leveres som den er, uden garantier. Tredjepartsbiblioteker og skrifttyper har egne licenser.
-about.project_link = GitHub · ing156/VitaGram
+about.project_link = GitHub · ing156/VitaPlane
 about.author_link = Telegram · @Ing156
 about.footer = {dpad}: rul  {l}/{r}: side  ←/→: links  {cross}: åbn  {circle}: tilbage
 about.telegram_unavailable = Log ind på Telegram for at åbne forfatterens chat.
-about.platform_risk = Trods vores sikkerhedsindsats kører VitaGram på en modificeret konsol med tilhørende risici. Software med systemadgang kan læse data i den kørende app og konsollens hukommelse. Lokal kryptering garanterer ikke beskyttelse mod denne adgang.
+about.platform_risk = Trods vores sikkerhedsindsats kører VitaPlane på en modificeret konsol med tilhørende risici. Software med systemadgang kan læse data i den kørende app og konsollens hukommelse. Lokal kryptering garanterer ikke beskyttelse mod denne adgang.
 
 menu.seek_time = Gå til tidspunkt
 media.seek_hint = {dpad}  Venstre/højre: felt; op/ned: tid (timer:minutter:sekunder)
@@ -921,7 +921,7 @@ upload.sort_size_desc = Største først
 # In-app text keyboard
 settings.keyboard = Tastatur
 settings.keyboard_system = System
-settings.keyboard_custom = VitaGram
+settings.keyboard_custom = VitaPlane
 keyboard.send = Send
 keyboard.help = {cross} Skriv   {square} Slet   {triangle} Mellemrum   L/R Markør   Start OK
 
@@ -934,7 +934,7 @@ vpk.installing = Installerer…
 vpk.success = Installationen er fuldført.
 vpk.failed = Installationen mislykkedes: {0}
 vpk.invalid = Ugyldig eller ikke understøttet app-pakke.
-vpk.self = Opdater VitaGram og installationsprogrammet via Opdatering eller VitaShell.
+vpk.self = Opdater VitaPlane og installationsprogrammet via Opdatering eller VitaShell.
 vpk.header_failed = Kunne ikke forberede pakkehovedet.
 vpk.dialog_failed = Kunne ikke åbne installationsdialogen.
 vpk.thread_failed = Kunne ikke starte installationen.
@@ -1016,7 +1016,7 @@ settings.view_combined = Kombineret
 chat.focus_list = Chats > historik
 chat.focus_history = < chats | Historik
 chat.select_chat = Vælg en chat
-webapp.payment_unavailable = Betalinger i Mini Apps er endnu ikke tilgængelige i VitaGram.
+webapp.payment_unavailable = Betalinger i Mini Apps er endnu ikke tilgængelige i VitaPlane.
 
 # --- Background audio player ---
 player.hint = L+R: afspiller
@@ -1091,3 +1091,23 @@ calendar.weekday.5 = Lø
 calendar.weekday.6 = Sø
 calendar.back = {circle} Tilbage
 calendar.hint = L/R: måned · {dpad}: dag · {cross}: gå · {circle}: tilbage
+
+settings.download_ask = Spørg, hvor downloads skal gemmes
+picker.save_as = Gem som
+picker.open_action = {cross} Åbn
+picker.select_action = {square} Vælg
+picker.create_action = {triangle} Ny mappe
+picker.back_action = {circle} Tilbage
+picker.loading = Indlæser
+
+# --- text editing ---
+menu.edit_message = Rediger tekst
+input.edit_message = Rediger besked
+message.edit_failed = Kunne ikke gemme: {0}
+message.edit_saved = Ændringer gemt
+message.edit_saving = Gemmer ændringer...
+message.edit_unavailable = Denne besked kan ikke redigeres i klienten.
+message.edit_invalid = Indtast tekst, højst 1023 UTF-8-byte.
+message.edit_changed = Beskeden er ændret. Annuller og åbn igen.
+message.edit_timeout = Intet svar. Kontrollér beskeden før nyt forsøg.
+keyboard.save = Gem

@@ -1,4 +1,4 @@
-"""Generate original Vita-inspired wave wallpapers for VitaGram 960x544.
+"""Generate original Vita-inspired wave wallpapers for VitaPlane 960x544.
 
 Usage: python generate_wave_backgrounds.py /path/to/VitaGram_UI_Assets_v1
 No external copyrighted PS Vita wallpapers are embedded. Uses vector SVG paths,

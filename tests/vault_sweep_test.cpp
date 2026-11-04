@@ -44,6 +44,12 @@ int main() {
         spit("ux0:data/vitagram/settings.json", "{}");
         restored.load(); assert(restored.font_file.empty());
     }
+    for (bool ask : {false, true}) {
+        AppSettings settings; settings.download_ask = ask; settings.download_last_dir = "uma0:Мои файлы"; assert(settings.save());
+        AppSettings loaded; loaded.load(); assert(loaded.download_ask == ask && loaded.download_last_dir == "uma0:Мои файлы");
+    }
+    spit("ux0:data/vitagram/settings.json", "{}");
+    { AppSettings loaded; loaded.load(); assert(!loaded.download_ask && loaded.download_last_dir.empty()); }
     const std::string files = "ux0:data/vitagram/files", db = "ux0:data/vitagram/db";
     assert(!mkdir(ui_themes::directory, 0777));
     const std::string custom_palette = R"({"background":"#080609","surface":"#160E14","text":"#FFF3F6","muted":"#DABFC9","accent":"#FF365D"})";

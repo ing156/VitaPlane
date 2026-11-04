@@ -1,4 +1,4 @@
-"""Adapt VHBB surfaces to VitaGram's manifest/9-slice format (offline, Pillow/CairoSVG).
+"""Adapt VHBB surfaces to VitaPlane's manifest/9-slice format (offline, Pillow/CairoSVG).
 
 Run with external/font-tools-venv/bin/python from the repository root.
 Only the vhbb theme and its manifest entries are written; existing themes are preserved.
@@ -99,7 +99,7 @@ manifest.setdefault('theme_sources', {})['vhbb'] = {
     'project':'Vita Homebrew Browser', 'author':'devnoname120 and VHBB contributors',
     'url':'https://github.com/devnoname120/vhbb', 'license':'CC BY-NC-SA 4.0',
     'notice':'themes/vhbb/NOTICE.txt',
-    'changes':'Panels and header adapted to 9-slice; new unbranded wallpaper; VitaGram icons and fonts.'}
+    'changes':'Panels and header adapted to 9-slice; new unbranded wallpaper; VitaPlane icons and fonts.'}
 (ROOT/'manifest.json').write_text(json.dumps(manifest,ensure_ascii=False,indent=2)+'\n')
 
 
@@ -122,7 +122,7 @@ font_path = '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'
 font = ImageFont.truetype(font_path,20)
 small = ImageFont.truetype(font_path,16)
 d = ImageDraw.Draw(preview)
-d.text((24,7),'VitaGram',font=font,fill=palette['text'])
+d.text((24,7),'VitaPlane',font=font,fill=palette['text'])
 d.text((795,10),'85%   12:30',font=small,fill=palette['text'])
 for i,(label,style) in enumerate((('Все чаты','tab_active'),('Личные','tab_normal'),('Каналы','tab_normal'))):
     nine(preview,style,(24+i*200,52,188,38))

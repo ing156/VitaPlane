@@ -1,4 +1,4 @@
-# VitaGram language file (format: see en.lang)
+# VitaPlane language file (format: see en.lang)
 @code = nl
 @name = Nederlands
 
@@ -25,7 +25,7 @@
 
 account.cleanup_blocked = De gegevens van het vorige account konden niet worden verwijderd. Maak de toegang tot de geheugenkaart vrij en start de app opnieuw.
 account.delete_incomplete = Niet alle gegevens konden worden verwijderd. Het opruimen wordt bij de volgende start herhaald.
-account.deleted = Accountgegevens verwijderd. Start VitaGram opnieuw om in te loggen.
+account.deleted = Accountgegevens verwijderd. Start VitaPlane opnieuw om in te loggen.
 account.deleting = Accountgegevens verwijderen...
 account.logging_out = Uitloggen...
 account.mark_failed = De opruimmarkering van het account kon niet worden opgeslagen
@@ -530,7 +530,7 @@ voice.worker = Audio-uitvoerthread kan niet worden gestart
 # --- update ---
 settings.auto_update = Bij opstarten updates zoeken en installeren
 settings.auto_update_proxy = Gepauzeerd zolang een proxy aan staat
-network.held_notice = Je instellingen konden niet worden bevestigd: ze zijn buiten VitaGram vervangen, beschadigd of verwijderd, dus de proxy-instellingen zijn onbekend. VitaGram heeft geen verbinding gemaakt. Controleer de proxy-instellingen en sla ze op om verbinding te maken (met of zonder proxy).
+network.held_notice = Je instellingen konden niet worden bevestigd: ze zijn buiten VitaPlane vervangen, beschadigd of verwijderd, dus de proxy-instellingen zijn onbekend. VitaPlane heeft geen verbinding gemaakt. Controleer de proxy-instellingen en sla ze op om verbinding te maken (met of zonder proxy).
 network.held = Geen verbinding: sla de proxy-instellingen op om verbinding te maken.
 settings.update = Update
 update.idle = {cross}: controleren (versie {0})
@@ -542,7 +542,7 @@ update.verifying = Handtekening controleren...
 update.extracting = Uitpakken {0}%
 update.installing = Installeren...
 update.applying = Update wordt geïnstalleerd...
-update.applying_hint = Even geduld, schakel de console niet uit. VitaGram start opnieuw op.
+update.applying_hint = Even geduld, schakel de console niet uit. VitaPlane start opnieuw op.
 update.installed = {0} geïnstalleerd - opnieuw opstarten...
 update.hint = Update {0} beschikbaar: {start} Instellingen
 update.err.network = GitHub niet bereikbaar - {cross}: opnieuw
@@ -558,7 +558,7 @@ update.direct = Updatecontroles maken rechtstreeks verbinding met GitHub, niet v
 # Data encryption
 vault.title = Gegevensversleuteling
 vault.ask.title = Je gegevens beschermen?
-vault.ask.body = VitaGram bewaart gegevens lokaal op de console: Telegram-sessie, database, foto's, video's, stickers, spraakberichten en instellingen. De app kan die opslag versleutelen tegen ongeoorloofd kopiëren.\n\nKies een knopreeks of wachtwoordzin om te ontgrendelen. Een wachtwoordzin wordt aanbevolen voor betere bescherming.\n\n⚠ Als je de sleutel vergeet, zijn lokale gegevens niet herstelbaar. Je moet ze wissen en opnieuw aanmelden bij Telegram.\n\nJe kunt versleuteling later beheren via Start > Instellingen.\n\nControleer geregeld in de instellingen of alle lokale bestanden versleuteld zijn. De app sluiten of de console uitschakelen tijdens schrijven kan versleuteling onderbreken. Bestanden kunnen onversleuteld blijven tot de volgende verwerking of controle.\n\nVitaGram verzamelt geen telemetrie en stuurt je gegevens niet naar diensten van derden.\n\nOndanks onze inspanningen draait de app op een aangepaste console met bijbehorende risico's. Software met systeemtoegang kan gegevens in de actieve app en het consolegeheugen lezen. Lokale versleuteling garandeert geen bescherming tegen die toegang.
+vault.ask.body = VitaPlane bewaart gegevens lokaal op de console: Telegram-sessie, database, foto's, video's, stickers, spraakberichten en instellingen. De app kan die opslag versleutelen tegen ongeoorloofd kopiëren.\n\nKies een knopreeks of wachtwoordzin om te ontgrendelen. Een wachtwoordzin wordt aanbevolen voor betere bescherming.\n\n⚠ Als je de sleutel vergeet, zijn lokale gegevens niet herstelbaar. Je moet ze wissen en opnieuw aanmelden bij Telegram.\n\nJe kunt versleuteling later beheren via Start > Instellingen.\n\nControleer geregeld in de instellingen of alle lokale bestanden versleuteld zijn. De app sluiten of de console uitschakelen tijdens schrijven kan versleuteling onderbreken. Bestanden kunnen onversleuteld blijven tot de volgende verwerking of controle.\n\nVitaPlane verzamelt geen telemetrie en stuurt je gegevens niet naar diensten van derden.\n\nOndanks onze inspanningen draait de app op een aangepaste console met bijbehorende risico's. Software met systeemtoegang kan gegevens in de actieve app en het consolegeheugen lezen. Lokale versleuteling garandeert geen bescherming tegen die toegang.
 vault.ask.footer = {cross} Versleutelen    {circle} Niet nu
 vault.setup.title = Sleutel maken
 vault.new.title = Nieuwe sleutel
@@ -574,7 +574,7 @@ vault.unlock.hint_disabling = Versleuteling wordt uitgeschakeld. Voer de sleutel
 vault.entry.footer = Start: OK    L: wissen    R: leegmaken    Select: annuleren
 vault.unlock.footer = Start: ontgrendelen    L: wissen    R: leegmaken    Select: sleutel vergeten
 vault.relock.footer = Start: ontgrendelen    L: wissen    R: leegmaken
-vault.relock.title = VitaGram is vergrendeld
+vault.relock.title = VitaPlane is vergrendeld
 vault.strength = {0} drukken, {1} bits
 vault.empty = Druk eerst enkele knoppen in.
 vault.one_button = Druk één knop tegelijk in.
@@ -588,18 +588,18 @@ vault.deriving = Sleutel afleiden... {0}%
 vault.no_memory = Onvoldoende geheugen om de sleutel af te leiden.
 vault.unavailable = Deze sleutel is op een andere console gemaakt.
 vault.error = Kan de sleutel niet opslaan.
-vault.state_reset = De versleutelingsinstellingen zijn buiten VitaGram gewijzigd. Versleuteling blijft aan en alle bestanden worden opnieuw gecontroleerd. Als je niet bent begonnen met uitschakelen, heeft iemand mogelijk toegang gehad tot je geheugenkaart.
-vault.plugins_warning = Er zijn plug-ins in VitaGram geladen: {0}. Ze kunnen de ingevoerde sleutel en je berichten lezen. Verwijder onbetrouwbare uit tai/config.txt.
+vault.state_reset = De versleutelingsinstellingen zijn buiten VitaPlane gewijzigd. Versleuteling blijft aan en alle bestanden worden opnieuw gecontroleerd. Als je niet bent begonnen met uitschakelen, heeft iemand mogelijk toegang gehad tot je geheugenkaart.
+vault.plugins_warning = Er zijn plug-ins in VitaPlane geladen: {0}. Ze kunnen de ingevoerde sleutel en je berichten lezen. Verwijder onbetrouwbare uit tai/config.txt.
 vault.notice.footer = {cross} Doorgaan
 vault.changed = Sleutel gewijzigd.
 vault.forgot.title = Alle gegevens wissen?
-vault.forgot.body = Zonder sleutel zijn versleutelde gegevens niet leesbaar.\n\nJe kunt alle VitaGram-gegevens wissen, inclusief de Telegram-aanmelding, en opnieuw beginnen.
+vault.forgot.body = Zonder sleutel zijn versleutelde gegevens niet leesbaar.\n\nJe kunt alle VitaPlane-gegevens wissen, inclusief de Telegram-aanmelding, en opnieuw beginnen.
 vault.forgot.footer = {triangle} Alles wissen    {circle} Terug
 vault.erasing = Gegevens wissen...
 vault.migrate.encrypting = Gegevens versleutelen... {0}/{1}
 vault.migrate.decrypting = Gegevens ontsleutelen... {0}/{1}
 vault.migrate.hint = Houd de console aan. {circle} slaat over; het proces gaat verder bij de volgende start.
-vault.migrate.failed = {0} bestanden konden niet worden omgezet. Je sleutel blijft bewaard en VitaGram probeert het bij de volgende start opnieuw. Maak ruimte vrij als de geheugenkaart vol is.
+vault.migrate.failed = {0} bestanden konden niet worden omgezet. Je sleutel blijft bewaard en VitaPlane probeert het bij de volgende start opnieuw. Maak ruimte vrij als de geheugenkaart vol is.
 vault.settings.encryption = Gegevensversleuteling
 vault.settings.change_key = Sleutel wijzigen
 vault.settings.confirm_disable = Druk nogmaals op {cross} om uit te schakelen
@@ -833,20 +833,20 @@ logs.vault = Versleuteld afspelen (vault-playback.log)
 logs.note = Bestanden staan in ux0:data/vitagram en worden niet versleuteld.
 logs.footer = {dpad}: selecteren    {cross} Aan / uit    {circle} Terug
 
-# About VitaGram
-about.title = Over VitaGram
+# About VitaPlane
+about.title = Over VitaPlane
 
 vault.ask.scroll = {dpad}: scrollen
-about.brand = VitaGram — Telegram voor PS Vita
+about.brand = VitaPlane — Telegram voor PS Vita
 about.version = Versie {0}
 about.description = Een onofficiële opensource Telegram-client op basis van VitaSDK, vita2d en TDLib. Chat, lees kanalen en bekijk media op je PS Vita met de knoppen en het aanraakscherm.
 about.development = Het project wordt actief ontwikkeld. Nog niet alle Telegram-functies zijn beschikbaar; sommige hebben beperkingen of fouten.
 about.privacy_title = Privacy
-about.privacy_servers = VitaGram stuurt je berichten, bestanden en diagnostische logboeken niet naar de servers van de auteur.
-about.privacy_logs = Logboeken bevatten technische informatie en staan standaard uit. VitaGram legt hierin geen berichttekst, telefoonnummers of wachtwoorden vast. Ze blijven op de console en worden nooit automatisch verstuurd. Bij problemen kun je ze vrijwillig handmatig naar de ontwikkelaar sturen voor onderzoek.
+about.privacy_servers = VitaPlane stuurt je berichten, bestanden en diagnostische logboeken niet naar de servers van de auteur.
+about.privacy_logs = Logboeken bevatten technische informatie en staan standaard uit. VitaPlane legt hierin geen berichttekst, telefoonnummers of wachtwoorden vast. Ze blijven op de console en worden nooit automatisch verstuurd. Bij problemen kun je ze vrijwillig handmatig naar de ontwikkelaar sturen voor onderzoek.
 about.privacy_connections = De client verbindt met Telegram-servers. Updatecontroles en downloads gebruiken GitHub. TDLib kan externe diensten benaderen om proxyhostnamen op te zoeken en verbindingsinstellingen te verkrijgen. Met een proxy loopt de verbinding via de gekozen server.
 about.security_title = Veiligheid en risico's
-about.security_intro = VitaGram is een onofficiële client. Softwarefouten en platformbeperkingen kunnen de veiligheid beïnvloeden.
+about.security_intro = VitaPlane is een onofficiële client. Softwarefouten en platformbeperkingen kunnen de veiligheid beïnvloeden.
 about.risk_data_title = Lokale opslag
 about.risk_data = De client bewaart gegevens op de console. De app kan die opslag versleutelen tegen ongeoorloofd kopiëren. Zonder versleuteling kunnen personen of software met toegang tot de geheugenkaart lokale accountgegevens en gedownloade media lezen.
 about.risk_encryption_title = Versleuteling
@@ -859,13 +859,13 @@ about.risk_updates_title = Installatie en updates
 about.risk_updates = Installeer vanuit een vertrouwde bron. De ingebouwde updater controleert de digitale VPK-handtekening vóór installatie.
 about.author_title = Auteur en broncode
 about.license_title = Licentie
-about.license_mit = VitaGrams eigen code valt onder MIT. Gebruik, wijziging en verspreiding, ook commercieel, zijn toegestaan met behoud van de auteursrechtvermelding en licentietekst.
+about.license_mit = VitaPlanes eigen code valt onder MIT. Gebruik, wijziging en verspreiding, ook commercieel, zijn toegestaan met behoud van de auteursrechtvermelding en licentietekst.
 about.license_warranty = De app wordt geleverd zoals hij is, zonder garanties. Bibliotheken en lettertypen van derden hebben eigen licenties.
-about.project_link = GitHub · ing156/VitaGram
+about.project_link = GitHub · ing156/VitaPlane
 about.author_link = Telegram · @Ing156
 about.footer = {dpad}: scrollen  {l}/{r}: pagina  ←/→: links  {cross}: openen  {circle}: terug
 about.telegram_unavailable = Meld je aan bij Telegram om de chat van de auteur te openen.
-about.platform_risk = Ondanks onze veiligheidsinspanningen draait VitaGram op een aangepaste console met bijbehorende risico's. Software met systeemtoegang kan gegevens in de actieve app en het consolegeheugen lezen. Lokale versleuteling garandeert geen bescherming tegen die toegang.
+about.platform_risk = Ondanks onze veiligheidsinspanningen draait VitaPlane op een aangepaste console met bijbehorende risico's. Software met systeemtoegang kan gegevens in de actieve app en het consolegeheugen lezen. Lokale versleuteling garandeert geen bescherming tegen die toegang.
 
 menu.seek_time = Ga naar tijd
 media.seek_hint = {dpad}  Links/rechts: veld; omhoog/omlaag: tijd (uren:minuten:seconden)
@@ -924,7 +924,7 @@ upload.sort_size_desc = Grootste eerst
 # In-app text keyboard
 settings.keyboard = Toetsenbord
 settings.keyboard_system = Systeem
-settings.keyboard_custom = VitaGram
+settings.keyboard_custom = VitaPlane
 keyboard.send = Verzenden
 keyboard.help = {cross} Typen   {square} Wissen   {triangle} Spatie   L/R Cursor   Start OK
 
@@ -937,7 +937,7 @@ vpk.installing = Installeren…
 vpk.success = Installatie voltooid.
 vpk.failed = Installatie mislukt: {0}
 vpk.invalid = Ongeldig of niet ondersteund app-pakket.
-vpk.self = Gebruik Update of VitaShell om VitaGram en het installatieprogramma bij te werken.
+vpk.self = Gebruik Update of VitaShell om VitaPlane en het installatieprogramma bij te werken.
 vpk.header_failed = Pakketheader kon niet worden voorbereid.
 vpk.dialog_failed = Installatievenster kon niet worden geopend.
 vpk.thread_failed = Installatieproces kon niet worden gestart.
@@ -1019,7 +1019,7 @@ settings.view_combined = Gecombineerd
 chat.focus_list = Chats > berichten
 chat.focus_history = < chats | Berichten
 chat.select_chat = Selecteer een chat
-webapp.payment_unavailable = Betalingen in Mini Apps zijn nog niet beschikbaar in VitaGram.
+webapp.payment_unavailable = Betalingen in Mini Apps zijn nog niet beschikbaar in VitaPlane.
 
 # --- Background audio player ---
 player.hint = L+R: speler
@@ -1094,3 +1094,23 @@ calendar.weekday.5 = Za
 calendar.weekday.6 = Zo
 calendar.back = {circle} Terug
 calendar.hint = L/R: maand · {dpad}: dag · {cross}: openen · {circle}: terug
+
+settings.download_ask = Vragen waar downloads worden opgeslagen
+picker.save_as = Opslaan als
+picker.open_action = {cross} Openen
+picker.select_action = {square} Kiezen
+picker.create_action = {triangle} Nieuwe map
+picker.back_action = {circle} Terug
+picker.loading = Laden
+
+# --- text editing ---
+menu.edit_message = Tekst bewerken
+input.edit_message = Bericht bewerken
+message.edit_failed = Opslaan mislukt: {0}
+message.edit_saved = Wijzigingen opgeslagen
+message.edit_saving = Wijzigingen opslaan...
+message.edit_unavailable = Dit bericht kan niet worden bewerkt in deze client.
+message.edit_invalid = Voer tekst in, maximaal 1023 UTF-8-bytes.
+message.edit_changed = Bericht is gewijzigd. Annuleer en open het opnieuw.
+message.edit_timeout = Geen antwoord. Controleer het bericht voor een nieuwe poging.
+keyboard.save = Opslaan

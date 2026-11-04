@@ -142,7 +142,7 @@ bool install_downloaded_vpk(const std::string& path) {
             const std::string language = i18n::current();
             bool cjk = language == "ja" || language == "ko" || language == "zh-Hans" || language == "zh-Hant";
             Updater::HandoffText text{cjk ? "Installing update..." : i18n::tr("update.applying"),
-                cjk ? "Please wait. VitaGram will restart." : i18n::tr("update.applying_hint")};
+                cjk ? "Please wait. VitaPlane will restart." : i18n::tr("update.applying_hint")};
             if (Updater::handoffConfirmedPackage(staging, text, job.error)) return true;
         }
         ok = false;

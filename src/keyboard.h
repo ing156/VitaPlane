@@ -12,7 +12,7 @@ public:
     void configure(bool custom, bool dark, const std::vector<std::string>& languages = {}, int split_level = 1);
     bool systemActive() const { return active_ && !custom_active_; }
     bool ownsScreen() const { return active_ && custom_active_; }
-    void open(const std::string& title, bool secret = false, const std::string& initial = "", bool message = false);
+    void open(const std::string& title, bool secret = false, const std::string& initial = "", bool message = false, bool editing = false);
     void close();
     void clear(); // overwrites the typed text (passphrases)
     bool active() const { return active_; }

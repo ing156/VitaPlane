@@ -35,7 +35,7 @@ public:
     // Installing needs a lot of free memory (0x8001000C = ENOMEM while the whole app is running), so
     // the downloaded package is only staged; the next process start installs it before anything heavy
     // is loaded. Call applyPending() first thing in main().
-    // Handoff: the package is verified and unpacked and the VitaGram Updater app has been started; this
+    // Handoff: the package is verified and unpacked and the VitaPlane Updater app has been started; this
     // process must exit now (the console cannot replace an application that is running).
     enum class Pending { None, Handoff, Failed };
     // Text the updater app shows while it installs (already in the user's language).
@@ -55,7 +55,7 @@ public:
     static bool updaterCleanupDue(const std::string& work_dir, const std::string& fallback_dir);
     void reportStartupFailure(const std::string& detail); // result of a failed applyPending()
     // Explicit, already-confirmed local VPK installation; never used by automatic updates.
-    // The extracted package must identify VitaGram. On success the caller must exit, not restart itself.
+    // The extracted package must identify VitaPlane. On success the caller must exit, not restart itself.
     static bool prepareLocalInstaller(std::string& detail);
     static bool handoffConfirmedPackage(const std::string& package_dir, const HandoffText& text, std::string& detail);
     // A staged update still owns the installer after its download worker has finished.

@@ -44,6 +44,9 @@ struct AnimationPlayer {
     int64_t seekLimitUs() const { return 10000000; }
     void seekTo(int64_t target) { position = target; }
     void setVolume(int value) { volume = value; }
+    int rate = 100;
+    int speed() const { return rate; }
+    void setSpeed(int value) { rate = value; }
     double positionSeconds() const { return position / 1e6; }
     int64_t seekLimitUs(int64_t limit) const { return limit; }
     void setPlaying(bool play) { paused = !play; }
@@ -96,10 +99,12 @@ fixture += r'''
 fixture += section('        // One sound output:', '        if (voice_message) {\n            const bool same')
 fixture += r'''
     };
+    bg_set_speed(150); assert(voice.speed() == 150);
     auto* note = &tg.items[0];
     frame(note, true);
     assert(bg_media.live && bg_media.circle && bg_media.file == 101);
     assert(video_note_animation.playing() && &post_animation() == &video_note_animation);
+    bg_set_speed(125); assert(video_note_animation.speed() == 125 && bg_speed() == 125);
     const int generation = video_note_animation.generation;
     // Settings, keyboard, photos and pickers select no post animation.
     for (bool* menu : {&settings_open, &kb.open, &photo_open, &stickers_open, &gifs_open}) {
@@ -154,7 +159,11 @@ fixture += r'''
     voice.setSource(""); video_note_animation.toggle();
     MessageItem clip; clip.video_note = false; clip.animation_path = "clip.mp4";
     frame(&clip, true);
-    assert(animation.playing() && !video_note_animation.playing());
+    assert(video_note_animation.playing() && !animation.playing() && !bg_media.round);
+    const int clip_generation = video_note_animation.generation;
+    post_open = false; frame(nullptr);
+    assert(bg_media.live && video_note_animation.playing() && video_note_animation.generation == clip_generation);
+    video_note_animation.toggle();
     // Paused background notes survive navigation; natural completion retires the bar.
     frame(nullptr); assert(bg_media.live);
     video_note_animation.position = 60000000;
@@ -273,6 +282,8 @@ int av_read_frame(void*, void*) { tick += 3000000; return 0; }
 struct Audio {
     bool ready = false, done = false;
     std::atomic<bool> buffering{false};
+    int rate = 100;
+    int speed() const { return rate; }
     bool finished() const { return done; }
     bool clockReady() const { return ready; }
     std::atomic<bool>& videoBuffering() { return buffering; }
@@ -294,6 +305,11 @@ clock_fixture += r'''
     assert(video_time() == -1 && !wall_fallback);
     audio_.ready = true;
     assert(video_time() == 1234567 && !wall_fallback);
+    audio_.done = true; audio_.rate = 150;
+    assert(video_time() == 1234567);
+    tick += 1000000; assert(video_time() == 2734567);
+    wall_fallback = true; video_wall = tick; seek_base = 2000000;
+    audio_.rate = 50; tick += 1000000; assert(video_time() == 2500000);
 }
 '''
 source = build / 'video_clock_test.cpp'
@@ -505,8 +521,9 @@ int main() {
     tick = 1000000;
     stream_state.complete = true; had_frame = false; dynamic_clock = false;
     feed(); assert(tick == 1000000);
-    dynamic_clock = true; paused_ = true; seek_base = 1000000;
+    dynamic_clock = true; paused_ = true; seek_base = 1000000; packet->dts = 5000000;
     feed(); assert(tick == 1000000);
+    packet->dts = 6000000;
     paused_ = false; had_frame = true; seek_base = 0;
     feed(); assert(tick >= 3000000 && !unref);
     packet_pacer = VideoPacketPacer{}; // A fresh playback generation owns a fresh pacer.
@@ -536,6 +553,8 @@ lag_fixture = r'''
 #include <cstdint>
 struct Audio {
     bool done = false, ready = true; int64_t clock = 1000000; std::atomic<bool> lagging{false};
+    int rate = 100;
+    int speed() const { return rate; }
     bool finished() const { return done; } bool clockReady() const { return ready; }
     int64_t positionUs() const { return clock; }
     std::atomic<bool>& videoFrameLagging() { return lagging; }

@@ -1,4 +1,4 @@
-# VitaGram language file (format: see en.lang)
+# VitaPlane language file (format: see en.lang)
 @code = sv
 @name = Svenska
 
@@ -21,7 +21,7 @@
 
 account.cleanup_blocked = Det gick inte att radera data från det tidigare kontot. Frigör åtkomsten till minneskortet och starta om appen.
 account.delete_incomplete = Det gick inte att radera all data. Rensningen upprepas vid nästa start.
-account.deleted = Kontodata raderad. Starta om VitaGram för att logga in.
+account.deleted = Kontodata raderad. Starta om VitaPlane för att logga in.
 account.deleting = Raderar kontodata...
 account.logging_out = Loggar ut...
 account.mark_failed = Det gick inte att spara rensningsmarkeringen för kontot
@@ -526,7 +526,7 @@ voice.worker = Det går inte att starta ljudutmatningstråden
 # --- update ---
 settings.auto_update = Sök och installera uppdateringar vid start
 settings.auto_update_proxy = Pausad medan en proxy är på
-network.held_notice = Dina inställningar kunde inte bekräftas: de ersattes, skadades eller raderades utanför VitaGram, så proxyinställningarna är okända. VitaGram har inte anslutit. Kontrollera proxyinställningarna och spara dem för att ansluta (med eller utan proxy).
+network.held_notice = Dina inställningar kunde inte bekräftas: de ersattes, skadades eller raderades utanför VitaPlane, så proxyinställningarna är okända. VitaPlane har inte anslutit. Kontrollera proxyinställningarna och spara dem för att ansluta (med eller utan proxy).
 network.held = Inte ansluten: spara proxyinställningarna för att ansluta.
 settings.update = Uppdatering
 update.idle = {cross}: kontrollera (version {0})
@@ -538,7 +538,7 @@ update.verifying = Kontrollerar signatur...
 update.extracting = Packar upp {0}%
 update.installing = Installerar...
 update.applying = Installerar uppdatering...
-update.applying_hint = Vänta, stäng inte av konsolen. VitaGram startar om.
+update.applying_hint = Vänta, stäng inte av konsolen. VitaPlane startar om.
 update.installed = {0} installerad - startar om...
 update.hint = Uppdatering {0} tillgänglig: {start} Inställningar
 update.err.network = Ingen kontakt med GitHub - {cross}: försök igen
@@ -554,7 +554,7 @@ update.direct = Uppdateringskontrollen ansluter direkt till GitHub, inte via pro
 # Data encryption
 vault.title = Datakryptering
 vault.ask.title = Skydda dina data?
-vault.ask.body = VitaGram lagrar data lokalt på konsolen: Telegram-session, databas, foton, videor, dekaler, röstmeddelanden och inställningar. Appen kan kryptera lagringen mot obehörig kopiering.\n\nVälj en knappföljd eller lösenfras för upplåsning. En lösenfras rekommenderas för bättre skydd.\n\n⚠ Om du glömmer nyckeln kan lokala data inte återställas. Du måste radera dem och logga in på Telegram igen.\n\nKrypteringen kan hanteras senare under Start > Inställningar.\n\nKontrollera regelbundet i inställningarna att alla lokala filer är krypterade. Att stänga appen eller konsolen under skrivning kan avbryta krypteringen. Filer kan förbli okrypterade till nästa bearbetning eller kontroll.\n\nVitaGram samlar inte in telemetri och skickar inte dina data till tredjepartstjänster.\n\nTrots våra insatser körs appen på en modifierad konsol med tillhörande risker. Program med systemåtkomst kan läsa data i den körande appen och konsolminnet. Lokal kryptering garanterar inte skydd mot sådan åtkomst.
+vault.ask.body = VitaPlane lagrar data lokalt på konsolen: Telegram-session, databas, foton, videor, dekaler, röstmeddelanden och inställningar. Appen kan kryptera lagringen mot obehörig kopiering.\n\nVälj en knappföljd eller lösenfras för upplåsning. En lösenfras rekommenderas för bättre skydd.\n\n⚠ Om du glömmer nyckeln kan lokala data inte återställas. Du måste radera dem och logga in på Telegram igen.\n\nKrypteringen kan hanteras senare under Start > Inställningar.\n\nKontrollera regelbundet i inställningarna att alla lokala filer är krypterade. Att stänga appen eller konsolen under skrivning kan avbryta krypteringen. Filer kan förbli okrypterade till nästa bearbetning eller kontroll.\n\nVitaPlane samlar inte in telemetri och skickar inte dina data till tredjepartstjänster.\n\nTrots våra insatser körs appen på en modifierad konsol med tillhörande risker. Program med systemåtkomst kan läsa data i den körande appen och konsolminnet. Lokal kryptering garanterar inte skydd mot sådan åtkomst.
 vault.ask.footer = {cross} Kryptera    {circle} Inte nu
 vault.setup.title = Skapa en nyckel
 vault.new.title = Ny nyckel
@@ -570,7 +570,7 @@ vault.unlock.hint_disabling = Krypteringen stängs av. Ange nyckeln för att slu
 vault.entry.footer = Start: OK    L: radera    R: töm    Select: avbryt
 vault.unlock.footer = Start: lås upp    L: radera    R: töm    Select: glömd nyckel
 vault.relock.footer = Start: lås upp    L: radera    R: töm
-vault.relock.title = VitaGram är låst
+vault.relock.title = VitaPlane är låst
 vault.strength = {0} tryck, {1} bitar
 vault.empty = Tryck först på några knappar.
 vault.one_button = Tryck på en knapp i taget.
@@ -584,18 +584,18 @@ vault.deriving = Härleder nyckeln... {0}%
 vault.no_memory = Otillräckligt minne för att härleda nyckeln.
 vault.unavailable = Nyckeln skapades på en annan konsol.
 vault.error = Kunde inte spara nyckeln.
-vault.state_reset = Krypteringsinställningarna ändrades utanför VitaGram. Krypteringen förblir på och alla filer kontrolleras igen. Om du inte började stänga av krypteringen kan någon ha haft tillgång till ditt minneskort.
-vault.plugins_warning = Plugin-program är inlästa i VitaGram: {0}. De kan läsa nyckeln du anger och dina meddelanden. Ta bort opålitliga från tai/config.txt.
+vault.state_reset = Krypteringsinställningarna ändrades utanför VitaPlane. Krypteringen förblir på och alla filer kontrolleras igen. Om du inte började stänga av krypteringen kan någon ha haft tillgång till ditt minneskort.
+vault.plugins_warning = Plugin-program är inlästa i VitaPlane: {0}. De kan läsa nyckeln du anger och dina meddelanden. Ta bort opålitliga från tai/config.txt.
 vault.notice.footer = {cross} Fortsätt
 vault.changed = Nyckeln ändrad.
 vault.forgot.title = Radera alla data?
-vault.forgot.body = Utan nyckeln kan krypterade data inte läsas.\n\nDu kan radera alla VitaGram-data, inklusive Telegram-inloggningen, och börja om.
+vault.forgot.body = Utan nyckeln kan krypterade data inte läsas.\n\nDu kan radera alla VitaPlane-data, inklusive Telegram-inloggningen, och börja om.
 vault.forgot.footer = {triangle} Radera allt    {circle} Tillbaka
 vault.erasing = Raderar data...
 vault.migrate.encrypting = Krypterar data... {0}/{1}
 vault.migrate.decrypting = Dekrypterar data... {0}/{1}
 vault.migrate.hint = Låt konsolen vara på. {circle} hoppar över; processen fortsätter vid nästa start.
-vault.migrate.failed = {0} filer kunde inte konverteras. Din nyckel behålls och VitaGram försöker igen vid nästa start. Frigör utrymme om minneskortet är fullt.
+vault.migrate.failed = {0} filer kunde inte konverteras. Din nyckel behålls och VitaPlane försöker igen vid nästa start. Frigör utrymme om minneskortet är fullt.
 vault.settings.encryption = Datakryptering
 vault.settings.change_key = Byt nyckel
 vault.settings.confirm_disable = Tryck på {cross} igen för att stänga av
@@ -829,20 +829,20 @@ logs.vault = Krypterad uppspelning (vault-playback.log)
 logs.note = Filerna sparas i ux0:data/vitagram och krypteras inte.
 logs.footer = {dpad}: välj    {cross} På / av    {circle} Tillbaka
 
-# About VitaGram
-about.title = Om VitaGram
+# About VitaPlane
+about.title = Om VitaPlane
 
 vault.ask.scroll = {dpad}: rulla
-about.brand = VitaGram — Telegram för PS Vita
+about.brand = VitaPlane — Telegram för PS Vita
 about.version = Version {0}
 about.description = En inofficiell Telegram-klient med öppen källkod, byggd på VitaSDK, vita2d och TDLib. Chatta, läs kanaler och visa medier på PS Vita med knapparna och pekskärmen.
 about.development = Projektet utvecklas aktivt. Alla Telegram-funktioner finns ännu inte; vissa kan ha begränsningar eller fel.
 about.privacy_title = Integritet
-about.privacy_servers = VitaGram skickar inte dina meddelanden, filer eller diagnostikloggar till författarens servrar.
-about.privacy_logs = Loggar innehåller teknisk information och är avstängda som standard. VitaGram loggar inte meddelandetext, telefonnummer eller lösenord i dem. De stannar på konsolen och skickas aldrig automatiskt. Vid problem kan du frivilligt skicka dem manuellt till utvecklaren för felsökning.
+about.privacy_servers = VitaPlane skickar inte dina meddelanden, filer eller diagnostikloggar till författarens servrar.
+about.privacy_logs = Loggar innehåller teknisk information och är avstängda som standard. VitaPlane loggar inte meddelandetext, telefonnummer eller lösenord i dem. De stannar på konsolen och skickas aldrig automatiskt. Vid problem kan du frivilligt skicka dem manuellt till utvecklaren för felsökning.
 about.privacy_connections = Klienten ansluter till Telegrams servrar. Uppdateringskontroller och hämtningar använder GitHub. TDLib kan kontakta externa tjänster för att slå upp proxyvärdnamn och hämta anslutningsinställningar. Med proxy går anslutningen via vald server.
 about.security_title = Säkerhet och risker
-about.security_intro = VitaGram är en inofficiell klient. Programfel och plattformsbegränsningar kan påverka säkerheten.
+about.security_intro = VitaPlane är en inofficiell klient. Programfel och plattformsbegränsningar kan påverka säkerheten.
 about.risk_data_title = Lokal lagring
 about.risk_data = Klienten lagrar uppgifter på konsolen. Appen kan kryptera lagringen mot obehörig kopiering. Utan kryptering kan personer eller program med tillgång till minneskortet läsa lokala kontouppgifter och hämtade medier.
 about.risk_encryption_title = Kryptering
@@ -855,13 +855,13 @@ about.risk_updates_title = Installation och uppdateringar
 about.risk_updates = Installera från en betrodd källa. Den inbyggda uppdateraren kontrollerar VPK:s digitala signatur före installation.
 about.author_title = Författare och källkod
 about.license_title = Licens
-about.license_mit = VitaGrams egen kod har MIT-licens. Användning, ändring och spridning, även kommersiell, är tillåten om upphovsrättsmeddelandet och licenstexten behålls.
+about.license_mit = VitaPlanes egen kod har MIT-licens. Användning, ändring och spridning, även kommersiell, är tillåten om upphovsrättsmeddelandet och licenstexten behålls.
 about.license_warranty = Appen tillhandahålls i befintligt skick utan garantier. Tredjepartsbibliotek och typsnitt har egna licenser.
-about.project_link = GitHub · ing156/VitaGram
+about.project_link = GitHub · ing156/VitaPlane
 about.author_link = Telegram · @Ing156
 about.footer = {dpad}: rulla  {l}/{r}: sida  ←/→: länkar  {cross}: öppna  {circle}: tillbaka
 about.telegram_unavailable = Logga in på Telegram för att öppna författarens chatt.
-about.platform_risk = Trots våra säkerhetsinsatser körs VitaGram på en modifierad konsol med tillhörande risker. Program med systemåtkomst kan läsa data i den körande appen och konsolminnet. Lokal kryptering garanterar inte skydd mot sådan åtkomst.
+about.platform_risk = Trots våra säkerhetsinsatser körs VitaPlane på en modifierad konsol med tillhörande risker. Program med systemåtkomst kan läsa data i den körande appen och konsolminnet. Lokal kryptering garanterar inte skydd mot sådan åtkomst.
 
 menu.seek_time = Gå till tid
 media.seek_hint = {dpad}  Vänster/höger: fält; upp/ned: tid (timmar:minuter:sekunder)
@@ -920,7 +920,7 @@ upload.sort_size_desc = Största först
 # In-app text keyboard
 settings.keyboard = Tangentbord
 settings.keyboard_system = System
-settings.keyboard_custom = VitaGram
+settings.keyboard_custom = VitaPlane
 keyboard.send = Skicka
 keyboard.help = {cross} Skriv   {square} Radera   {triangle} Mellanslag   L/R Markör   Start OK
 
@@ -933,7 +933,7 @@ vpk.installing = Installerar…
 vpk.success = Installationen slutförd.
 vpk.failed = Installationen misslyckades: {0}
 vpk.invalid = Ogiltigt eller ej stött app-paket.
-vpk.self = Uppdatera VitaGram och installationsprogrammet via Uppdatering eller VitaShell.
+vpk.self = Uppdatera VitaPlane och installationsprogrammet via Uppdatering eller VitaShell.
 vpk.header_failed = Kunde inte förbereda pakethuvudet.
 vpk.dialog_failed = Kunde inte öppna installationsdialogen.
 vpk.thread_failed = Kunde inte starta installationen.
@@ -1015,7 +1015,7 @@ settings.view_combined = Kombinerat
 chat.focus_list = Chattar > historik
 chat.focus_history = < chattar | Historik
 chat.select_chat = Välj en chatt
-webapp.payment_unavailable = Betalningar i Mini Apps är ännu inte tillgängliga i VitaGram.
+webapp.payment_unavailable = Betalningar i Mini Apps är ännu inte tillgängliga i VitaPlane.
 
 # --- Background audio player ---
 player.hint = L+R: spelare
@@ -1090,3 +1090,23 @@ calendar.weekday.5 = Lö
 calendar.weekday.6 = Sö
 calendar.back = {circle} Tillbaka
 calendar.hint = L/R: månad · {dpad}: dag · {cross}: gå · {circle}: tillbaka
+
+settings.download_ask = Fråga var hämtade filer ska sparas
+picker.save_as = Spara som
+picker.open_action = {cross} Öppna
+picker.select_action = {square} Välj
+picker.create_action = {triangle} Ny mapp
+picker.back_action = {circle} Tillbaka
+picker.loading = Läser in
+
+# --- text editing ---
+menu.edit_message = Redigera text
+input.edit_message = Redigera meddelande
+message.edit_failed = Kunde inte spara: {0}
+message.edit_saved = Ändringar sparade
+message.edit_saving = Sparar ändringar...
+message.edit_unavailable = Det här meddelandet kan inte redigeras i klienten.
+message.edit_invalid = Skriv in text, högst 1023 UTF-8-byte.
+message.edit_changed = Meddelandet har ändrats. Avbryt och öppna igen.
+message.edit_timeout = Inget svar. Kontrollera meddelandet innan du försöker igen.
+keyboard.save = Spara

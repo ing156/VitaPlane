@@ -78,7 +78,7 @@ void VideoNoteRecorder::releaseFile() {
 }
 
 bool VideoNoteRecorder::openCamera(int device) {
-    memory_=sceKernelAllocMemBlock("VitaGramVideoNote",SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_PHYCONT_NC_RW,1024*1024,nullptr);
+    memory_=sceKernelAllocMemBlock("VitaPlaneVideoNote",SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_PHYCONT_NC_RW,1024*1024,nullptr);
     if (memory_<0) { setStatus(camera_error(i18n::text("cam.memory"),memory_)); return false; }
     void* data=nullptr; int rc=sceKernelGetMemBlockBase(memory_,&data);
     if (rc<0) { setStatus(camera_error(i18n::text("cam.buffer"),rc)); closeCamera(); return false; }

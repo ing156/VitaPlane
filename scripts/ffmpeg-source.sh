@@ -22,7 +22,7 @@ prepare_ffmpeg_source() {
     rm -rf -- "$destination"
     mkdir -p "$destination"
     tar -xJf "$archive" -C "$destination" --strip-components=1
-    # The Vita H.264 hardware decoder (from fish47/FFmpeg-vita, ported to 7.1) and VitaGram's
+    # The Vita H.264 hardware decoder (from fish47/FFmpeg-vita, ported to 7.1) and VitaPlane's
     # portrait-video diagnostics. Applied to the verified release only.
     patch --directory="$destination" --strip=1 --forward --silent --input="$project_dir/scripts/ffmpeg-vita-7.1.patch"
     patch --directory="$destination" --strip=1 --forward --silent --input="$project_dir/scripts/ffmpeg-vita-portrait-diagnostics.patch"

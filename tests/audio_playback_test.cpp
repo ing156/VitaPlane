@@ -28,6 +28,13 @@ int main() {
         assert(layout.hit(800,layout.top()-40,true)==VolumeTrack);
         assert(layout.hit(748,layout.top()-36,true)==Mute);
         assert(layout.hit(800,layout.top()-40,false)==None);
+        for (int i=0; i<7; ++i) {
+            const auto cell = layout.speedCell(i);
+            assert(layout.speedPopup().contains(cell.x,cell.y));
+            assert(layout.hit(cell.x+22,cell.y+20,false,true) == SpeedFirst+i);
+            assert(layout.hit(cell.x+44,cell.y+20,false,true) == None);
+            assert(layout.hit(cell.x+22,cell.y+40,false,true) == None);
+        }
         assert(layout.volumeAt(-100)==0 && layout.volumeAt(2000)==100);
         assert(layout.volumeAt(layout.volumeTrack().x+layout.volumeTrack().w/2)==50);
         assert(layout.seekAt(-1,10000000,4000000)==0);

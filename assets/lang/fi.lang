@@ -1,4 +1,4 @@
-# VitaGram language file (format: see en.lang)
+# VitaPlane language file (format: see en.lang)
 @code = fi
 @name = Suomi
 
@@ -21,7 +21,7 @@
 
 account.cleanup_blocked = Edellisen tilin tietoja ei voitu poistaa. Vapauta muistikortin käyttö ja käynnistä sovellus uudelleen.
 account.delete_incomplete = Kaikkia tietoja ei voitu poistaa. Siivous toistetaan seuraavalla käynnistyskerralla.
-account.deleted = Tilin tiedot poistettu. Käynnistä VitaGram uudelleen kirjautuaksesi sisään.
+account.deleted = Tilin tiedot poistettu. Käynnistä VitaPlane uudelleen kirjautuaksesi sisään.
 account.deleting = Poistetaan tilin tietoja...
 account.logging_out = Kirjaudutaan ulos...
 account.mark_failed = Tilin siivousmerkintää ei voitu tallentaa
@@ -526,7 +526,7 @@ voice.worker = Äänilähtösäiettä ei voi käynnistää
 # --- update ---
 settings.auto_update = Hae ja asenna päivitykset käynnistettäessä
 settings.auto_update_proxy = Keskeytetty, kun välityspalvelin on päällä
-network.held_notice = Asetuksiasi ei voitu vahvistaa: ne korvattiin, vahingoittuivat tai poistettiin VitaGramin ulkopuolella, joten välityspalvelimen asetukset ovat tuntemattomat. VitaGram ei ole muodostanut yhteyttä. Tarkista välityspalvelimen asetukset ja tallenna ne yhdistääksesi (välityspalvelimen kanssa tai ilman).
+network.held_notice = Asetuksiasi ei voitu vahvistaa: ne korvattiin, vahingoittuivat tai poistettiin VitaPlanein ulkopuolella, joten välityspalvelimen asetukset ovat tuntemattomat. VitaPlane ei ole muodostanut yhteyttä. Tarkista välityspalvelimen asetukset ja tallenna ne yhdistääksesi (välityspalvelimen kanssa tai ilman).
 network.held = Ei yhteyttä: tallenna välityspalvelimen asetukset yhdistääksesi.
 settings.update = Päivitys
 update.idle = {cross}: tarkista (versio {0})
@@ -538,7 +538,7 @@ update.verifying = Tarkistetaan allekirjoitusta...
 update.extracting = Puretaan {0}%
 update.installing = Asennetaan...
 update.applying = Asennetaan päivitystä...
-update.applying_hint = Odota, älä sammuta konsolia. VitaGram käynnistyy uudelleen.
+update.applying_hint = Odota, älä sammuta konsolia. VitaPlane käynnistyy uudelleen.
 update.installed = {0} asennettu - käynnistetään uudelleen...
 update.hint = Päivitys {0} saatavilla: {start} Asetukset
 update.err.network = GitHubiin ei saada yhteyttä - {cross}: yritä uudelleen
@@ -554,7 +554,7 @@ update.direct = Päivitysten tarkistus yhdistää GitHubiin suoraan, ei välitys
 # Data encryption
 vault.title = Tietojen salaus
 vault.ask.title = Suojataanko tiedot?
-vault.ask.body = VitaGram tallentaa tietosi konsolille: Telegram-istunnon, tietokannan, kuvat, videot, tarrat, ääniviestit ja asetukset. Sovellus voi salata tallennuksen luvattoman kopioinnin estämiseksi.\n\nValitse avaukseen painikesarja tai salalause. Salalausetta suositellaan paremman suojan vuoksi.\n\n⚠ Jos unohdat avaimen, paikallisia tietoja ei voi palauttaa. Ne on poistettava ja Telegramiin on kirjauduttava uudelleen.\n\nSalausta voi hallita myöhemmin kohdassa Start > Asetukset.\n\nTarkista säännöllisesti asetuksista, että kaikki paikalliset tiedostot on salattu. Sovelluksen sulkeminen tai konsolin sammuttaminen kirjoituksen aikana voi keskeyttää salauksen. Tiedostoja voi jäädä salaamatta seuraavaan käsittelyyn tai tarkistukseen asti.\n\nVitaGram ei kerää telemetriaa eikä lähetä tietojasi kolmansien osapuolten palveluihin.\n\nParannuksista huolimatta sovellus toimii muokatulla konsolilla, johon liittyy riskejä. Järjestelmään pääsevä ohjelmisto voi lukea toimivan sovelluksen tiedot ja konsolin muistin. Paikallinen salaus ei takaa suojaa tältä pääsyltä.
+vault.ask.body = VitaPlane tallentaa tietosi konsolille: Telegram-istunnon, tietokannan, kuvat, videot, tarrat, ääniviestit ja asetukset. Sovellus voi salata tallennuksen luvattoman kopioinnin estämiseksi.\n\nValitse avaukseen painikesarja tai salalause. Salalausetta suositellaan paremman suojan vuoksi.\n\n⚠ Jos unohdat avaimen, paikallisia tietoja ei voi palauttaa. Ne on poistettava ja Telegramiin on kirjauduttava uudelleen.\n\nSalausta voi hallita myöhemmin kohdassa Start > Asetukset.\n\nTarkista säännöllisesti asetuksista, että kaikki paikalliset tiedostot on salattu. Sovelluksen sulkeminen tai konsolin sammuttaminen kirjoituksen aikana voi keskeyttää salauksen. Tiedostoja voi jäädä salaamatta seuraavaan käsittelyyn tai tarkistukseen asti.\n\nVitaPlane ei kerää telemetriaa eikä lähetä tietojasi kolmansien osapuolten palveluihin.\n\nParannuksista huolimatta sovellus toimii muokatulla konsolilla, johon liittyy riskejä. Järjestelmään pääsevä ohjelmisto voi lukea toimivan sovelluksen tiedot ja konsolin muistin. Paikallinen salaus ei takaa suojaa tältä pääsyltä.
 vault.ask.footer = {cross} Salaa    {circle} Ei nyt
 vault.setup.title = Luo avain
 vault.new.title = Uusi avain
@@ -570,7 +570,7 @@ vault.unlock.hint_disabling = Salausta poistetaan käytöstä. Anna avain salauk
 vault.entry.footer = Start: OK    L: poista    R: tyhjennä    Select: peruuta
 vault.unlock.footer = Start: avaa    L: poista    R: tyhjennä    Select: avain unohtunut
 vault.relock.footer = Start: avaa    L: poista    R: tyhjennä
-vault.relock.title = VitaGram on lukittu
+vault.relock.title = VitaPlane on lukittu
 vault.strength = {0} painallusta, {1} bittiä
 vault.empty = Paina ensin joitakin painikkeita.
 vault.one_button = Paina yhtä painiketta kerrallaan.
@@ -584,18 +584,18 @@ vault.deriving = Johdetaan avainta... {0}%
 vault.no_memory = Muisti ei riitä avaimen johtamiseen.
 vault.unavailable = Avain luotiin toisella konsolilla.
 vault.error = Avainta ei voitu tallentaa.
-vault.state_reset = Salausasetuksia muutettiin VitaGramin ulkopuolella. Salaus pysyy päällä ja kaikki tiedostot tarkistetaan uudelleen. Jos et aloittanut salauksen poistamista, joku on ehkä päässyt käsiksi muistikorttiisi.
-vault.plugins_warning = VitaGramiin on ladattu laajennuksia: {0}. Ne voivat lukea syöttämäsi avaimen ja viestisi. Poista epäluotettavat tiedostosta tai/config.txt.
+vault.state_reset = Salausasetuksia muutettiin VitaPlanein ulkopuolella. Salaus pysyy päällä ja kaikki tiedostot tarkistetaan uudelleen. Jos et aloittanut salauksen poistamista, joku on ehkä päässyt käsiksi muistikorttiisi.
+vault.plugins_warning = VitaPlaneiin on ladattu laajennuksia: {0}. Ne voivat lukea syöttämäsi avaimen ja viestisi. Poista epäluotettavat tiedostosta tai/config.txt.
 vault.notice.footer = {cross} Jatka
 vault.changed = Avain vaihdettu.
 vault.forgot.title = Poistetaanko kaikki tiedot?
-vault.forgot.body = Ilman avainta salattuja tietoja ei voi lukea.\n\nVoit poistaa kaikki VitaGramin tiedot, myös Telegram-kirjautumisen, ja aloittaa alusta.
+vault.forgot.body = Ilman avainta salattuja tietoja ei voi lukea.\n\nVoit poistaa kaikki VitaPlanein tiedot, myös Telegram-kirjautumisen, ja aloittaa alusta.
 vault.forgot.footer = {triangle} Poista kaikki    {circle} Takaisin
 vault.erasing = Poistetaan tietoja...
 vault.migrate.encrypting = Salataan tietoja... {0}/{1}
 vault.migrate.decrypting = Puretaan tietojen salausta... {0}/{1}
 vault.migrate.hint = Pidä konsoli päällä. {circle} ohittaa; käsittely jatkuu seuraavalla käynnistyksellä.
-vault.migrate.failed = {0} tiedostoa ei voitu muuntaa. Avaimesi säilytetään, ja VitaGram yrittää uudelleen seuraavalla käynnistyskerralla. Jos muistikortti on täynnä, vapauta tilaa.
+vault.migrate.failed = {0} tiedostoa ei voitu muuntaa. Avaimesi säilytetään, ja VitaPlane yrittää uudelleen seuraavalla käynnistyskerralla. Jos muistikortti on täynnä, vapauta tilaa.
 vault.settings.encryption = Tietojen salaus
 vault.settings.change_key = Vaihda avain
 vault.settings.confirm_disable = Poista käytöstä painamalla {cross} uudelleen
@@ -829,20 +829,20 @@ logs.vault = Salatun median toisto (vault-playback.log)
 logs.note = Tiedostot tallennetaan ux0:data/vitagram-kansioon eikä niitä salata.
 logs.footer = {dpad}: valitse    {cross} Päälle / pois    {circle} Takaisin
 
-# About VitaGram
+# About VitaPlane
 about.title = Tietoja
 
 vault.ask.scroll = {dpad}: vieritä
-about.brand = VitaGram — Telegram PS Vitalle
+about.brand = VitaPlane — Telegram PS Vitalle
 about.version = Versio {0}
 about.description = Epävirallinen avoimen lähdekoodin Telegram-asiakas, joka perustuu VitaSDK:hon, vita2d:hen ja TDLibiin. Keskustele, lue kanavia ja katso mediaa PS Vitalla painikkeiden ja kosketusnäytön avulla.
 about.development = Projektia kehitetään aktiivisesti. Kaikkia Telegramin toimintoja ei vielä ole; joissakin voi olla rajoituksia tai virheitä.
 about.privacy_title = Yksityisyys
-about.privacy_servers = VitaGram ei lähetä viestejäsi, tiedostojasi tai diagnostiikkalokeja tekijän palvelimille.
-about.privacy_logs = Lokit sisältävät teknisiä tietoja ja ovat oletuksena pois käytöstä. VitaGram ei tallenna niihin viestitekstejä, puhelinnumeroita tai salasanoja. Lokit pysyvät konsolilla eikä niitä lähetetä automaattisesti. Ongelmatilanteessa voit halutessasi lähettää ne käsin kehittäjälle vian selvittämiseksi.
+about.privacy_servers = VitaPlane ei lähetä viestejäsi, tiedostojasi tai diagnostiikkalokeja tekijän palvelimille.
+about.privacy_logs = Lokit sisältävät teknisiä tietoja ja ovat oletuksena pois käytöstä. VitaPlane ei tallenna niihin viestitekstejä, puhelinnumeroita tai salasanoja. Lokit pysyvät konsolilla eikä niitä lähetetä automaattisesti. Ongelmatilanteessa voit halutessasi lähettää ne käsin kehittäjälle vian selvittämiseksi.
 about.privacy_connections = Asiakas yhdistää Telegramin palvelimiin. Päivitystarkistukset ja lataukset käyttävät GitHubia. TDLib voi ottaa yhteyttä ulkoisiin palveluihin välityspalvelinten nimien selvittämiseksi ja yhteysasetusten hakemiseksi. Välityspalvelinta käytettäessä yhteys kulkee valitun palvelimen kautta.
 about.security_title = Turvallisuus ja riskit
-about.security_intro = VitaGram on epävirallinen asiakas. Sovellusvirheet ja alustan rajoitukset voivat vaikuttaa turvallisuuteen.
+about.security_intro = VitaPlane on epävirallinen asiakas. Sovellusvirheet ja alustan rajoitukset voivat vaikuttaa turvallisuuteen.
 about.risk_data_title = Paikallinen tallennus
 about.risk_data = Asiakas tallentaa käyttäjätiedot konsolille. Sovellus voi salata tallennuksen luvattoman kopioinnin estämiseksi. Ilman salausta muistikorttiin pääsevä henkilö tai ohjelma voi lukea paikalliset tilitiedot ja ladatun median.
 about.risk_encryption_title = Salaus
@@ -855,13 +855,13 @@ about.risk_updates_title = Asennus ja päivitykset
 about.risk_updates = Asenna luotetusta lähteestä. Sisäinen päivitystoiminto tarkistaa VPK:n digitaalisen allekirjoituksen ennen asennusta.
 about.author_title = Tekijä ja lähdekoodi
 about.license_title = Lisenssi
-about.license_mit = VitaGramin oma koodi on MIT-lisensoitu. Käyttö, muokkaus ja jakelu, myös kaupallisesti, sallitaan säilyttämällä tekijänoikeusilmoitus ja lisenssiteksti.
+about.license_mit = VitaPlanein oma koodi on MIT-lisensoitu. Käyttö, muokkaus ja jakelu, myös kaupallisesti, sallitaan säilyttämällä tekijänoikeusilmoitus ja lisenssiteksti.
 about.license_warranty = Sovellus toimitetaan sellaisenaan ilman takuita. Kolmannen osapuolen kirjastoilla ja fonteilla on omat lisenssinsä.
-about.project_link = GitHub · ing156/VitaGram
+about.project_link = GitHub · ing156/VitaPlane
 about.author_link = Telegram · @Ing156
 about.footer = {dpad}: vieritä  {l}/{r}: sivu  ←/→: linkit  {cross}: avaa  {circle}: takaisin
 about.telegram_unavailable = Kirjaudu Telegramiin avataksesi tekijän keskustelun.
-about.platform_risk = Turvallisuuden parannuksista huolimatta VitaGram toimii muokatulla konsolilla, johon liittyy riskejä. Järjestelmään pääsevä ohjelmisto voi lukea toimivan sovelluksen tiedot ja konsolin muistin. Paikallinen salaus ei takaa suojaa tältä pääsyltä.
+about.platform_risk = Turvallisuuden parannuksista huolimatta VitaPlane toimii muokatulla konsolilla, johon liittyy riskejä. Järjestelmään pääsevä ohjelmisto voi lukea toimivan sovelluksen tiedot ja konsolin muistin. Paikallinen salaus ei takaa suojaa tältä pääsyltä.
 
 menu.seek_time = Siirry aikaan
 media.seek_hint = {dpad}  Vasen/oikea: kenttä; ylös/alas: aika (tunnit:minuutit:sekunnit)
@@ -920,7 +920,7 @@ upload.sort_size_desc = Suurimmat ensin
 # In-app text keyboard
 settings.keyboard = Näppäimistö
 settings.keyboard_system = Järjestelmä
-settings.keyboard_custom = VitaGram
+settings.keyboard_custom = VitaPlane
 keyboard.send = Lähetä
 keyboard.help = {cross} Kirjoita   {square} Poista   {triangle} Väli   L/R Kohdistin   Start OK
 
@@ -933,7 +933,7 @@ vpk.installing = Asennetaan…
 vpk.success = Asennus valmis.
 vpk.failed = Asennus epäonnistui: {0}
 vpk.invalid = Virheellinen tai tukematon sovelluspaketti.
-vpk.self = Päivitä VitaGram ja asennusohjelma Päivitys-toiminnolla tai VitaShellillä.
+vpk.self = Päivitä VitaPlane ja asennusohjelma Päivitys-toiminnolla tai VitaShellillä.
 vpk.header_failed = Paketin otsaketta ei voitu valmistella.
 vpk.dialog_failed = Asennusikkunaa ei voitu avata.
 vpk.thread_failed = Asennusta ei voitu käynnistää.
@@ -1015,7 +1015,7 @@ settings.view_combined = Yhdistetty
 chat.focus_list = Keskustelut > viestit
 chat.focus_history = < keskustelut | Viestit
 chat.select_chat = Valitse keskustelu
-webapp.payment_unavailable = Mini Apps -maksut eivät ole vielä käytettävissä VitaGramissa.
+webapp.payment_unavailable = Mini Apps -maksut eivät ole vielä käytettävissä VitaPlaneissa.
 
 # --- Background audio player ---
 player.hint = L+R: soitin
@@ -1090,3 +1090,23 @@ calendar.weekday.5 = La
 calendar.weekday.6 = Su
 calendar.back = {circle} Takaisin
 calendar.hint = L/R: kuukausi · {dpad}: päivä · {cross}: avaa · {circle}: takaisin
+
+settings.download_ask = Kysy latausten tallennuspaikka
+picker.save_as = Tallenna nimellä
+picker.open_action = {cross} Avaa
+picker.select_action = {square} Valitse
+picker.create_action = {triangle} Uusi kansio
+picker.back_action = {circle} Takaisin
+picker.loading = Ladataan
+
+# --- text editing ---
+menu.edit_message = Muokkaa tekstiä
+input.edit_message = Muokkaa viestiä
+message.edit_failed = Tallennus epäonnistui: {0}
+message.edit_saved = Muutokset tallennettu
+message.edit_saving = Tallennetaan muutoksia...
+message.edit_unavailable = Tätä viestiä ei voi muokata tässä sovelluksessa.
+message.edit_invalid = Kirjoita tekstiä, enintään 1023 UTF-8-tavua.
+message.edit_changed = Viesti muuttui. Peruuta ja avaa uudelleen.
+message.edit_timeout = Ei vastausta. Tarkista viesti ennen uutta yritystä.
+keyboard.save = Tallenna

@@ -1,4 +1,4 @@
-# VitaGram language file (format: see en.lang)
+# VitaPlane language file (format: see en.lang)
 @code = ja
 @name = 日本語
 
@@ -17,7 +17,7 @@
 
 account.cleanup_blocked = 以前のアカウントのデータを削除できませんでした。メモリーカードへのアクセスを解放して、アプリを再起動してください。
 account.delete_incomplete = すべてのデータを削除できませんでした。次回起動時にもう一度クリーンアップします。
-account.deleted = アカウントのデータを削除しました。ログインするにはVitaGramを再起動してください。
+account.deleted = アカウントのデータを削除しました。ログインするにはVitaPlaneを再起動してください。
 account.deleting = アカウントのデータを削除中...
 account.logging_out = ログアウト中...
 account.mark_failed = アカウントのクリーンアップ用マークを保存できませんでした
@@ -522,7 +522,7 @@ voice.worker = 音声出力用スレッドを起動できません
 # --- update ---
 settings.auto_update = 起動時にアップデートを確認して自動インストール
 settings.auto_update_proxy = プロキシ使用中は一時停止
-network.held_notice = 設定を確認できませんでした。VitaGram 以外で置き換え・破損・削除されたため、プロキシ設定が不明です。VitaGram はまだ接続していません。プロキシ設定を確認して保存すると接続します（プロキシあり・なしのどちらでも）。
+network.held_notice = 設定を確認できませんでした。VitaPlane 以外で置き換え・破損・削除されたため、プロキシ設定が不明です。VitaPlane はまだ接続していません。プロキシ設定を確認して保存すると接続します（プロキシあり・なしのどちらでも）。
 network.held = 未接続：接続するにはプロキシ設定を保存してください。
 settings.update = アップデート
 update.idle = {cross}: 確認 (バージョン {0})
@@ -534,7 +534,7 @@ update.verifying = 署名を確認中...
 update.extracting = 展開中 {0}%
 update.installing = インストール中...
 update.applying = アップデートをインストール中...
-update.applying_hint = しばらくお待ちください。本体の電源を切らないでください。VitaGramは自動的に再起動します。
+update.applying_hint = しばらくお待ちください。本体の電源を切らないでください。VitaPlaneは自動的に再起動します。
 update.installed = {0} をインストールしました - 再起動中...
 update.hint = アップデート {0} があります: {start} 設定
 update.err.network = GitHub に接続できません - {cross}: 再試行
@@ -550,7 +550,7 @@ update.direct = アップデートの確認はプロキシを経由せず、GitH
 # Data encryption
 vault.title = データの暗号化
 vault.ask.title = データを保護しますか？
-vault.ask.body = VitaGramはデータをコンソールに保存します：Telegramのセッション、データベース、写真、動画、ステッカー、ボイスメッセージ、設定。不正なコピーを防ぐため保存領域を暗号化できます。\n\n解除用にボタン操作の順序かパスフレーズを選びます。より強い保護にはパスフレーズを推奨します。\n\n⚠ 鍵を忘れるとローカルデータは復元できません。データを削除してTelegramに再度ログインする必要があります。\n\n暗号化は後でStart > 設定から管理できます。\n\nすべてのローカルファイルが暗号化されているか、設定で定期的に確認してください。書き込み中にアプリを閉じたり電源を切ったりすると暗号化が中断されます。一部のファイルは次の処理や確認まで暗号化されずに残る場合があります。\n\nVitaGramはテレメトリーを収集せず、データを第三者のサービスへ送信しません。\n\n安全性の向上に努めていますが、アプリは改造コンソールで動作し、そのリスクがあります。システムにアクセスできるソフトウェアは動作中のアプリのデータやコンソールのメモリーを読めます。ローカルストレージの暗号化はこのアクセスからの保護を保証しません。
+vault.ask.body = VitaPlaneはデータをコンソールに保存します：Telegramのセッション、データベース、写真、動画、ステッカー、ボイスメッセージ、設定。不正なコピーを防ぐため保存領域を暗号化できます。\n\n解除用にボタン操作の順序かパスフレーズを選びます。より強い保護にはパスフレーズを推奨します。\n\n⚠ 鍵を忘れるとローカルデータは復元できません。データを削除してTelegramに再度ログインする必要があります。\n\n暗号化は後でStart > 設定から管理できます。\n\nすべてのローカルファイルが暗号化されているか、設定で定期的に確認してください。書き込み中にアプリを閉じたり電源を切ったりすると暗号化が中断されます。一部のファイルは次の処理や確認まで暗号化されずに残る場合があります。\n\nVitaPlaneはテレメトリーを収集せず、データを第三者のサービスへ送信しません。\n\n安全性の向上に努めていますが、アプリは改造コンソールで動作し、そのリスクがあります。システムにアクセスできるソフトウェアは動作中のアプリのデータやコンソールのメモリーを読めます。ローカルストレージの暗号化はこのアクセスからの保護を保証しません。
 vault.ask.footer = {cross} 暗号化    {circle} 今はしない
 vault.setup.title = 鍵を作成
 vault.new.title = 新しい鍵
@@ -566,7 +566,7 @@ vault.unlock.hint_disabling = 暗号化を無効にしています。復号を�
 vault.entry.footer = Start：確定    L：削除    R：消去    Select：キャンセル
 vault.unlock.footer = Start：解除    L：削除    R：消去    Select：鍵を忘れた
 vault.relock.footer = Start：解除    L：削除    R：消去
-vault.relock.title = VitaGramはロックされています
+vault.relock.title = VitaPlaneはロックされています
 vault.strength = {0}回の入力、{1}ビット
 vault.empty = まずボタンを押してください。
 vault.one_button = ボタンは1つずつ押してください。
@@ -580,12 +580,12 @@ vault.deriving = 鍵を導出中... {0}%
 vault.no_memory = 鍵の導出に必要なメモリーが不足しています。
 vault.unavailable = この鍵は別のコンソールで作成されました。
 vault.error = 鍵を保存できませんでした。
-vault.state_reset = 暗号化の設定が VitaGram 以外で変更されました。暗号化はオンのままで、すべてのファイルを再確認します。暗号化の解除を始めていない場合、誰かがメモリーカードにアクセスした可能性があります。
-vault.plugins_warning = VitaGram にプラグインが読み込まれています: {0}。入力するキーとメッセージを読み取られる可能性があります。信頼できないものは tai/config.txt から削除してください。
+vault.state_reset = 暗号化の設定が VitaPlane 以外で変更されました。暗号化はオンのままで、すべてのファイルを再確認します。暗号化の解除を始めていない場合、誰かがメモリーカードにアクセスした可能性があります。
+vault.plugins_warning = VitaPlane にプラグインが読み込まれています: {0}。入力するキーとメッセージを読み取られる可能性があります。信頼できないものは tai/config.txt から削除してください。
 vault.notice.footer = {cross} 続ける
 vault.changed = 鍵を変更しました。
 vault.forgot.title = すべてのデータを消去しますか？
-vault.forgot.body = 鍵がなければ暗号化されたデータを読み取れません。\n\nTelegramのログイン情報を含むVitaGramの全データを消去し、やり直すことができます。
+vault.forgot.body = 鍵がなければ暗号化されたデータを読み取れません。\n\nTelegramのログイン情報を含むVitaPlaneの全データを消去し、やり直すことができます。
 vault.forgot.footer = {triangle} すべて消去    {circle} 戻る
 vault.erasing = データを消去中...
 vault.migrate.encrypting = データを暗号化中... {0}/{1}
@@ -825,20 +825,20 @@ logs.vault = 暗号化メディアの再生（vault-playback.log）
 logs.note = ファイルはux0:data/vitagramに保存され、暗号化されません。
 logs.footer = {dpad}：選択    {cross} 有効 / 無効    {circle} 戻る
 
-# About VitaGram
+# About VitaPlane
 about.title = このアプリについて
 
 vault.ask.scroll = {dpad}：スクロール
-about.brand = VitaGram — PS Vita用Telegram
+about.brand = VitaPlane — PS Vita用Telegram
 about.version = バージョン {0}
 about.description = VitaSDK、vita2d、TDLibを使った非公式のオープンソースTelegramクライアントです。PS Vitaのボタンとタッチスクリーンで会話、チャンネルの閲覧、メディアの視聴ができます。
 about.development = 開発は進行中です。Telegramの全機能には対応しておらず、一部には制限や不具合があります。
 about.privacy_title = プライバシー
-about.privacy_servers = VitaGramはメッセージ、ファイル、診断ログを作者のサーバーに送信しません。
+about.privacy_servers = VitaPlaneはメッセージ、ファイル、診断ログを作者のサーバーに送信しません。
 about.privacy_logs = 診断ログは技術情報を含み、初期設定では無効です。メッセージ本文、電話番号、パスワードは記録しません。ログはコンソール内に保存され、自動送信されません。問題が起きた場合、任意で開発者に手動送信して診断を依頼できます。
 about.privacy_connections = クライアントはTelegramのサーバーに接続します。更新の確認とダウンロードにはGitHubを使います。TDLibはプロキシの名前解決や接続設定の取得のため外部サービスに接続する場合があります。プロキシ使用時は選択したサーバーを経由します。
 about.security_title = 安全性とリスク
-about.security_intro = VitaGramは非公式クライアントです。アプリの不具合やプラットフォームの制約が安全性に影響する場合があります。
+about.security_intro = VitaPlaneは非公式クライアントです。アプリの不具合やプラットフォームの制約が安全性に影響する場合があります。
 about.risk_data_title = ローカルストレージ
 about.risk_data = クライアントはデータをコンソールに保存します。不正なコピーを防ぐため、アプリで保存領域を暗号化できます。暗号化しない場合、メモリーカードにアクセスできる人やソフトウェアがアカウント情報やダウンロードしたメディアを読める可能性があります。
 about.risk_encryption_title = 暗号化
@@ -851,13 +851,13 @@ about.risk_updates_title = インストールと更新
 about.risk_updates = 信頼できる配布元からインストールしてください。内蔵の更新機能はインストール前にVPKのデジタル署名を検証します。
 about.author_title = 作者とソースコード
 about.license_title = ライセンス
-about.license_mit = VitaGram独自のコードはMITライセンスです。著作権表示とライセンス本文を維持すれば、商用を含め使用、変更、配布できます。
+about.license_mit = VitaPlane独自のコードはMITライセンスです。著作権表示とライセンス本文を維持すれば、商用を含め使用、変更、配布できます。
 about.license_warranty = アプリは現状のまま、無保証で提供されます。外部のライブラリとフォントには各自のライセンスがあります。
-about.project_link = GitHub · ing156/VitaGram
+about.project_link = GitHub · ing156/VitaPlane
 about.author_link = Telegram · @Ing156
 about.footer = {dpad}：スクロール  {l}/{r}：ページ  ←/→：リンク  {cross}：開く  {circle}：戻る
 about.telegram_unavailable = 作者のチャットを開くにはTelegramにログインしてください。
-about.platform_risk = 安全性の向上に努めていますが、VitaGramは改造コンソール上で動作し、そのリスクがあります。システムにアクセスできるソフトウェアは動作中のアプリのデータやコンソールのメモリーを読めます。ローカルストレージの暗号化はこのアクセスからの保護を保証しません。
+about.platform_risk = 安全性の向上に努めていますが、VitaPlaneは改造コンソール上で動作し、そのリスクがあります。システムにアクセスできるソフトウェアは動作中のアプリのデータやコンソールのメモリーを読めます。ローカルストレージの暗号化はこのアクセスからの保護を保証しません。
 
 menu.seek_time = 指定時刻へ移動
 media.seek_hint = {dpad}  左右で項目、上下で時間を変更（時:分:秒）
@@ -916,7 +916,7 @@ upload.sort_size_desc = サイズの降順
 # In-app text keyboard
 settings.keyboard = キーボード
 settings.keyboard_system = システム
-settings.keyboard_custom = VitaGram
+settings.keyboard_custom = VitaPlane
 keyboard.send = 送信
 keyboard.help = {cross} 入力   {square} 削除   {triangle} 空白   L/R カーソル   Start OK
 
@@ -929,7 +929,7 @@ vpk.installing = インストール中…
 vpk.success = インストールが完了しました。
 vpk.failed = インストール失敗: {0}
 vpk.invalid = 無効または非対応のアプリパッケージです。
-vpk.self = VitaGramとインストーラーの更新には「更新」またはVitaShellを使用してください。
+vpk.self = VitaPlaneとインストーラーの更新には「更新」またはVitaShellを使用してください。
 vpk.header_failed = パッケージヘッダーを準備できませんでした。
 vpk.dialog_failed = インストール画面を開けませんでした。
 vpk.thread_failed = インストール処理を開始できませんでした。
@@ -1011,7 +1011,7 @@ settings.view_combined = 分割表示
 chat.focus_list = チャット > 履歴
 chat.focus_history = < チャット | 履歴
 chat.select_chat = チャットを選択
-webapp.payment_unavailable = VitaGram では Mini Apps の支払いはまだ利用できません。
+webapp.payment_unavailable = VitaPlane では Mini Apps の支払いはまだ利用できません。
 
 # --- Background audio player ---
 player.hint = L+R: プレーヤー
@@ -1086,3 +1086,23 @@ calendar.weekday.5 = 土
 calendar.weekday.6 = 日
 calendar.back = {circle} 戻る
 calendar.hint = L/R: 月 · {dpad}: 日 · {cross}: 移動 · {circle}: 戻る
+
+settings.download_ask = ダウンロードの保存先を毎回確認
+picker.save_as = 名前を付けて保存
+picker.open_action = {cross} 開く
+picker.select_action = {square} 選択
+picker.create_action = {triangle} 新規フォルダー
+picker.back_action = {circle} 戻る
+picker.loading = 読み込み中
+
+# --- text editing ---
+menu.edit_message = テキストを編集
+input.edit_message = メッセージを編集
+message.edit_failed = 保存できませんでした: {0}
+message.edit_saved = 変更を保存しました
+message.edit_saving = 変更を保存中...
+message.edit_unavailable = このメッセージはこのクライアントで編集できません。
+message.edit_invalid = 空でないテキストを入力してください。UTF-8で1023バイトまでです。
+message.edit_changed = メッセージが変更されました。キャンセルして開き直してください。
+message.edit_timeout = 応答がありません。再試行前にメッセージを確認してください。
+keyboard.save = 保存

@@ -1,4 +1,4 @@
-# VitaGram language file (format: see en.lang)
+# VitaPlane language file (format: see en.lang)
 @code = zh-Hans
 @name = 简体中文
 
@@ -17,7 +17,7 @@
 
 account.cleanup_blocked = 无法删除上一个账号的数据。请释放对存储卡的占用，然后重新启动应用。
 account.delete_incomplete = 未能删除全部数据。下次启动时将再次清理。
-account.deleted = 账号数据已删除。请重新启动 VitaGram 后登录。
+account.deleted = 账号数据已删除。请重新启动 VitaPlane 后登录。
 account.deleting = 正在删除账号数据...
 account.logging_out = 正在退出登录...
 account.mark_failed = 无法保存账号清理标记
@@ -522,7 +522,7 @@ voice.worker = 无法启动音频输出线程
 # --- update ---
 settings.auto_update = 启动时检查并安装更新
 settings.auto_update_proxy = 开启代理时暂停
-network.held_notice = 无法验证你的设置：它们在 VitaGram 之外被替换、损坏或删除，因此代理设置未知。VitaGram 尚未联网。请检查代理设置并保存后再连接（使用或不使用代理均可）。
+network.held_notice = 无法验证你的设置：它们在 VitaPlane 之外被替换、损坏或删除，因此代理设置未知。VitaPlane 尚未联网。请检查代理设置并保存后再连接（使用或不使用代理均可）。
 network.held = 未连接：保存代理设置后即可连接。
 settings.update = 更新
 update.idle = {cross}: 检查 (版本 {0})
@@ -534,7 +534,7 @@ update.verifying = 正在验证签名...
 update.extracting = 正在解压 {0}%
 update.installing = 正在安装...
 update.applying = 正在安装更新...
-update.applying_hint = 请稍候，不要关闭主机。VitaGram 将自动重启。
+update.applying_hint = 请稍候，不要关闭主机。VitaPlane 将自动重启。
 update.installed = 已安装 {0} - 正在重启...
 update.hint = 有新版本 {0}: {start} 设置
 update.err.network = 无法连接 GitHub - {cross}: 重试
@@ -550,7 +550,7 @@ update.direct = 检查更新会直接连接 GitHub，不经过代理。
 # Data encryption
 vault.title = 数据加密
 vault.ask.title = 保护数据？
-vault.ask.body = VitaGram 在主机本地保存数据：Telegram 会话、数据库、照片、视频、贴纸、语音消息和设置。应用可以加密存储以防未经授权的复制。\n\n选择按键序列或口令短语来解锁。为获得更好保护，建议使用口令短语。\n\n⚠ 忘记密钥后，本地数据无法恢复。您必须删除数据并重新登录 Telegram。\n\n以后可在 Start > 设置中管理加密。\n\n请定期在设置中检查所有本地文件是否已加密。写入时关闭应用或主机可能中断加密。部分文件可能保持未加密状态，直到下次处理或检查。\n\nVitaGram 不收集遥测信息，也不将您的数据发送给第三方服务。\n\n尽管我们努力提高安全性，应用仍运行于经过修改的主机，存在相关风险。拥有系统访问权限的软件可以访问运行中的应用数据和主机内存。本地存储加密无法保证防止这种访问。
+vault.ask.body = VitaPlane 在主机本地保存数据：Telegram 会话、数据库、照片、视频、贴纸、语音消息和设置。应用可以加密存储以防未经授权的复制。\n\n选择按键序列或口令短语来解锁。为获得更好保护，建议使用口令短语。\n\n⚠ 忘记密钥后，本地数据无法恢复。您必须删除数据并重新登录 Telegram。\n\n以后可在 Start > 设置中管理加密。\n\n请定期在设置中检查所有本地文件是否已加密。写入时关闭应用或主机可能中断加密。部分文件可能保持未加密状态，直到下次处理或检查。\n\nVitaPlane 不收集遥测信息，也不将您的数据发送给第三方服务。\n\n尽管我们努力提高安全性，应用仍运行于经过修改的主机，存在相关风险。拥有系统访问权限的软件可以访问运行中的应用数据和主机内存。本地存储加密无法保证防止这种访问。
 vault.ask.footer = {cross} 加密    {circle} 暂不
 vault.setup.title = 创建密钥
 vault.new.title = 新密钥
@@ -566,7 +566,7 @@ vault.unlock.hint_disabling = 正在关闭加密。输入密钥以完成数据�
 vault.entry.footer = Start：确认    L：删除    R：清空    Select：取消
 vault.unlock.footer = Start：解锁    L：删除    R：清空    Select：忘记密钥
 vault.relock.footer = Start：解锁    L：删除    R：清空
-vault.relock.title = VitaGram 已锁定
+vault.relock.title = VitaPlane 已锁定
 vault.strength = {0} 次按键，{1} 位
 vault.empty = 请先按一些按键。
 vault.one_button = 每次只按一个按键。
@@ -580,18 +580,18 @@ vault.deriving = 正在派生密钥... {0}%
 vault.no_memory = 内存不足，无法派生密钥。
 vault.unavailable = 此密钥是在另一台主机上创建的。
 vault.error = 无法保存密钥。
-vault.state_reset = 加密设置在 VitaGram 之外被更改。加密保持开启，所有文件将重新检查。如果你没有开始关闭加密，可能有人接触过你的记忆卡。
-vault.plugins_warning = VitaGram 中加载了插件：{0}。它们可以读取您输入的密钥和消息。请从 tai/config.txt 中移除不受信任的插件。
+vault.state_reset = 加密设置在 VitaPlane 之外被更改。加密保持开启，所有文件将重新检查。如果你没有开始关闭加密，可能有人接触过你的记忆卡。
+vault.plugins_warning = VitaPlane 中加载了插件：{0}。它们可以读取您输入的密钥和消息。请从 tai/config.txt 中移除不受信任的插件。
 vault.notice.footer = {cross} 继续
 vault.changed = 密钥已更改。
 vault.forgot.title = 清除所有数据？
-vault.forgot.body = 没有密钥就无法读取加密数据。\n\n您可以清除 VitaGram 的所有数据，包括 Telegram 登录信息，然后重新开始。
+vault.forgot.body = 没有密钥就无法读取加密数据。\n\n您可以清除 VitaPlane 的所有数据，包括 Telegram 登录信息，然后重新开始。
 vault.forgot.footer = {triangle} 全部清除    {circle} 返回
 vault.erasing = 正在清除数据...
 vault.migrate.encrypting = 正在加密数据... {0}/{1}
 vault.migrate.decrypting = 正在解密数据... {0}/{1}
 vault.migrate.hint = 保持主机开启。按 {circle} 跳过，下次启动时继续。
-vault.migrate.failed = 有 {0} 个文件无法转换。密钥已保留，VitaGram 会在下次启动时重试。如果记忆卡已满，请释放空间。
+vault.migrate.failed = 有 {0} 个文件无法转换。密钥已保留，VitaPlane 会在下次启动时重试。如果记忆卡已满，请释放空间。
 vault.settings.encryption = 数据加密
 vault.settings.change_key = 更改密钥
 vault.settings.confirm_disable = 再次按 {cross} 以关闭
@@ -825,20 +825,20 @@ logs.vault = 加密媒体播放（vault-playback.log）
 logs.note = 文件存放在 ux0:data/vitagram，不会加密。
 logs.footer = {dpad}：选择    {cross} 开 / 关    {circle} 返回
 
-# About VitaGram
+# About VitaPlane
 about.title = 关于项目
 
 vault.ask.scroll = {dpad}：滚动
-about.brand = VitaGram — PS Vita 上的 Telegram
+about.brand = VitaPlane — PS Vita 上的 Telegram
 about.version = 版本 {0}
 about.description = 基于 VitaSDK、vita2d 和 TDLib 的非官方开源 Telegram 客户端。使用 PS Vita 的按键与触摸屏聊天、阅读频道和查看媒体。
 about.development = 项目正在积极开发。尚未支持全部 Telegram 功能，部分功能可能有限制或错误。
 about.privacy_title = 隐私
-about.privacy_servers = VitaGram 不会将消息、文件或诊断日志发送到作者的服务器。
-about.privacy_logs = 诊断日志包含技术信息，默认关闭。VitaGram 不在其中记录消息正文、电话号码或密码。日志仅保存在主机上，绝不会自动发送。遇到问题时，您可以自愿手动发送给开发者进行诊断。
+about.privacy_servers = VitaPlane 不会将消息、文件或诊断日志发送到作者的服务器。
+about.privacy_logs = 诊断日志包含技术信息，默认关闭。VitaPlane 不在其中记录消息正文、电话号码或密码。日志仅保存在主机上，绝不会自动发送。遇到问题时，您可以自愿手动发送给开发者进行诊断。
 about.privacy_connections = 客户端连接 Telegram 服务器。更新检查与下载使用 GitHub。TDLib 也可能访问外部服务以解析代理主机名和获取连接配置。使用代理时，连接经过您选择的服务器。
 about.security_title = 安全与风险
-about.security_intro = VitaGram 是非官方客户端。应用错误和平台限制可能影响安全。
+about.security_intro = VitaPlane 是非官方客户端。应用错误和平台限制可能影响安全。
 about.risk_data_title = 本地存储
 about.risk_data = 客户端在主机上保存用户数据。应用可以加密存储以防未经授权的复制。未启用加密时，能访问存储卡的人或程序可能访问本地账户数据和已下载的媒体。
 about.risk_encryption_title = 加密
@@ -851,13 +851,13 @@ about.risk_updates_title = 安装与更新
 about.risk_updates = 请从可信来源安装。内置更新程序会在安装前验证 VPK 数字签名。
 about.author_title = 作者与源代码
 about.license_title = 许可证
-about.license_mit = VitaGram 自有代码采用 MIT 许可证。保留版权声明和许可证文本即可使用、修改和分发，包括商业用途。
+about.license_mit = VitaPlane 自有代码采用 MIT 许可证。保留版权声明和许可证文本即可使用、修改和分发，包括商业用途。
 about.license_warranty = 应用按现状提供，不附任何保证。第三方库和字体采用各自的许可证。
-about.project_link = GitHub · ing156/VitaGram
+about.project_link = GitHub · ing156/VitaPlane
 about.author_link = Telegram · @Ing156
 about.footer = {dpad}：滚动  {l}/{r}：页面  ←/→：链接  {cross}：打开  {circle}：返回
 about.telegram_unavailable = 请登录 Telegram 以打开作者的聊天。
-about.platform_risk = 尽管我们努力提高安全性，VitaGram 仍运行于经过修改的主机，存在相关风险。拥有系统访问权限的软件可以访问运行中的应用数据和主机内存。本地存储加密无法保证防止这种访问。
+about.platform_risk = 尽管我们努力提高安全性，VitaPlane 仍运行于经过修改的主机，存在相关风险。拥有系统访问权限的软件可以访问运行中的应用数据和主机内存。本地存储加密无法保证防止这种访问。
 
 menu.seek_time = 跳转到时间
 media.seek_hint = {dpad}  左右选择，上下调整（时:分:秒）
@@ -916,7 +916,7 @@ upload.sort_size_desc = 大小降序
 # In-app text keyboard
 settings.keyboard = 键盘
 settings.keyboard_system = 系统
-settings.keyboard_custom = VitaGram
+settings.keyboard_custom = VitaPlane
 keyboard.send = 发送
 keyboard.help = {cross} 输入   {square} 删除   {triangle} 空格   L/R 光标   Start OK
 
@@ -929,7 +929,7 @@ vpk.installing = 正在安装…
 vpk.success = 安装完成。
 vpk.failed = 安装失败：{0}
 vpk.invalid = 应用软件包无效或不受支持。
-vpk.self = 请使用“更新”或 VitaShell 更新 VitaGram 及其安装程序。
+vpk.self = 请使用“更新”或 VitaShell 更新 VitaPlane 及其安装程序。
 vpk.header_failed = 无法准备软件包头。
 vpk.dialog_failed = 无法打开安装对话框。
 vpk.thread_failed = 无法启动安装任务。
@@ -1011,7 +1011,7 @@ settings.view_combined = 合并视图
 chat.focus_list = 聊天 > 记录
 chat.focus_history = < 聊天 | 记录
 chat.select_chat = 选择聊天
-webapp.payment_unavailable = VitaGram 暂不支持 Mini Apps 付款。
+webapp.payment_unavailable = VitaPlane 暂不支持 Mini Apps 付款。
 
 # --- Background audio player ---
 player.hint = L+R：播放器
@@ -1086,3 +1086,23 @@ calendar.weekday.5 = 六
 calendar.weekday.6 = 日
 calendar.back = {circle} 返回
 calendar.hint = L/R: 月份 · {dpad}: 日期 · {cross}: 跳转 · {circle}: 返回
+
+settings.download_ask = 每次询问下载保存位置
+picker.save_as = 另存为
+picker.open_action = {cross} 打开
+picker.select_action = {square} 选择
+picker.create_action = {triangle} 新建文件夹
+picker.back_action = {circle} 返回
+picker.loading = 加载中
+
+# --- text editing ---
+menu.edit_message = 编辑文本
+input.edit_message = 编辑消息
+message.edit_failed = 无法保存：{0}
+message.edit_saved = 更改已保存
+message.edit_saving = 正在保存更改...
+message.edit_unavailable = 无法在此客户端编辑这条消息。
+message.edit_invalid = 请输入非空文本，最多1023个UTF-8字节。
+message.edit_changed = 消息已被更改。请取消后重新打开。
+message.edit_timeout = 没有响应。重试前请检查消息。
+keyboard.save = 保存

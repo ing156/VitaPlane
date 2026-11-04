@@ -1,4 +1,4 @@
-# VitaGram language file (format: see en.lang)
+# VitaPlane language file (format: see en.lang)
 @code = de
 @name = Deutsch
 
@@ -23,7 +23,7 @@
 
 account.cleanup_blocked = Die Daten des vorherigen Kontos konnten nicht gelöscht werden. Gib den Zugriff auf die Speicherkarte frei und starte die App neu.
 account.delete_incomplete = Nicht alle Daten konnten gelöscht werden. Die Bereinigung wird beim nächsten Start wiederholt.
-account.deleted = Kontodaten gelöscht. Starte VitaGram neu, um dich anzumelden.
+account.deleted = Kontodaten gelöscht. Starte VitaPlane neu, um dich anzumelden.
 account.deleting = Kontodaten werden gelöscht...
 account.logging_out = Abmeldung...
 account.mark_failed = Die Markierung für die Kontobereinigung konnte nicht gespeichert werden
@@ -528,7 +528,7 @@ voice.worker = Audioausgabe-Thread kann nicht gestartet werden
 # --- update ---
 settings.auto_update = Beim Start Updates suchen und installieren
 settings.auto_update_proxy = Pausiert, solange ein Proxy aktiv ist
-network.held_notice = Deine Einstellungen konnten nicht bestätigt werden: Sie wurden außerhalb von VitaGram ersetzt, beschädigt oder gelöscht, daher sind die Proxy-Einstellungen unbekannt. VitaGram hat keine Verbindung aufgebaut. Prüfe die Proxy-Einstellungen und speichere sie, um dich zu verbinden (mit oder ohne Proxy).
+network.held_notice = Deine Einstellungen konnten nicht bestätigt werden: Sie wurden außerhalb von VitaPlane ersetzt, beschädigt oder gelöscht, daher sind die Proxy-Einstellungen unbekannt. VitaPlane hat keine Verbindung aufgebaut. Prüfe die Proxy-Einstellungen und speichere sie, um dich zu verbinden (mit oder ohne Proxy).
 network.held = Nicht verbunden: Speichere die Proxy-Einstellungen, um dich zu verbinden.
 settings.update = Update
 update.idle = {cross}: prüfen (Version {0})
@@ -540,7 +540,7 @@ update.verifying = Signatur wird geprüft...
 update.extracting = Entpacken {0}%
 update.installing = Installation...
 update.applying = Update wird installiert...
-update.applying_hint = Bitte warten, Konsole nicht ausschalten. VitaGram startet neu.
+update.applying_hint = Bitte warten, Konsole nicht ausschalten. VitaPlane startet neu.
 update.installed = {0} installiert - Neustart...
 update.hint = Update {0} verfügbar: {start} Einstellungen
 update.err.network = GitHub nicht erreichbar - {cross}: erneut
@@ -556,7 +556,7 @@ update.direct = Die Update-Prüfung verbindet sich direkt mit GitHub, nicht übe
 # Data encryption
 vault.title = Datenverschlüsselung
 vault.ask.title = Daten schützen?
-vault.ask.body = VitaGram speichert Ihre Daten lokal auf der Konsole: Telegram-Sitzung, Datenbank, Fotos, Videos, Sticker, Sprachnachrichten und Einstellungen. Die App kann diesen Speicher gegen unbefugtes Kopieren verschlüsseln.\n\nWählen Sie zum Entsperren eine Tastenfolge oder eine Passphrase. Für besseren Schutz wird eine Passphrase empfohlen.\n\n⚠ Ohne den Schlüssel sind lokale Daten nicht wiederherstellbar. Sie müssen sie löschen und sich erneut bei Telegram anmelden.\n\nDie Verschlüsselung lässt sich später unter Start > Einstellungen verwalten.\n\nPrüfen Sie regelmäßig in den Einstellungen, ob alle lokalen Dateien verschlüsselt sind. Schließen der App oder Ausschalten der Konsole während des Schreibens kann die Verschlüsselung unterbrechen. Dateien können bis zur nächsten Verarbeitung oder Prüfung unverschlüsselt bleiben.\n\nVitaGram erfasst keine Telemetrie und sendet Ihre Daten nicht an Dienste Dritter.\n\nTrotz unserer Sicherheitsbemühungen läuft die App auf einer modifizierten Konsole mit entsprechenden Risiken. Software mit Systemzugriff kann Daten der laufenden App und den Konsolenspeicher auslesen. Die lokale Verschlüsselung garantiert keinen Schutz davor.
+vault.ask.body = VitaPlane speichert Ihre Daten lokal auf der Konsole: Telegram-Sitzung, Datenbank, Fotos, Videos, Sticker, Sprachnachrichten und Einstellungen. Die App kann diesen Speicher gegen unbefugtes Kopieren verschlüsseln.\n\nWählen Sie zum Entsperren eine Tastenfolge oder eine Passphrase. Für besseren Schutz wird eine Passphrase empfohlen.\n\n⚠ Ohne den Schlüssel sind lokale Daten nicht wiederherstellbar. Sie müssen sie löschen und sich erneut bei Telegram anmelden.\n\nDie Verschlüsselung lässt sich später unter Start > Einstellungen verwalten.\n\nPrüfen Sie regelmäßig in den Einstellungen, ob alle lokalen Dateien verschlüsselt sind. Schließen der App oder Ausschalten der Konsole während des Schreibens kann die Verschlüsselung unterbrechen. Dateien können bis zur nächsten Verarbeitung oder Prüfung unverschlüsselt bleiben.\n\nVitaPlane erfasst keine Telemetrie und sendet Ihre Daten nicht an Dienste Dritter.\n\nTrotz unserer Sicherheitsbemühungen läuft die App auf einer modifizierten Konsole mit entsprechenden Risiken. Software mit Systemzugriff kann Daten der laufenden App und den Konsolenspeicher auslesen. Die lokale Verschlüsselung garantiert keinen Schutz davor.
 vault.ask.footer = {cross} Daten verschlüsseln    {circle} Nicht jetzt
 vault.setup.title = Schlüssel erstellen
 vault.new.title = Neuer Schlüssel
@@ -572,7 +572,7 @@ vault.unlock.hint_disabling = Die Verschlüsselung wird ausgeschaltet. Geben Sie
 vault.entry.footer = Start: OK    L: löschen    R: leeren    Select: abbrechen
 vault.unlock.footer = Start: entsperren    L: löschen    R: leeren    Select: Schlüssel vergessen
 vault.relock.footer = Start: entsperren    L: löschen    R: leeren
-vault.relock.title = VitaGram ist gesperrt
+vault.relock.title = VitaPlane ist gesperrt
 vault.strength = {0} Tastendrücke, {1} Bit
 vault.empty = Drücken Sie zuerst einige Tasten.
 vault.one_button = Drücken Sie jeweils nur eine Taste.
@@ -586,18 +586,18 @@ vault.deriving = Schlüssel wird abgeleitet... {0}%
 vault.no_memory = Nicht genug Speicher zum Ableiten des Schlüssels.
 vault.unavailable = Dieser Schlüssel wurde auf einer anderen Konsole erstellt.
 vault.error = Schlüssel konnte nicht gespeichert werden.
-vault.state_reset = Die Verschlüsselungseinstellungen wurden außerhalb von VitaGram geändert. Die Verschlüsselung bleibt aktiv, und alle Dateien werden erneut geprüft. Wenn du das Ausschalten nicht begonnen hast, hatte möglicherweise jemand Zugriff auf deine Speicherkarte.
-vault.plugins_warning = In VitaGram sind Plugins geladen: {0}. Sie können den eingegebenen Schlüssel und Ihre Nachrichten lesen. Entfernen Sie nicht vertrauenswürdige aus tai/config.txt.
+vault.state_reset = Die Verschlüsselungseinstellungen wurden außerhalb von VitaPlane geändert. Die Verschlüsselung bleibt aktiv, und alle Dateien werden erneut geprüft. Wenn du das Ausschalten nicht begonnen hast, hatte möglicherweise jemand Zugriff auf deine Speicherkarte.
+vault.plugins_warning = In VitaPlane sind Plugins geladen: {0}. Sie können den eingegebenen Schlüssel und Ihre Nachrichten lesen. Entfernen Sie nicht vertrauenswürdige aus tai/config.txt.
 vault.notice.footer = {cross} Weiter
 vault.changed = Schlüssel geändert.
 vault.forgot.title = Alle Daten löschen?
-vault.forgot.body = Ohne Schlüssel sind die verschlüsselten Daten nicht lesbar.\n\nSie können alle VitaGram-Daten einschließlich der Telegram-Anmeldung löschen und neu beginnen.
+vault.forgot.body = Ohne Schlüssel sind die verschlüsselten Daten nicht lesbar.\n\nSie können alle VitaPlane-Daten einschließlich der Telegram-Anmeldung löschen und neu beginnen.
 vault.forgot.footer = {triangle} Alles löschen    {circle} Zurück
 vault.erasing = Daten werden gelöscht...
 vault.migrate.encrypting = Daten werden verschlüsselt... {0}/{1}
 vault.migrate.decrypting = Daten werden entschlüsselt... {0}/{1}
 vault.migrate.hint = Lassen Sie die Konsole eingeschaltet. {circle} überspringt; beim nächsten Start geht es weiter.
-vault.migrate.failed = {0} Dateien konnten nicht umgewandelt werden. Dein Schlüssel bleibt erhalten, VitaGram versucht es beim nächsten Start erneut. Ist die Speicherkarte voll, schaffe etwas Platz.
+vault.migrate.failed = {0} Dateien konnten nicht umgewandelt werden. Dein Schlüssel bleibt erhalten, VitaPlane versucht es beim nächsten Start erneut. Ist die Speicherkarte voll, schaffe etwas Platz.
 vault.settings.encryption = Datenverschlüsselung
 vault.settings.change_key = Schlüssel ändern
 vault.settings.confirm_disable = Zum Ausschalten nochmals {cross} drücken
@@ -831,20 +831,20 @@ logs.vault = Verschlüsselte Wiedergabe (vault-playback.log)
 logs.note = Dateien werden in ux0:data/vitagram gespeichert und nicht verschlüsselt.
 logs.footer = {dpad}: Auswahl    {cross} Ein / aus    {circle} Zurück
 
-# About VitaGram
-about.title = Über VitaGram
+# About VitaPlane
+about.title = Über VitaPlane
 
 vault.ask.scroll = {dpad}: scrollen
-about.brand = VitaGram — Telegram für PS Vita
+about.brand = VitaPlane — Telegram für PS Vita
 about.version = Version {0}
 about.description = Ein inoffizieller Telegram-Client mit offenem Quellcode auf Basis von VitaSDK, vita2d und TDLib. Chatten, Kanäle lesen und Medien auf der PS Vita ansehen — mit Konsolentasten und Touchscreen.
 about.development = Das Projekt wird aktiv entwickelt. Noch sind nicht alle Telegram-Funktionen verfügbar; einige haben Einschränkungen oder Fehler.
 about.privacy_title = Datenschutz
-about.privacy_servers = VitaGram sendet Ihre Nachrichten, Dateien und Diagnoseprotokolle nicht an die Server des Projektautors.
-about.privacy_logs = Diagnoseprotokolle enthalten technische Informationen und sind standardmäßig aus. VitaGram protokolliert darin weder Nachrichtentexte noch Telefonnummern oder Passwörter. Die Protokolle bleiben auf der Konsole und werden nie automatisch versendet. Bei Problemen können Sie sie freiwillig manuell zur Diagnose an den Entwickler senden.
+about.privacy_servers = VitaPlane sendet Ihre Nachrichten, Dateien und Diagnoseprotokolle nicht an die Server des Projektautors.
+about.privacy_logs = Diagnoseprotokolle enthalten technische Informationen und sind standardmäßig aus. VitaPlane protokolliert darin weder Nachrichtentexte noch Telefonnummern oder Passwörter. Die Protokolle bleiben auf der Konsole und werden nie automatisch versendet. Bei Problemen können Sie sie freiwillig manuell zur Diagnose an den Entwickler senden.
 about.privacy_connections = Der Client verbindet sich mit Telegram-Servern. Update-Prüfungen und Downloads erfolgen über GitHub. TDLib kann externe Dienste zur Auflösung von Proxy-Hostnamen und zum Abrufen der Verbindungskonfiguration nutzen. Bei aktiviertem Proxy läuft die Verbindung über den gewählten Server.
 about.security_title = Sicherheit und Risiken
-about.security_intro = VitaGram ist ein inoffizieller Client. Programmfehler und Plattformgrenzen können die Sicherheit beeinträchtigen.
+about.security_intro = VitaPlane ist ein inoffizieller Client. Programmfehler und Plattformgrenzen können die Sicherheit beeinträchtigen.
 about.risk_data_title = Lokaler Speicher
 about.risk_data = Der Client speichert Benutzerdaten lokal auf der Konsole. Die App kann diesen Speicher gegen unbefugtes Kopieren verschlüsseln. Ohne Verschlüsselung können Personen oder Programme mit Zugriff auf die Speicherkarte lokale Kontodaten und heruntergeladene Medien lesen.
 about.risk_encryption_title = Verschlüsselung
@@ -857,13 +857,13 @@ about.risk_updates_title = Installation und Updates
 about.risk_updates = Installieren Sie die App aus vertrauenswürdiger Quelle. Der integrierte Updater prüft die digitale Signatur der VPK vor der Installation.
 about.author_title = Autor und Quellcode
 about.license_title = Lizenz
-about.license_mit = VitaGrams eigener Code steht unter der MIT-Lizenz. Nutzung, Änderung und Verbreitung, auch kommerziell, sind erlaubt, wenn Urheberrechtshinweis und Lizenztext erhalten bleiben.
+about.license_mit = VitaPlanes eigener Code steht unter der MIT-Lizenz. Nutzung, Änderung und Verbreitung, auch kommerziell, sind erlaubt, wenn Urheberrechtshinweis und Lizenztext erhalten bleiben.
 about.license_warranty = Die App wird ohne Gewährleistung bereitgestellt. Bibliotheken und Schriftarten Dritter haben eigene Lizenzen.
-about.project_link = GitHub · ing156/VitaGram
+about.project_link = GitHub · ing156/VitaPlane
 about.author_link = Telegram · @Ing156
 about.footer = {dpad}: scrollen  {l}/{r}: Seite  ←/→: Links  {cross}: öffnen  {circle}: zurück
 about.telegram_unavailable = Melden Sie sich bei Telegram an, um den Chat des Autors zu öffnen.
-about.platform_risk = Trotz unserer Bemühungen um bessere Sicherheit läuft VitaGram auf einer modifizierten Konsole mit entsprechenden Risiken. Software mit Systemzugriff kann Daten der laufenden App und den Konsolenspeicher auslesen. Die Verschlüsselung lokaler Daten garantiert keinen Schutz vor diesem Zugriff.
+about.platform_risk = Trotz unserer Bemühungen um bessere Sicherheit läuft VitaPlane auf einer modifizierten Konsole mit entsprechenden Risiken. Software mit Systemzugriff kann Daten der laufenden App und den Konsolenspeicher auslesen. Die Verschlüsselung lokaler Daten garantiert keinen Schutz vor diesem Zugriff.
 
 menu.seek_time = Zu Zeitpunkt springen
 media.seek_hint = {dpad}  Links/rechts: Feld; oben/unten: Zeit (Stunden:Minuten:Sekunden)
@@ -922,7 +922,7 @@ upload.sort_size_desc = Größte zuerst
 # In-app text keyboard
 settings.keyboard = Tastatur
 settings.keyboard_system = System
-settings.keyboard_custom = VitaGram
+settings.keyboard_custom = VitaPlane
 keyboard.send = Senden
 keyboard.help = {cross} Eingabe   {square} Löschen   {triangle} Leerzeichen   L/R Cursor   Start OK
 
@@ -935,7 +935,7 @@ vpk.installing = Installation…
 vpk.success = Installation abgeschlossen.
 vpk.failed = Installation fehlgeschlagen: {0}
 vpk.invalid = Ungültiges oder nicht unterstütztes App-Paket.
-vpk.self = VitaGram und Installer über Update oder VitaShell aktualisieren.
+vpk.self = VitaPlane und Installer über Update oder VitaShell aktualisieren.
 vpk.header_failed = Paket-Header konnte nicht erstellt werden.
 vpk.dialog_failed = Installationsdialog konnte nicht geöffnet werden.
 vpk.thread_failed = Installationsthread konnte nicht gestartet werden.
@@ -1017,7 +1017,7 @@ settings.view_combined = Kombiniert
 chat.focus_list = Chats > Verlauf
 chat.focus_history = < Chats | Verlauf
 chat.select_chat = Chat auswählen
-webapp.payment_unavailable = Zahlungen in Mini Apps sind in VitaGram noch nicht verfügbar.
+webapp.payment_unavailable = Zahlungen in Mini Apps sind in VitaPlane noch nicht verfügbar.
 
 # --- Background audio player ---
 player.hint = L+R: Player
@@ -1092,3 +1092,23 @@ calendar.weekday.5 = Sa
 calendar.weekday.6 = So
 calendar.back = {circle} Zurück
 calendar.hint = L/R: Monat · {dpad}: Tag · {cross}: öffnen · {circle}: zurück
+
+settings.download_ask = Speicherort vor jedem Download wählen
+picker.save_as = Speichern unter
+picker.open_action = {cross} Öffnen
+picker.select_action = {square} Wählen
+picker.create_action = {triangle} Neuer Ordner
+picker.back_action = {circle} Zurück
+picker.loading = Lädt
+
+# --- text editing ---
+menu.edit_message = Text bearbeiten
+input.edit_message = Nachricht bearbeiten
+message.edit_failed = Speichern fehlgeschlagen: {0}
+message.edit_saved = Änderungen gespeichert
+message.edit_saving = Änderungen werden gespeichert...
+message.edit_unavailable = Diese Nachricht kann hier nicht bearbeitet werden.
+message.edit_invalid = Text mit höchstens 1023 UTF-8-Bytes eingeben.
+message.edit_changed = Nachricht wurde geändert. Abbrechen und erneut öffnen.
+message.edit_timeout = Keine Antwort. Nachricht vor erneutem Versuch prüfen.
+keyboard.save = Speichern

@@ -37,7 +37,7 @@ function tr(key,...values) {
 }
 function fontScale(){return parseInt($('font-size').value,10)/100;}
 function fontSize(scale){return Math.max(1,Math.floor(L.font_base*scale*fontScale()+.5));}
-function font(scale){context.font=`${fontSize(scale)}px "VitaGram Noto","VitaGram CJK ${language}",sans-serif`;context.textBaseline='alphabetic';}
+function font(scale){context.font=`${fontSize(scale)}px "VitaPlane Noto","VitaPlane CJK ${language}",sans-serif`;context.textBaseline='alphabetic';}
 function controllerBounds(index) {
   const name=controllerNames[index],rect=data.manifest.assets['ps_buttons_atlas.png'].sprites[name];
   const layers=data.manifest.assets['buttons/'+name+'.png'].layers;
@@ -95,7 +95,7 @@ function corner(right,glow=false) {
 function header(settings=false,chat=false) {
   context.drawImage(texture('fixed/header_960x40.png'),0,0,L.width,L.header_height);
   if(chat)avatar(12,4,28,palette.selected);
-  const title=settings?tr('settings.title'):chat?'Vita Community':'VitaGram '+data.version;
+  const title=settings?tr('settings.title'):chat?'Vita Community':'VitaPlane '+data.version;
   const x=chat?50:20,scale=.65,y=L.header_baseline;
   text(title,x,y,scale,palette.header_text,320-x);
   const network=tr('net.online');text(network,480-textWidth(network,scale)/2,y,scale,palette.header_text,300);
@@ -123,8 +123,8 @@ function drawChats() {
     text(name,x+10,96+L.search_shift,.65,palette.text,164);
     if(index===0)context.drawImage(texture('fixed/active_indicator_128x4.png'),x+24,105+L.search_shift,136,4);
   }));
-  const names=['Vita Community',t('VitaGram · Новости'),t('Чат Ports Collection'),t('PS Vita — вопросы'),'Old Sparky',
-    t('VitaGram · Задачи'),t('Дизайн и палитры'),'ToDoVitaGram','RetroGG'];
+  const names=['Vita Community',t('VitaPlane · Новости'),t('Чат Ports Collection'),t('PS Vita — вопросы'),'Old Sparky',
+    t('VitaPlane · Задачи'),t('Дизайн и палитры'),'ToDoVitaPlane','RetroGG'];
   const pitch=Math.floor((L.height-L.chat_top_folders)/L.chat_rows_folders),inner=pitch-2;
   clipped(L.list_left,L.chat_top_folders,L.list_width,L.height-L.chat_top_folders,()=>names.forEach((name,index)=>{
     const y=L.chat_top_folders+1+index*pitch,focused=index===2;
@@ -242,7 +242,7 @@ function drawPopup(attach=false) {
 }
 function drawSearch() {
   searchBar();
-  const names=['Vita Community',t('VitaGram · Новости'),'Vita Homebrew'];
+  const names=['Vita Community',t('VitaPlane · Новости'),'Vita Homebrew'];
   for(let index=0;index<names.length;index++) {
     const y=L.search_top+index*L.search_row;nine(index===0?'row_focused':'row',20,y,920,L.search_row-4);
     avatar(32,y+4,32);text(names[index],76,y+27,.68,palette.text,640);text(tr('search.kind_group'),800,y+26,.5,palette.muted,126);

@@ -26,6 +26,6 @@ target_link_libraries(vitagram-updater
 vita_create_self(vitagram-updater-eboot.bin vitagram-updater UNSAFE)
 vita_create_vpk(vitagram-updater.vpk ${VITA_UPDATER_TITLEID} vitagram-updater-eboot.bin
   VERSION ${VITA_VERSION}
-  NAME "VitaGram Updater"
+  NAME "VitaPlane Updater"
   FILE ${CMAKE_SOURCE_DIR}/assets/icon0.png sce_sys/icon0.png
 )

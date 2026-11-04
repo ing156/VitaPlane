@@ -54,11 +54,13 @@ struct AppSettings {
         return c;
     }
     int cache_storage = 0;
+    bool download_ask = false;
+    std::string download_last_dir;
     std::string download_dir = "ux0:downloads/vitagram";
     std::string font_file; // Empty selects the built-in font chain.
     std::string language; // "" = follow the console language, otherwise a code from app0:lang/*.lang
     // load() found a settings.json not sealed by the vault although the vault is on: it was replaced
-    // outside VitaGram (or never re-saved after switching encryption on) and has been ignored.
+    // outside VitaPlane (or never re-saved after switching encryption on) and has been ignored.
     bool rejected = false;
     // load() read a settings.json (sealed with the vault key when the vault is on).
     bool loaded = false;
@@ -210,6 +212,8 @@ struct AppSettings {
         language = string_value("language");
         font_file = string_value("font_file");
         if (!user_fonts::valid_filename(font_file)) font_file.clear();
+        if (json_t* v = json_object_get(root, "download_ask")) download_ask = json_is_true(v);
+        download_last_dir = string_value("download_last_dir");
         std::string saved_download_dir = string_value("download_dir");
         if (!saved_download_dir.empty() && saved_download_dir != "ux0:download/vitagram" &&
             saved_download_dir != "ux0:/download/vitagram") download_dir = saved_download_dir;
@@ -252,6 +256,8 @@ struct AppSettings {
         json_object_set_new(root, "proxy_username", json_string(secure_store::protect(proxy_username).c_str()));
         json_object_set_new(root, "proxy_password", json_string(secure_store::protect(proxy_password).c_str()));
         json_object_set_new(root, "cache_storage", json_integer(cache_storage));
+        json_object_set_new(root, "download_ask", json_boolean(download_ask));
+        json_object_set_new(root, "download_last_dir", json_string(download_last_dir.c_str()));
         json_object_set_new(root, "download_dir", json_string(download_dir.c_str()));
         json_object_set_new(root, "language", json_string(language.c_str()));
         json_object_set_new(root, "font_file", json_string(font_file.c_str()));

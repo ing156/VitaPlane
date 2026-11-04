@@ -1,4 +1,4 @@
-# VitaGram language file (format: see en.lang)
+# VitaPlane language file (format: see en.lang)
 @code = tr
 @name = Türkçe
 
@@ -25,7 +25,7 @@
 
 account.cleanup_blocked = Önceki hesabın verileri silinemedi. Bellek kartı erişimini serbest bırakın ve uygulamayı yeniden başlatın.
 account.delete_incomplete = Tüm veriler silinemedi. Temizlik bir sonraki açılışta tekrarlanacak.
-account.deleted = Hesap verileri silindi. Giriş yapmak için VitaGram'ı yeniden başlatın.
+account.deleted = Hesap verileri silindi. Giriş yapmak için VitaPlane'ı yeniden başlatın.
 account.deleting = Hesap verileri siliniyor...
 account.logging_out = Çıkış yapılıyor...
 account.mark_failed = Hesap temizleme işareti kaydedilemedi
@@ -530,7 +530,7 @@ voice.worker = Ses çıkışı iş parçacığı başlatılamıyor
 # --- update ---
 settings.auto_update = Açılışta güncellemeleri denetle ve yükle
 settings.auto_update_proxy = Proxy açıkken duraklatıldı
-network.held_notice = Ayarlarınız doğrulanamadı: VitaGram dışında değiştirildi, bozuldu veya silindi; bu yüzden proxy ayarları bilinmiyor. VitaGram bağlanmadı. Bağlanmak için proxy ayarlarını kontrol edip kaydedin (proxy ile ya da olmadan).
+network.held_notice = Ayarlarınız doğrulanamadı: VitaPlane dışında değiştirildi, bozuldu veya silindi; bu yüzden proxy ayarları bilinmiyor. VitaPlane bağlanmadı. Bağlanmak için proxy ayarlarını kontrol edip kaydedin (proxy ile ya da olmadan).
 network.held = Bağlı değil: bağlanmak için proxy ayarlarını kaydedin.
 settings.update = Güncelleme
 update.idle = {cross}: denetle (sürüm {0})
@@ -542,7 +542,7 @@ update.verifying = İmza doğrulanıyor...
 update.extracting = Açılıyor {0}%
 update.installing = Yükleniyor...
 update.applying = Güncelleme yükleniyor...
-update.applying_hint = Lütfen bekleyin, konsolu kapatmayın. VitaGram yeniden başlayacak.
+update.applying_hint = Lütfen bekleyin, konsolu kapatmayın. VitaPlane yeniden başlayacak.
 update.installed = {0} yüklendi - yeniden başlatılıyor...
 update.hint = Güncelleme {0} mevcut: {start} Ayarlar
 update.err.network = GitHub'a ulaşılamıyor - {cross}: yeniden dene
@@ -558,7 +558,7 @@ update.direct = Güncelleme denetimi GitHub'a proxy üzerinden değil, doğrudan
 # Data encryption
 vault.title = Veri şifreleme
 vault.ask.title = Verileriniz korunsun mu?
-vault.ask.body = VitaGram verilerinizi konsolda yerel olarak saklar: Telegram oturumu, veritabanı, fotoğraflar, videolar, çıkartmalar, sesli mesajlar ve ayarlar. Uygulama bu alanı izinsiz kopyalamaya karşı şifreleyebilir.\n\nKilidi açmak için düğme dizisi veya parola ifadesi seçin. Daha iyi koruma için parola ifadesi önerilir.\n\n⚠ Anahtarı unutursanız yerel veriler kurtarılamaz. Verileri silip Telegram'a yeniden giriş yapmanız gerekir.\n\nŞifrelemeyi daha sonra Start > Ayarlar bölümünden yönetebilirsiniz.\n\nTüm yerel dosyaların şifreli olduğunu ayarlardan düzenli olarak denetleyin. Yazma sırasında uygulamayı kapatmak veya konsolu kapatmak şifrelemeyi kesebilir. Bazı dosyalar sonraki işleme veya denetime kadar şifresiz kalabilir.\n\nVitaGram telemetri toplamaz veya verilerinizi üçüncü taraf hizmetlere göndermez.\n\nÇabalarımıza rağmen uygulama ilgili riskleri taşıyan değiştirilmiş bir konsolda çalışır. Sistem erişimi olan yazılımlar çalışan uygulamadaki verilere ve konsol belleğine erişebilir. Yerel şifreleme bu erişime karşı koruma garantisi vermez.
+vault.ask.body = VitaPlane verilerinizi konsolda yerel olarak saklar: Telegram oturumu, veritabanı, fotoğraflar, videolar, çıkartmalar, sesli mesajlar ve ayarlar. Uygulama bu alanı izinsiz kopyalamaya karşı şifreleyebilir.\n\nKilidi açmak için düğme dizisi veya parola ifadesi seçin. Daha iyi koruma için parola ifadesi önerilir.\n\n⚠ Anahtarı unutursanız yerel veriler kurtarılamaz. Verileri silip Telegram'a yeniden giriş yapmanız gerekir.\n\nŞifrelemeyi daha sonra Start > Ayarlar bölümünden yönetebilirsiniz.\n\nTüm yerel dosyaların şifreli olduğunu ayarlardan düzenli olarak denetleyin. Yazma sırasında uygulamayı kapatmak veya konsolu kapatmak şifrelemeyi kesebilir. Bazı dosyalar sonraki işleme veya denetime kadar şifresiz kalabilir.\n\nVitaPlane telemetri toplamaz veya verilerinizi üçüncü taraf hizmetlere göndermez.\n\nÇabalarımıza rağmen uygulama ilgili riskleri taşıyan değiştirilmiş bir konsolda çalışır. Sistem erişimi olan yazılımlar çalışan uygulamadaki verilere ve konsol belleğine erişebilir. Yerel şifreleme bu erişime karşı koruma garantisi vermez.
 vault.ask.footer = {cross} Şifrele    {circle} Şimdi değil
 vault.setup.title = Anahtar oluştur
 vault.new.title = Yeni anahtar
@@ -574,7 +574,7 @@ vault.unlock.hint_disabling = Şifreleme kapatılıyor. Şifre çözmeyi tamamla
 vault.entry.footer = Start: tamam    L: sil    R: temizle    Select: iptal
 vault.unlock.footer = Start: kilidi aç    L: sil    R: temizle    Select: anahtarı unuttum
 vault.relock.footer = Start: kilidi aç    L: sil    R: temizle
-vault.relock.title = VitaGram kilitli
+vault.relock.title = VitaPlane kilitli
 vault.strength = {0} basış, {1} bit
 vault.empty = Önce birkaç düğmeye basın.
 vault.one_button = Düğmelere tek tek basın.
@@ -588,18 +588,18 @@ vault.deriving = Anahtar türetiliyor... {0}%
 vault.no_memory = Anahtar türetmek için bellek yetersiz.
 vault.unavailable = Bu anahtar başka bir konsolda oluşturuldu.
 vault.error = Anahtar kaydedilemedi.
-vault.state_reset = Şifreleme ayarları VitaGram dışında değiştirildi. Şifreleme açık kalıyor ve tüm dosyalar yeniden denetlenecek. Şifrelemeyi kapatmaya siz başlamadıysanız, birisi bellek kartınıza erişmiş olabilir.
-vault.plugins_warning = VitaGram'a eklentiler yüklendi: {0}. Girdiğiniz anahtarı ve mesajlarınızı okuyabilirler. Güvenmediklerinizi tai/config.txt dosyasından kaldırın.
+vault.state_reset = Şifreleme ayarları VitaPlane dışında değiştirildi. Şifreleme açık kalıyor ve tüm dosyalar yeniden denetlenecek. Şifrelemeyi kapatmaya siz başlamadıysanız, birisi bellek kartınıza erişmiş olabilir.
+vault.plugins_warning = VitaPlane'a eklentiler yüklendi: {0}. Girdiğiniz anahtarı ve mesajlarınızı okuyabilirler. Güvenmediklerinizi tai/config.txt dosyasından kaldırın.
 vault.notice.footer = {cross} Devam
 vault.changed = Anahtar değiştirildi.
 vault.forgot.title = Tüm veriler silinsin mi?
-vault.forgot.body = Anahtar olmadan şifreli veriler okunamaz.\n\nTelegram oturumu dahil tüm VitaGram verilerini silip yeniden başlayabilirsiniz.
+vault.forgot.body = Anahtar olmadan şifreli veriler okunamaz.\n\nTelegram oturumu dahil tüm VitaPlane verilerini silip yeniden başlayabilirsiniz.
 vault.forgot.footer = {triangle} Tümünü sil    {circle} Geri
 vault.erasing = Veriler siliniyor...
 vault.migrate.encrypting = Veriler şifreleniyor... {0}/{1}
 vault.migrate.decrypting = Verilerin şifresi çözülüyor... {0}/{1}
 vault.migrate.hint = Konsolu açık tutun. {circle} atlar; işlem sonraki açılışta devam eder.
-vault.migrate.failed = {0} dosya dönüştürülemedi. Anahtarınız korunuyor; VitaGram bir sonraki açılışta yeniden deneyecek. Bellek kartı doluysa yer açın.
+vault.migrate.failed = {0} dosya dönüştürülemedi. Anahtarınız korunuyor; VitaPlane bir sonraki açılışta yeniden deneyecek. Bellek kartı doluysa yer açın.
 vault.settings.encryption = Veri şifreleme
 vault.settings.change_key = Anahtarı değiştir
 vault.settings.confirm_disable = Kapatmak için {cross} düğmesine tekrar basın
@@ -833,20 +833,20 @@ logs.vault = Şifreli oynatma (vault-playback.log)
 logs.note = Dosyalar ux0:data/vitagram içinde saklanır ve şifrelenmez.
 logs.footer = {dpad}: seçim    {cross} Aç / kapat    {circle} Geri
 
-# About VitaGram
+# About VitaPlane
 about.title = Hakkında
 
 vault.ask.scroll = {dpad}: kaydır
-about.brand = VitaGram — PS Vita için Telegram
+about.brand = VitaPlane — PS Vita için Telegram
 about.version = Sürüm {0}
 about.description = VitaSDK, vita2d ve TDLib tabanlı, açık kaynaklı ve gayriresmî Telegram istemcisi. PS Vita'da konsol düğmeleri ve dokunmatik ekranla sohbet edin, kanalları okuyun ve medyayı görüntüleyin.
 about.development = Proje aktif olarak geliştiriliyor. Tüm Telegram özellikleri henüz yok; bazıları sınırlı veya hatalı çalışabilir.
 about.privacy_title = Gizlilik
-about.privacy_servers = VitaGram mesajlarınızı, dosyalarınızı veya tanılama günlüklerini yazarın sunucularına göndermez.
-about.privacy_logs = Günlükler teknik bilgi içerir ve varsayılan olarak kapalıdır. VitaGram bunlara mesaj metni, telefon numarası veya parola kaydetmez. Günlükler konsolda kalır ve asla otomatik gönderilmez. Sorun yaşarsanız tanılama için geliştiriciye isteğe bağlı olarak elle gönderebilirsiniz.
+about.privacy_servers = VitaPlane mesajlarınızı, dosyalarınızı veya tanılama günlüklerini yazarın sunucularına göndermez.
+about.privacy_logs = Günlükler teknik bilgi içerir ve varsayılan olarak kapalıdır. VitaPlane bunlara mesaj metni, telefon numarası veya parola kaydetmez. Günlükler konsolda kalır ve asla otomatik gönderilmez. Sorun yaşarsanız tanılama için geliştiriciye isteğe bağlı olarak elle gönderebilirsiniz.
 about.privacy_connections = İstemci Telegram sunucularına bağlanır. Güncelleme kontrolü ve indirmeleri GitHub'ı kullanır. TDLib proxy adlarını çözmek ve bağlantı yapılandırmasını almak için dış hizmetlere başvurabilir. Proxy açıkken bağlantı seçtiğiniz sunucudan geçer.
 about.security_title = Güvenlik ve riskler
-about.security_intro = VitaGram gayriresmî bir istemcidir. Uygulama hataları ve platform sınırlamaları güvenliği etkileyebilir.
+about.security_intro = VitaPlane gayriresmî bir istemcidir. Uygulama hataları ve platform sınırlamaları güvenliği etkileyebilir.
 about.risk_data_title = Yerel depolama
 about.risk_data = İstemci verileri konsolda saklar. Uygulama bu alanı izinsiz kopyalamaya karşı şifreleyebilir. Şifreleme olmadan hafıza kartına erişen kişiler veya programlar yerel hesap verilerine ve indirilen medyaya erişebilir.
 about.risk_encryption_title = Şifreleme
@@ -859,13 +859,13 @@ about.risk_updates_title = Kurulum ve güncellemeler
 about.risk_updates = Uygulamayı güvenilir kaynaktan kurun. Yerleşik güncelleyici kurulumdan önce VPK dijital imzasını doğrular.
 about.author_title = Yazar ve kaynak kod
 about.license_title = Lisans
-about.license_mit = VitaGram'ın kendi kodu MIT lisanslıdır. Telif bildirimi ve lisans metni korunarak ticari kullanım dahil kullanma, değiştirme ve dağıtma serbesttir.
+about.license_mit = VitaPlane'ın kendi kodu MIT lisanslıdır. Telif bildirimi ve lisans metni korunarak ticari kullanım dahil kullanma, değiştirme ve dağıtma serbesttir.
 about.license_warranty = Uygulama olduğu gibi, garantisiz sunulur. Üçüncü taraf kitaplıklar ve yazı tipleri kendi lisanslarına sahiptir.
-about.project_link = GitHub · ing156/VitaGram
+about.project_link = GitHub · ing156/VitaPlane
 about.author_link = Telegram · @Ing156
 about.footer = {dpad}: kaydır  {l}/{r}: sayfa  ←/→: bağlantılar  {cross}: aç  {circle}: geri
 about.telegram_unavailable = Yazarın sohbetini açmak için Telegram'a giriş yapın.
-about.platform_risk = Güvenliği artırma çabalarımıza rağmen VitaGram, ilgili riskleri taşıyan değiştirilmiş bir konsolda çalışır. Sistem erişimi olan yazılımlar çalışan uygulamadaki verilere ve konsol belleğine erişebilir. Yerel şifreleme bu erişime karşı koruma garantisi vermez.
+about.platform_risk = Güvenliği artırma çabalarımıza rağmen VitaPlane, ilgili riskleri taşıyan değiştirilmiş bir konsolda çalışır. Sistem erişimi olan yazılımlar çalışan uygulamadaki verilere ve konsol belleğine erişebilir. Yerel şifreleme bu erişime karşı koruma garantisi vermez.
 
 menu.seek_time = Zamana git
 media.seek_hint = {dpad}  Sol/sağ: alan; yukarı/aşağı: zaman (saat:dakika:saniye)
@@ -924,7 +924,7 @@ upload.sort_size_desc = Önce en büyük
 # In-app text keyboard
 settings.keyboard = Klavye
 settings.keyboard_system = Sistem
-settings.keyboard_custom = VitaGram
+settings.keyboard_custom = VitaPlane
 keyboard.send = Gönder
 keyboard.help = {cross} Yaz   {square} Sil   {triangle} Boşluk   L/R İmleç   Start OK
 
@@ -937,7 +937,7 @@ vpk.installing = Kuruluyor…
 vpk.success = Kurulum tamamlandı.
 vpk.failed = Kurulum başarısız: {0}
 vpk.invalid = Geçersiz veya desteklenmeyen uygulama paketi.
-vpk.self = VitaGram ve yükleyiciyi Güncelleme veya VitaShell ile güncelleyin.
+vpk.self = VitaPlane ve yükleyiciyi Güncelleme veya VitaShell ile güncelleyin.
 vpk.header_failed = Paket başlığı hazırlanamadı.
 vpk.dialog_failed = Kurulum penceresi açılamadı.
 vpk.thread_failed = Kurulum işlemi başlatılamadı.
@@ -1019,7 +1019,7 @@ settings.view_combined = Birleşik
 chat.focus_list = Sohbetler > geçmiş
 chat.focus_history = < sohbetler | Geçmiş
 chat.select_chat = Sohbet seçin
-webapp.payment_unavailable = Mini Apps ödemeleri henüz VitaGram içinde kullanılamıyor.
+webapp.payment_unavailable = Mini Apps ödemeleri henüz VitaPlane içinde kullanılamıyor.
 
 # --- Background audio player ---
 player.hint = L+R: oynatıcı
@@ -1094,3 +1094,23 @@ calendar.weekday.5 = Ct
 calendar.weekday.6 = Pa
 calendar.back = {circle} Geri
 calendar.hint = L/R: ay · {dpad}: gün · {cross}: git · {circle}: geri
+
+settings.download_ask = İndirmelerin kaydedileceği yeri sor
+picker.save_as = Farklı kaydet
+picker.open_action = {cross} Aç
+picker.select_action = {square} Seç
+picker.create_action = {triangle} Yeni klasör
+picker.back_action = {circle} Geri
+picker.loading = Yükleniyor
+
+# --- text editing ---
+menu.edit_message = Metni düzenle
+input.edit_message = Mesajı düzenle
+message.edit_failed = Kaydedilemedi: {0}
+message.edit_saved = Değişiklikler kaydedildi
+message.edit_saving = Değişiklikler kaydediliyor...
+message.edit_unavailable = Bu mesaj bu istemcide düzenlenemez.
+message.edit_invalid = Boş olmayan metin girin; en çok 1023 UTF-8 baytı.
+message.edit_changed = Mesaj değişti. İptal edip yeniden açın.
+message.edit_timeout = Yanıt yok. Tekrar denemeden önce mesajı kontrol edin.
+keyboard.save = Kaydet

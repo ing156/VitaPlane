@@ -8,17 +8,17 @@ if(NOT DEFINED CMAKE_TOOLCHAIN_FILE)
   endif()
 endif()
 
-project(vitagram LANGUAGES C CXX)
+project(VitaPlane LANGUAGES C CXX)
 include("${VITASDK}/share/vita.cmake" REQUIRED)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(VITA_APP_NAME "VitaGram")
+set(VITA_APP_NAME "VitaPlane")
 set(VITA_TITLEID  "VITAGRM01")
 # VitaSDK requires ##.##; the package version matches the final two source components.
-set(VITA_VERSION  "39.02")
-set(VITAGRAM_VERSION "0.39.02")
+set(VITA_VERSION  "39.05")
+set(VITAGRAM_VERSION "0.39.05")
 option(VITAGRAM_PERFORMANCE "Collect bounded performance diagnostics" ON)
 option(VITAGRAM_TGS_DIAGNOSTIC "Save one rendered TGS frame for diagnosis" OFF)
 option(VITAGRAM_PICKER_LOG "Write browsed folders and file names to ux0:data/vitagram/picker.log (plain text)" OFF)
@@ -77,7 +77,7 @@ foreach(CJK_FONT KR SC TC)
   endif()
 endforeach()
 
-# Pinned dependencies are git submodules (.gitmodules); VitaGram's changes to them live in
+# Pinned dependencies are git submodules (.gitmodules); VitaPlane's changes to them live in
 # scripts/*-vita.patch and are applied here once, so a fresh clone builds the same code.
 find_package(Git REQUIRED)
 function(vitagram_apply_patch dir patch)
@@ -384,13 +384,13 @@ if(VITAGRAM_WEBKIT_ROOT)
   add_subdirectory(src/webview/module)
 endif()
 
-# VitaGram Updater: a separate tiny application that installs a staged update while VitaGram is not
+# VitaPlane Updater: a separate tiny application that installs a staged update while VitaPlane is not
 # running (the console cannot replace a running application); the scheme PSVitaAlive's self-updater uses.
 # Its own directory keeps vita_create_vpk()'s accumulated flags apart from the main package.
 add_subdirectory(src/updater_app)
 # head.bin of the updater app as the console's installer wrote it (ux0:app/VGUPDATE1/sce_sys/package/head.bin
 # after installing vitagram-updater.vpk once with VitaShell). Otherwise the installer regenerates
-# a header for the updater title from VitaGram's installed homebrew header.
+# a header for the updater title from VitaPlane's installed homebrew header.
 set(UPDATER_HEAD_FILES)
 if(EXISTS "${CMAKE_SOURCE_DIR}/assets/updater-head.bin")
   list(APPEND UPDATER_HEAD_FILES FILE "${CMAKE_SOURCE_DIR}/assets/updater-head.bin" updater/head.bin)

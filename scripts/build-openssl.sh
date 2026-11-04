@@ -33,7 +33,7 @@ build_dir="$root/build-$version"
 rm -rf -- "$build_dir" "$root/install"
 mkdir -p "$build_dir"
 cd "$build_dir"
-# Static libraries only. Disabled: everything VitaGram and TDLib do not use (apps, engines, QUIC,
+# Static libraries only. Disabled: everything VitaPlane and TDLib do not use (apps, engines, QUIC,
 # DTLS, CMS/TS/CMP, binary curves, legacy provider) - less code reachable from the network, and
 # the subsystems behind most post-1.1.1 advisories. no-atexit: no cleanup racing TDLib threads at exit.
 "$source_dir/Configure" vita-cross --config="$project_dir/scripts/openssl-vita.conf" \

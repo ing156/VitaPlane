@@ -344,7 +344,7 @@ encrypting, decrypting and re-encrypting an actual source file, and rejects
 unauthenticated samples from a damaged encrypted source.
 
 `bash tests/run-memory-protection-tests.sh` checks the heap-wiping size policy, recognition
-of VitaGram's gzip crash dumps by the NUL-terminated title ID (other titles and partial
+of VitaPlane's gzip crash dumps by the NUL-terminated title ID (other titles and partial
 `.psp2dmp.tmp` files included), overwrite-and-delete of only those dumps, classification of
 system, own and injected plugin module paths, and that the masked session keys yield the same
 database/file keys and a verifiable state signature after a lock and unlock.
@@ -865,7 +865,7 @@ Storage probe: `bash tests/run-storage-probe-tests.sh` checks space reserves,
 exclusive file creation, cancellation, read-back verification and cleanup on the host.
 The same suite also runs the Vita API branch with native flag values and checks
 that creation uses mode 0666, matching VitaSDK newlib.
-On Vita, create an empty `ux0:data/vitagram/storage-test.request`, launch VitaGram
+On Vita, create an empty `ux0:data/vitagram/storage-test.request`, launch VitaPlane
 and leave it idle without playback or uploads. The background worker consumes the
 request and writes `ux0:data/vitagram/storage-test.log`. It checks `ux0:`, `ur0:`
 and `uma0:` without assuming their physical device mappings. Each available mount
@@ -989,3 +989,49 @@ before an older queued file update and verifies that the message publishes the
 readable tail before suppressing that update. Older messages and cached reparses
 must not rewind the stream. Real Vita must still confirm playback after the
 observed storage stall; this fix does not reduce file-extension latency.
+
+VitaPlane 0.39.03 checks: keyboard regressions cover L/R without a stale letter
+preview and touch cursor placement across UTF-8, explicit/soft line breaks and
+scrolled drafts. Settings regressions cover optional per-download folder prompts,
+confirm/cancel, unchanged default folders and stable message identity; modal checks
+cover folder ownership in Classic/Combined. Updater lifecycle tests query both
+repository names, missing repositories, newest-version selection and invalid
+metadata. Audio/video checks cover background ordinary clips, speed-panel hit
+bounds, media clocks at 0.5x/1x/2x and silent-video clock scaling. The packet-pacing
+fixtures use the existing four-second paused-preview boundary. Account paths,
+cryptographic labels, signature domains and title IDs remain compatible.
+Run keyboard, i18n, chat-scroll, updater-lifecycle, webkit-addon, audio-playback,
+video, transfer and vault suites. Real Vita still needs checking for L/R visuals,
+touch cursor accuracy, destination browsing/cancellation, channel SELECT, video
+speed/A-V sync, decoder capacity, sleep/resume and all palettes/font sizes.
+
+Keyboard magnifier (0.39.04): `bash tests/run-keyboard-tests.sh` checks the 350 ms
+threshold, themed opaque lens bounds, all seven font metrics, UTF-8 caret
+boundaries, multiline dragging, fixed viewport ownership, bounded edge scrolling,
+release/cancel/clear/reopen, second-contact isolation and password/covered-screen
+exclusion. The lens reuses the keyboard's rounded fan/fringe renderer and never
+copies a framebuffer or captures a password. Physical Vita still needs touch
+accuracy, finger occlusion, font rendering, drag smoothness and edge-scroll pacing
+checks with light/dark/custom themes, split keyboard and slow frames.
+
+Save-as follow-up (0.39.04): chat-scroll checks include the production asynchronous
+directory picker: remembered/configured/built-in fallback paths, folder-first file
+lists, files never entered as folders, creation/navigation, read errors, 5000-entry
+cap, blocked storage with immediate close/reopen and stale-result rejection.
+Every pixel of rows/footer is checked, including gaps and unused last-page cells.
+Vault checks persist the last destination independently of the default folder;
+settings checks confirm cancellation does not change it. The header/path/name/list
+occupy separate vertical bands; each footer label fits its own touch zone.
+Physical Vita still needs mounted/unmounted drives, real-card latency, long UTF-8
+paths/names, all font sizes and light/dark/custom themes.
+
+Text editing (0.39.05): transfer checks run production permission/parser/edit
+handlers for own sent text, absent/denied rights, 1023-byte capacity, automatic
+versus manual entities, media exclusions, unchanged/invalid UTF-8 input, retained
+preview settings, no new message/reply/topic fields, duplicate submit, server
+failure with draft recovery, retry identity, external text conflicts, timeout,
+cancel and stale results after navigation. Keyboard checks verify the Save label
+and unchanged initial text. Run transfer, keyboard, i18n and chat-scroll suites.
+Physical Vita still needs menu/controller/touch flow in Classic/Combined,
+channels, topics and Saved Messages; expired edit rights, offline/reconnect,
+custom/native keyboard, all fonts/palettes and live edits from another device.

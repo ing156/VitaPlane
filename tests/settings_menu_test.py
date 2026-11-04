@@ -26,7 +26,7 @@ fixture = r'''
 #include <iostream>
 constexpr int SCE_CTRL_CROSS = 1, SCE_CTRL_CIRCLE = 2;
 int main() {
-    int seen[34]{};
+    int seen[35]{};
     for (int section = 0; section < 9; ++section) {
         assert(settings_menu::counts[section] > 0 && settings_menu::counts[section] <= 9);
         for (int i = 0; i < settings_menu::counts[section]; ++i) {
@@ -34,12 +34,12 @@ int main() {
             if (source < 0) {
                 assert(section == 0 && -source == i + 1 && -source < 9);
                 assert(settings_menu::submenu(source));
-            } else { assert(source < 34); ++seen[source]; }
+            } else { assert(source < 35); ++seen[source]; }
         }
     }
     for (int n : seen) assert(n == 1); // No lost or duplicated setting/action.
     assert(settings_menu::rows[0][8] == 31); // Logout stays outside sections.
-    for (int id = 0; id < 34; ++id)
+    for (int id = 0; id < 35; ++id)
         assert(settings_menu::vaultDependent(id) == (id >= 12 && id <= 15));
     const int kSettingsTop = ui_layout::settings_top;
     const int kSettingsRowHeight = ui_layout::settings_row;
@@ -164,6 +164,64 @@ fixture = fixture.replace('    std::cout << "Settings menu:', r'''
         open_language(); assert(theme_picker.focused == 0);
         theme_picker.focused = 1; choose_language();
         assert(requested_language == "en" && language_pending && !theme_picker.active);
+    }
+    std::cout << "Settings menu:''')
+# Exercise the real download prompt/confirmation and post SELECT routing.
+fixture = fixture.replace('    std::cout << "Settings menu:', r'''
+    {
+        constexpr int SCE_CTRL_SQUARE = 4, SCE_CTRL_SELECT = 8, SCE_CTRL_START = 16;
+        struct MessageItem { bool document = true; int id = 7; };
+        struct Settings {
+            bool download_ask = true; std::string download_dir = "ux0:downloads", download_last_dir;
+            bool save() { return true; }
+        } settings;
+        struct Picker {
+            bool active = false, loading = false; std::string path;
+            void open(const std::string& value, const std::string& fallback = {}) { path = value.empty() ? fallback : value; active = true; }
+            void close() { active = false; }
+        } folder_picker;
+        struct Client {
+            int calls = 0, last = 0; std::string directory;
+            bool ready() { return true; }
+            void downloadDocument(const MessageItem& item, const std::string& path) { ++calls; last = item.id; directory = path; }
+        } tg;
+        struct Upload { bool active = false; void openMenu() { active = true; } } upload_picker;
+        struct Pad { int buttons = 0; } pad;
+        MessageItem messages[] = {{true, 7}}, save_as_message;
+        int message_index = 0;
+        bool save_as_open = false, reaction_context = true, post_open = true, chat_menu_open = true;
+        auto begin = [&] {
+''' + block('if ((pressed & SCE_CTRL_CROSS) && messages[message_index].document)') + r'''
+        };
+        auto confirm = [&] {
+''' + block('if ((pressed & SCE_CTRL_SQUARE) && !folder_picker.loading && !folder_picker.path.empty())')
+    .replace('i18n::text("settings.save_failed")', '"save failed"') + r'''
+        };
+        auto cancel = [&] {
+''' + block('if (save_as_open && !folder_picker.active)') + r'''
+        };
+        auto select = [&] {
+''' + block('if (reaction_context && post_open && (pressed & SCE_CTRL_SELECT)') + r'''
+        };
+        settings_open = false; pressed = SCE_CTRL_CROSS; begin();
+        assert(settings_open && save_as_open && folder_picker.active && !tg.calls);
+        messages[0].id = 99; // Asynchronous message changes cannot retarget the saved download.
+        folder_picker.path = "uma0:chosen"; pressed = SCE_CTRL_SQUARE; confirm();
+        assert(tg.calls == 1 && tg.last == 7 && tg.directory == "uma0:chosen");
+        assert(!settings_open && !save_as_open && !folder_picker.active && settings.download_dir == "ux0:downloads");
+        assert(settings.download_last_dir == "uma0:chosen");
+        pressed = SCE_CTRL_CROSS; begin(); assert(folder_picker.path == "uma0:chosen"); folder_picker.active = false; cancel();
+        assert(settings.download_last_dir == "uma0:chosen");
+        assert(!settings_open && !save_as_open && tg.calls == 1);
+        settings.download_ask = false; begin(); assert(tg.calls == 2 && !folder_picker.active);
+        settings_open = true; folder_picker.open("ur0:chosen"); pressed = SCE_CTRL_SQUARE; confirm();
+        assert(settings.download_dir == "ur0:chosen" && settings_open && tg.calls == 2);
+        for (bool context : {false, true}) {
+            reaction_context = context; upload_picker.active = false; pressed = SCE_CTRL_SELECT;
+            select(); assert(upload_picker.active == context);
+        }
+        reaction_context = true; upload_picker.active = false; pad.buttons = SCE_CTRL_START;
+        pressed = SCE_CTRL_SELECT; select(); assert(!upload_picker.active);
     }
     std::cout << "Settings menu:''')
 with tempfile.TemporaryDirectory(prefix='vitagram-settings-') as directory:

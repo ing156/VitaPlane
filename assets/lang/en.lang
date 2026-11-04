@@ -1,4 +1,4 @@
-# VitaGram language file. Copy this file to <code>.lang and translate the values after "=".
+# VitaPlane language file. Copy this file to <code>.lang and translate the values after "=".
 # Keys must stay unchanged; a missing key falls back to English.
 #   {0} {1} ...   arguments inserted by the program (keep them, the order may change)
 #   {cross} {circle} {square} {triangle} {dpad} {start} {select}
@@ -32,7 +32,7 @@
 # --- account ---
 account.cleanup_blocked = Could not delete the previous account's data. Free access to the memory card and restart the app.
 account.delete_incomplete = Could not delete all data. Cleanup will repeat at the next launch.
-account.deleted = Account data deleted. Restart VitaGram to sign in.
+account.deleted = Account data deleted. Restart VitaPlane to sign in.
 account.deleting = Deleting account data...
 account.logging_out = Logging out...
 account.mark_failed = Could not save the account cleanup marker
@@ -633,7 +633,7 @@ voice.worker = Cannot start audio output worker
 # --- update ---
 settings.auto_update = Check and install updates at startup
 settings.auto_update_proxy = Paused while a proxy is on
-network.held_notice = Your settings could not be verified: they were replaced, damaged or deleted outside VitaGram, so the proxy settings are unknown. VitaGram has not connected. Check the proxy settings and save them to connect (with or without a proxy).
+network.held_notice = Your settings could not be verified: they were replaced, damaged or deleted outside VitaPlane, so the proxy settings are unknown. VitaPlane has not connected. Check the proxy settings and save them to connect (with or without a proxy).
 network.held = Not connected: save the proxy settings to connect.
 settings.update = Update
 update.idle = {cross}: check (version {0})
@@ -645,7 +645,7 @@ update.verifying = Verifying signature...
 update.extracting = Unpacking {0}%
 update.installing = Installing...
 update.applying = Installing update...
-update.applying_hint = Please wait, do not turn off the console. VitaGram will restart.
+update.applying_hint = Please wait, do not turn off the console. VitaPlane will restart.
 update.installed = {0} installed - restarting...
 update.hint = Update {0} available: {start} Settings
 update.err.network = Cannot reach GitHub - {cross}: retry
@@ -661,7 +661,7 @@ update.direct = Update checks connect to GitHub directly, not through the proxy.
 # Data encryption (key made of console buttons)
 vault.title = Data encryption
 vault.ask.title = Protect your data?
-vault.ask.body = To operate, VitaGram stores your data locally on the console: the Telegram session, database, photos, videos, stickers, voice messages and settings. The app can encrypt this local storage to protect it against unauthorized copying.\n\nChoose a console button sequence or a passphrase to unlock it. A passphrase is recommended for better protection.\n\n⚠ If you forget the key, local data cannot be recovered. You will need to delete it and sign in to Telegram again.\n\nYou can manage encryption later in Start > Settings.\n\nPeriodically check in settings that all local files are encrypted. Closing the app or turning off the console during writing may interrupt encryption. Some files may remain unencrypted until the next processing pass or check.\n\nVitaGram does not collect telemetry or send your data to third-party services.\n\nDespite our efforts to improve VitaGram security, the application runs on a modified console with the associated risks. Software with system access may access data in the running application and console memory. Local storage encryption cannot guarantee protection against such access.
+vault.ask.body = To operate, VitaPlane stores your data locally on the console: the Telegram session, database, photos, videos, stickers, voice messages and settings. The app can encrypt this local storage to protect it against unauthorized copying.\n\nChoose a console button sequence or a passphrase to unlock it. A passphrase is recommended for better protection.\n\n⚠ If you forget the key, local data cannot be recovered. You will need to delete it and sign in to Telegram again.\n\nYou can manage encryption later in Start > Settings.\n\nPeriodically check in settings that all local files are encrypted. Closing the app or turning off the console during writing may interrupt encryption. Some files may remain unencrypted until the next processing pass or check.\n\nVitaPlane does not collect telemetry or send your data to third-party services.\n\nDespite our efforts to improve VitaPlane security, the application runs on a modified console with the associated risks. Software with system access may access data in the running application and console memory. Local storage encryption cannot guarantee protection against such access.
 vault.ask.footer = {cross} Encrypt data    {circle} Not now
 vault.setup.title = Create a key
 vault.new.title = New key
@@ -677,7 +677,7 @@ vault.unlock.hint_disabling = Encryption is being turned off. Enter your key to 
 vault.entry.footer = Start: OK    L: delete    R: clear    Select: cancel
 vault.unlock.footer = Start: unlock    L: delete    R: clear    Select: forgot key
 vault.relock.footer = Start: unlock    L: delete    R: clear
-vault.relock.title = VitaGram is locked
+vault.relock.title = VitaPlane is locked
 vault.strength = {0} presses, {1} bits
 vault.empty = Press some buttons first.
 vault.one_button = Press one button at a time.
@@ -691,18 +691,18 @@ vault.deriving = Deriving the key... {0}%
 vault.no_memory = Not enough memory to derive the key.
 vault.unavailable = This key was made on another console.
 vault.error = Could not save the key.
-vault.state_reset = The encryption settings were changed outside VitaGram. Encryption stays on and every file will be checked again. If you did not start turning encryption off, someone may have had access to your memory card.
-vault.plugins_warning = Plugins are loaded into VitaGram: {0}. They can read the key you enter and your messages. Remove untrusted ones from tai/config.txt.
+vault.state_reset = The encryption settings were changed outside VitaPlane. Encryption stays on and every file will be checked again. If you did not start turning encryption off, someone may have had access to your memory card.
+vault.plugins_warning = Plugins are loaded into VitaPlane: {0}. They can read the key you enter and your messages. Remove untrusted ones from tai/config.txt.
 vault.notice.footer = {cross} Continue
 vault.changed = Key changed.
 vault.forgot.title = Erase all data?
-vault.forgot.body = Without the key the encrypted data cannot be read.\n\nYou can erase all VitaGram data, including the Telegram sign-in, and start over.
+vault.forgot.body = Without the key the encrypted data cannot be read.\n\nYou can erase all VitaPlane data, including the Telegram sign-in, and start over.
 vault.forgot.footer = {triangle} Erase everything    {circle} Back
 vault.erasing = Erasing data...
 vault.migrate.encrypting = Encrypting your data... {0}/{1}
 vault.migrate.decrypting = Decrypting your data... {0}/{1}
 vault.migrate.hint = Keep the console on. Press {circle} to skip; it will continue at the next start.
-vault.migrate.failed = {0} files could not be converted. Your key is kept and VitaGram will try again at the next start. If the memory card is full, free up some space.
+vault.migrate.failed = {0} files could not be converted. Your key is kept and VitaPlane will try again at the next start. If the memory card is full, free up some space.
 vault.settings.encryption = Data encryption
 vault.settings.change_key = Change key
 vault.settings.confirm_disable = Press {cross} again to turn off
@@ -936,20 +936,20 @@ logs.vault = Encrypted playback (vault-playback.log)
 logs.note = Files go to ux0:data/vitagram and are not encrypted.
 logs.footer = {dpad}: select    {cross} On / off    {circle} Back
 
-# About VitaGram
+# About VitaPlane
 about.title = About
 
 vault.ask.scroll = {dpad}: scroll
-about.brand = VitaGram — Telegram for PS Vita
+about.brand = VitaPlane — Telegram for PS Vita
 about.version = Version {0}
 about.description = An unofficial open-source Telegram client built with VitaSDK, vita2d and TDLib. Chat, read channels and view media on your PS Vita using console buttons and the touchscreen.
 about.development = The project is actively developed. Not all Telegram features are available yet, and some features may have limitations or errors.
 about.privacy_title = Privacy
-about.privacy_servers = VitaGram does not send your messages, files or diagnostic logs to the project author's servers.
-about.privacy_logs = Diagnostic logs contain technical information about the application and are disabled by default. VitaGram does not record message text, phone numbers or passwords in them. Logs remain on the console and are never sent automatically. If a problem occurs, you may choose to send logs to the developer manually for troubleshooting.
+about.privacy_servers = VitaPlane does not send your messages, files or diagnostic logs to the project author's servers.
+about.privacy_logs = Diagnostic logs contain technical information about the application and are disabled by default. VitaPlane does not record message text, phone numbers or passwords in them. Logs remain on the console and are never sent automatically. If a problem occurs, you may choose to send logs to the developer manually for troubleshooting.
 about.privacy_connections = The client connects to Telegram servers. Update checks and downloads use GitHub. TDLib may also contact external services to resolve proxy hostnames and obtain connection configuration. When a proxy is enabled, the connection passes through your chosen server.
 about.security_title = Security and risks
-about.security_intro = VitaGram is an unofficial client. Application errors and platform limitations may affect security.
+about.security_intro = VitaPlane is an unofficial client. Application errors and platform limitations may affect security.
 about.risk_data_title = Local storage
 about.risk_data = The client stores user data locally on the console. The app can encrypt this storage to protect it against unauthorized copying. Without data encryption, anyone or any software with memory-card access may access local account data and downloaded media.
 about.risk_encryption_title = Encryption
@@ -962,13 +962,13 @@ about.risk_updates_title = Installation and updates
 about.risk_updates = Install the application from a trusted source. The built-in updater verifies the VPK digital signature before installation.
 about.author_title = Author and source code
 about.license_title = License
-about.license_mit = VitaGram's own code is licensed under MIT. You may use, modify and distribute it, including commercially, provided you retain the copyright notice and license text.
+about.license_mit = VitaPlane's own code is licensed under MIT. You may use, modify and distribute it, including commercially, provided you retain the copyright notice and license text.
 about.license_warranty = The application is provided as is, without warranties. Third-party libraries and fonts have their own licenses.
-about.project_link = GitHub · ing156/VitaGram
+about.project_link = GitHub · ing156/VitaPlane
 about.author_link = Telegram · @Ing156
 about.footer = {dpad}: scroll  {l}/{r}: page  ←/→: links  {cross}: open  {circle}: back
 about.telegram_unavailable = Sign in to Telegram to open the author’s chat.
-about.platform_risk = Despite our efforts to improve VitaGram security, the application runs on a modified console with the associated risks. Software with system access may access data in the running application and console memory. Local storage encryption cannot guarantee protection against such access.
+about.platform_risk = Despite our efforts to improve VitaPlane security, the application runs on a modified console with the associated risks. Software with system access may access data in the running application and console memory. Local storage encryption cannot guarantee protection against such access.
 
 menu.seek_time = Go to time
 media.seek_hint = {dpad}  Left/right: field; up/down: time (hours:minutes:seconds)
@@ -1027,7 +1027,7 @@ upload.sort_size_desc = Largest first
 # In-app text keyboard
 settings.keyboard = Keyboard
 settings.keyboard_system = System
-settings.keyboard_custom = VitaGram
+settings.keyboard_custom = VitaPlane
 keyboard.send = Send
 keyboard.help = {cross} Type   {square} Delete   {triangle} Space   L/R Cursor   Start OK
 
@@ -1123,7 +1123,7 @@ settings.view_combined = Combined
 chat.focus_list = Chats > history
 chat.focus_history = < chats | History
 chat.select_chat = Select a chat
-webapp.payment_unavailable = Payments in Mini Apps are not available in VitaGram yet.
+webapp.payment_unavailable = Payments in Mini Apps are not available in VitaPlane yet.
 
 # --- Background audio player ---
 player.hint = L+R: player
@@ -1198,3 +1198,23 @@ calendar.weekday.5 = Sa
 calendar.weekday.6 = Su
 calendar.back = {circle} Back
 calendar.hint = L/R: month · {dpad}: day · {cross}: go · {circle}: back
+
+settings.download_ask = Ask where to save downloads
+picker.save_as = Save as
+picker.open_action = {cross} Open
+picker.select_action = {square} Select
+picker.create_action = {triangle} New folder
+picker.back_action = {circle} Back
+picker.loading = Loading
+
+# --- text editing ---
+menu.edit_message = Edit text
+input.edit_message = Edit message
+message.edit_failed = Could not save changes: {0}
+message.edit_saved = Changes saved
+message.edit_saving = Saving changes...
+message.edit_unavailable = This message cannot be edited in this client.
+message.edit_invalid = Enter non-empty text, up to 1023 UTF-8 bytes.
+message.edit_changed = Message changed elsewhere. Cancel and reopen editing.
+message.edit_timeout = No reply. Check the message before retrying.
+keyboard.save = Save

@@ -4,7 +4,7 @@
 // Installs the extracted package in `package_dir` through the system package promoter (the same
 // calls VitaShell's installer makes: PAF, ScePromoterUtil, promote with RIF). The title being replaced
 // must not be running - the console refuses to overwrite a live application, which is why the update is
-// installed by the separate VitaGram Updater app (src/updater_app). Use a shallow folder (ux0:data/<name>).
+// installed by the separate VitaPlane Updater app (src/updater_app). Use a shallow folder (ux0:data/<name>).
 // Vita only; on other platforms it always fails. `detail` gets the English reason for diagnostics.
 // `installed_eboot` / `expected_size`: after the promoter is idle again, an installed eboot.bin of that size
 // counts as success even if the promoter's own result code is an error (the result alone proved unreliable;

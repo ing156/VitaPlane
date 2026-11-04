@@ -25,7 +25,7 @@ def build(out: Path, palettes=None, waves=None, emit_masks=None):
     def save(img,p):
      p=OUT/p; p.parent.mkdir(parents=True,exist_ok=True); img.save(p,optimize=True)
      return str(p.relative_to(OUT))
-    manifest={'package':'VitaGram UI Assets','version':'1.2.0','screen':[960,544],'format':'PNG RGBA8','themes':PALETTES,'nine_slice':{},'textures':{},'sprite_atlases':{},'notes':['Source sizes are physical pixels for Vita frame buffer 960x544.','Nine-slice margin order is left,top,right,bottom; coordinates are top-left and width/height.','No logos, avatar images, user-specific text, or user-specific tabs are baked into textures.','Theme and per-component colors are static PNGs; real text stays in current app renderer.', 'Full-screen wave wallpapers are pre-rendered offline as opaque RGBA PNGs: background_960x544.png is the default and background_alt_960x544.png is an optional stronger version.']}
+    manifest={'package':'VitaPlane UI Assets','version':'1.2.0','screen':[960,544],'format':'PNG RGBA8','themes':PALETTES,'nine_slice':{},'textures':{},'sprite_atlases':{},'notes':['Source sizes are physical pixels for Vita frame buffer 960x544.','Nine-slice margin order is left,top,right,bottom; coordinates are top-left and width/height.','No logos, avatar images, user-specific text, or user-specific tabs are baked into textures.','Theme and per-component colors are static PNGs; real text stays in current app renderer.', 'Full-screen wave wallpapers are pre-rendered offline as opaque RGBA PNGs: background_960x544.png is the default and background_alt_960x544.png is an optional stronger version.']}
 
     def make_nine(theme,name,fill,edge=None,size=(48,48),slice_=(12,12,12,12),radius=9,shadow=False,alpha=255,gradient=None,focus_stroke=0,ring_only=False,roles=None):
      layers=[]
@@ -417,7 +417,7 @@ def build(out: Path, palettes=None, waves=None, emit_masks=None):
      top=Image.open(OUT/f'themes/{theme}/fixed/header_960x40.png')
      img.alpha_composite(top,(0,0))
      sprite(img,theme,'ui_icons_atlas','send',(14,4),30)
-     text_at(img,(53,7),'VitaGram',21,p.get('header_text','#FFFFFF'),True)
+     text_at(img,(53,7),'VitaPlane',21,p.get('header_text','#FFFFFF'),True)
      text_at(img,(178,14),'UI template preview',11,p.get('header_text','#CFEAFF'))
      d=ImageDraw.Draw(img)
      d.ellipse((825,17,834,26),fill=rgba(p['green']))
@@ -496,7 +496,7 @@ def build(out: Path, palettes=None, waves=None, emit_masks=None):
     # Asset sheet, using large cards and labels
     sheet=Image.new('RGBA',(780*len(PALETTES),960),rgba('#0A1628'))
     d=ImageDraw.Draw(sheet)
-    text_at(sheet,(35,20),'VitaGram  •  UI asset template',30,'#FFFFFF',True)
+    text_at(sheet,(35,20),'VitaPlane  •  UI asset template',30,'#FFFFFF',True)
     text_at(sheet,(36,63),'PNG RGBA  ·  9-slice panels  ·  PS buttons  ·  icon atlases',17,'#A4C6E7')
     for col,theme in enumerate(PALETTES):
      p=PALETTES[theme];x0=30+col*770;y0=110
@@ -513,7 +513,7 @@ def build(out: Path, palettes=None, waves=None, emit_masks=None):
       nine(sheet,f'themes/{theme}/9slice/{nm}.png',(xx,yy+21,w,h))
       text_at(sheet,(xx+3,yy),label,12,p['muted'])
       if nm not in ('focus_ring','progress_track'):
-       text_at(sheet,(xx+14,yy+30),'VitaGram UI',13,p['text'],True)
+       text_at(sheet,(xx+14,yy+30),'VitaPlane UI',13,p['text'],True)
      sprite_y=y0+623
      text_at(sheet,(x0+26,sprite_y),'Controller buttons',12,p['muted'])
      for i,name in enumerate(BUTTONS[:7]):
@@ -540,7 +540,7 @@ def build(out: Path, palettes=None, waves=None, emit_masks=None):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Generate the original VitaGram UI asset templates.')
+    parser = argparse.ArgumentParser(description='Generate the original VitaPlane UI asset templates.')
     parser.add_argument('output', type=Path, help='New output directory (never overwrite source assets)')
     args = parser.parse_args()
     if args.output.exists():

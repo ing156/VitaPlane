@@ -9,7 +9,7 @@ deps="$work/deps"
 mkdir -p "$deps/include" "$deps/lib"
 jobs=$(nproc)
 for tool in cmake ruby bison flex unifdef make patch curl tar sha256sum python3; do command -v "$tool" >/dev/null; done
-test -s "$root/build-modern/tdlib/sqlite/libtdsqlite.a" || { echo 'Build VitaGram in build-modern first (TDLib SQLite is reused).' >&2; exit 1; }
+test -s "$root/build-modern/tdlib/sqlite/libtdsqlite.a" || { echo 'Build VitaPlane in build-modern first (TDLib SQLite is reused).' >&2; exit 1; }
 openssl="$root/external/openssl-vita/install"
 test -s "$openssl/lib/libcrypto.a"
 fetch() {

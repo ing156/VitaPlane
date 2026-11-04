@@ -13,7 +13,7 @@ public:
     enum class Result { None, Submitted, Cancelled, System };
     CustomKeyboard();
     ~CustomKeyboard();
-    void open(const std::string& initial, bool secret, bool message, size_t max_bytes, bool allow_system = false, bool auto_capitalize = true);
+    void open(const std::string& initial, bool secret, bool message, size_t max_bytes, bool allow_system = false, bool auto_capitalize = true, bool editing = false);
     void clear();
     void setSplitLevel(int level);
     void setLanguages(const std::vector<std::string>& codes);

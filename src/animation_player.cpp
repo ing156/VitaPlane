@@ -73,7 +73,7 @@ void log_decoder_error(const std::string& message, AVCodecContext* codec, AVPack
     std::fprintf(stderr, "Animation: %s\n", message.c_str());
     FILE* log = diag_log::open(diag_log::Kind::Video, "ux0:data/vitagram/animation-error.log", "w");
     if (!log) return;
-    std::fprintf(log, "VitaGram %s\nError: %s\nPackets: %u Frames: %u\nFFmpeg: %s\nConfiguration: %s\n",
+    std::fprintf(log, "VitaPlane %s\nError: %s\nPackets: %u Frames: %u\nFFmpeg: %s\nConfiguration: %s\n",
         VITAGRAM_VERSION, message.c_str(), packets, frames, av_version_info(), avcodec_configuration());
     if (logged_decoder_error[0]) std::fprintf(log, "Decoder detail: %s\n", logged_decoder_error);
     if (codec) std::fprintf(log, "Codec: %s profile=%d level=%d size=%dx%d pix_fmt=%d time_base=%d/%d\n",
@@ -750,7 +750,7 @@ void AnimationPlayer::decode(const std::string& source_path, unsigned generation
         std::fprintf(stderr, "Animation: AVCDEC module load 0x%08x\n", (unsigned)module_rc);
         hardware_log = diag_log::open(diag_log::Kind::Video, "ux0:data/vitagram/video-hardware.log", "w");
         if (hardware_log) {
-            std::fprintf(hardware_log, "VitaGram %s\nbackend=h264_vita\nmodule_load=0x%08x\nprofile=%d level=%d size=%dx%d\nfile_size=%lld head_crc=%08lx tail_crc=%08lx\n",
+            std::fprintf(hardware_log, "VitaPlane %s\nbackend=h264_vita\nmodule_load=0x%08x\nprofile=%d level=%d size=%dx%d\nfile_size=%lld head_crc=%08lx tail_crc=%08lx\n",
                 VITAGRAM_VERSION, (unsigned)module_rc, parameters->profile, parameters->level,
                 parameters->width, parameters->height, (long long)file_size, (unsigned long)head_crc, (unsigned long)tail_crc);
             std::fclose(hardware_log);
@@ -815,7 +815,7 @@ void AnimationPlayer::decode(const std::string& source_path, unsigned generation
     auto video_time = [&]() -> int64_t {
         int64_t now = sceKernelGetSystemTimeWide();
         if (!video_wall) video_wall = now;
-        if (wall_fallback) return seek_base + now - video_wall;
+        if (wall_fallback) return seek_base + (now - video_wall) * audio_.speed() / 100;
         if (!audio_.finished()) {
             if (!audio_.clockReady()) {
                 if (audio_.videoBuffering()) { audio_wait_started = 0; return -1; }
@@ -836,9 +836,9 @@ void AnimationPlayer::decode(const std::string& source_path, unsigned generation
         }
         if (audio_.clockReady()) {
             if (!tail_wall) { tail_wall = now; tail_position = audio_.positionUs(); }
-            return tail_position + now - tail_wall;
+            return tail_position + (now - tail_wall) * audio_.speed() / 100;
         }
-        return seek_base + now - video_wall;
+        return seek_base + (now - video_wall) * audio_.speed() / 100;
     };
     video_diagnostics::Playback diagnostic_playback;
     auto decoder_stage = [&](const char* stage) {
@@ -1103,7 +1103,7 @@ void AnimationPlayer::decode(const std::string& source_path, unsigned generation
         AVPacket* probe = av_packet_alloc();
         bool landed = false;
         FILE* seek_log = diag_log::open(diag_log::Kind::Video, "ux0:data/vitagram/video-seek.log", "a");
-        if (seek_log) std::fprintf(seek_log, "VitaGram %s seek target_us=%lld h264=%d streaming=%d tb=%d/%d\n", VITAGRAM_VERSION,
+        if (seek_log) std::fprintf(seek_log, "VitaPlane %s seek target_us=%lld h264=%d streaming=%d tb=%d/%d\n", VITAGRAM_VERSION,
             (long long)seek_base, h264 ? 1 : 0, growing ? 1 : 0, stream->time_base.num, stream->time_base.den);
         for (int attempt = 0; probe && attempt < 16 && !interrupted(&job); ++attempt) {
             if (av_seek_frame(format, stream_index, target, AVSEEK_FLAG_BACKWARD) < 0) break;

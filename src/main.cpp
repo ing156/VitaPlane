@@ -527,7 +527,7 @@ static const AboutLayout& about_layout(vita2d_pgf* font) {
     static std::string language;
     static unsigned revision = 0;
     static int probe = -1;
-    const int current_probe = rich_text_width(font, 0.68f, "VitaGram");
+    const int current_probe = rich_text_width(font, 0.68f, "VitaPlane");
     if (language == i18n::current() && revision == rich_text_revision() && probe == current_probe && layout.height)
         return layout;
     language = i18n::current(); revision = rich_text_revision(); probe = current_probe;
@@ -576,7 +576,7 @@ static const AboutLayout& about_layout(vita2d_pgf* font) {
     layout.height = y + 8;
     return layout;
 }
-static constexpr const char* kAboutProjectUrl = "https://github.com/ing156/VitaGram";
+static constexpr const char* kAboutProjectUrl = "https://github.com/ing156/VitaPlane";
 static constexpr const char* kAboutAuthorUrl = "https://t.me/Ing156";
 static const QrCode& about_project_qr() {
     static const QrCode qr = [] { QrCode result; qr_encode(kAboutProjectUrl, result); return result; }();
@@ -1633,7 +1633,7 @@ static void startup_screen(vita2d_pgf* font, const char* stage, int step) {
     vita2d_clear_screen();
     if (font) {
         // System font only: no dependency on the large Noto/emoji assets.
-        vita2d_pgf_draw_text(font, 330, 225, RGBA8(35,135,210,255), 1.5f, "VitaGram " VITAGRAM_VERSION);
+        vita2d_pgf_draw_text(font, 330, 225, RGBA8(35,135,210,255), 1.5f, "VitaPlane " VITAGRAM_VERSION);
         vita2d_pgf_draw_text(font, 280, 285, RGBA8(231,238,245,255), 0.8f, "Starting application...");
         vita2d_pgf_draw_text(font, 280, 325, RGBA8(163,183,200,255), 0.7f, stage);
     }
@@ -1694,13 +1694,13 @@ static UpdateText update_screen_text() {
     const std::string language = i18n::current();
     const bool system_font_covers = language != "ja" && language != "ko" && language != "zh-Hans" && language != "zh-Hant";
     return system_font_covers ? UpdateText{tr("update.applying"), tr("update.applying_hint")}
-                              : UpdateText{"Installing update...", "Please wait, do not turn off the console. VitaGram will restart."};
+                              : UpdateText{"Installing update...", "Please wait, do not turn off the console. VitaPlane will restart."};
 }
 static void update_screen(vita2d_pgf* font, int percent) {
     const UpdateText text = update_screen_text();
     const std::string& title = text.title;
     const std::string& hint = text.hint;
-    const std::string name = "VitaGram " VITAGRAM_VERSION;
+    const std::string name = "VitaPlane " VITAGRAM_VERSION;
     for (int frame = 0; frame < (percent <= 0 ? 2 : 1); ++frame) { // both buffers on the first call, so the screen stays up
         vita2d_set_clear_color(RGBA8(16,24,33,255));
         vita2d_start_drawing();
@@ -1764,7 +1764,7 @@ int main() {
     keyboard_layout::all(); // Register validated custom profiles before reading saved preferences.
     if (!vault::enabled()) { settings.load(); diag_log::set_mask(settings.log_mask); }
     else settings.theme = AppSettings::themeHint(settings.theme);   // unlock screens follow the saved theme
-    startup_trace::write("VitaGram " VITAGRAM_VERSION, true);
+    startup_trace::write("VitaPlane " VITAGRAM_VERSION, true);
     i18n::select(settings.language);
     apply_language_font();
 
@@ -1783,7 +1783,7 @@ int main() {
             update_screen(font, std::max(percent, 1));
         };
         switch (Updater::applyPending(kUpdateDir, kUpdateFallbackDir, VITAGRAM_VERSION, Updater::HandoffText{update_screen_text().title, update_screen_text().hint}, show, update_failure)) {
-            // The VitaGram Updater app closes this process's leftovers, installs the package and starts VitaGram again.
+            // The VitaPlane Updater app closes this process's leftovers, installs the package and starts VitaPlane again.
             case Updater::Pending::Handoff: sceKernelExitProcess(0); break;
             case Updater::Pending::Failed: break; // reported in Settings below
             case Updater::Pending::None: break;
@@ -1868,6 +1868,7 @@ int main() {
     tg.restoreCacheAsync();
 
     Keyboard kb;
+    bool edit_keyboard = false;
     startup_screen(font, "5/5  Loading settings", 5);
     apply_font_scale(settings.fontScale());
     bool settings_open = false, confirm_logout = false, confirm_vault_off = false;
@@ -1880,7 +1881,7 @@ int main() {
     Updater updater(VITAGRAM_VERSION, "app0:certs/cacert.pem", kUpdateDir, kUpdateFallbackDir);
     if (!update_failure.empty()) updater.reportStartupFailure(update_failure);
     else for (const char* dir : {kUpdateDir, kUpdateFallbackDir}) {
-        // from a failed install at an earlier start (written by VitaGram or by the updater app)
+        // from a failed install at an earlier start (written by VitaPlane or by the updater app)
         FILE* f = std::fopen((std::string(dir) + "/result.txt").c_str(), "rb");
         if (!f) continue;
         char text[160]; size_t n = std::fread(text, 1, sizeof(text) - 1, f); std::fclose(f); text[n] = 0;
@@ -1928,6 +1929,8 @@ int main() {
     bool about_chat_pending = false;
     int proxy_input = -1, proxy_scan_row = 0;
     DownloadFolderPicker folder_picker;
+    MessageItem save_as_message;
+    bool save_as_open = false;
     UploadPicker upload_picker;
     bool upload_text_input = false;
     int64_t attach_menu_since = 0;
@@ -2059,7 +2062,7 @@ int main() {
     // Playback that outlives the chat screen: a panel at the bottom left of the history pane controls it and a video note also
     // floats as a draggable circle. Its file keeps downloading after the chat is left (tg.setBackgroundMedia).
     struct BackgroundMedia {
-        bool live = false, circle = false;
+        bool live = false, circle = false, round = true;
         int32_t file = 0;
         int64_t message = 0;
         int duration = 0;
@@ -2074,7 +2077,8 @@ int main() {
     audio_bar::Layout bg_bar;
     audio_bar::Shoulders bg_shoulders;
     audio_bar::Control bg_control = audio_bar::None, bg_focus_control = audio_bar::Play;
-    bool bg_focus = false, bg_volume_open = false;
+    bool bg_focus = false, bg_volume_open = false, bg_speed_open = false;
+    int bg_speed_index = 2;
     int bg_volume = 100, bg_unmuted_volume = 100;
     int64_t bg_seek_target = 0;
     int32_t bg_touch_file = 0;
@@ -2191,7 +2195,7 @@ int main() {
 
     auto post_animation = [&]() -> AnimationPlayer& {
         return post_open && !upload_picker.active() && message_index >= 0 && message_index < (int)tg.messages().size() &&
-            tg.messages()[message_index].video_note && (!bg_media.live || !bg_media.circle ||
+            tg.messages()[message_index].video && (!bg_media.live || !bg_media.circle ||
             bg_media.file == tg.messages()[message_index].animation_file_id) ? video_note_animation : animation;
     };
     auto invalidate_spoiler_view = [&](bool changed, bool returning_to_app = false) {
@@ -2372,6 +2376,9 @@ int main() {
         if (has_message && !photo_open && !video_fullscreen && !stickers_open && !gifs_open && !reactions_open &&
             !circle_recorder.active() && !recorder.active() && !tg.topicsOpen() && tg.canDeleteMessage(m[message_index].id, false))
             v.push_back({"menu.delete_message", 0, 34, (int)ui_skin::Icon::Trash});
+        if (has_message && !photo_open && !video_fullscreen && !stickers_open && !gifs_open && !reactions_open && !search_open &&
+            !circle_recorder.active() && !recorder.active() && !tg.topicsOpen() && tg.canEditMessage(m[message_index].id, false))
+            v.push_back({"menu.edit_message", 0, 37});
         return v;
     };
     auto open_selected_set = [&]() {
@@ -2456,7 +2463,7 @@ int main() {
     int64_t calendar_chat = 0, calendar_thread = 0;
     int calendar_topic = 0;
     auto tool_window_open = [&]() {
-        return search_open || stickers_open || gifs_open || reactions_open || upload_picker.active() ||
+        return search_open || stickers_open || gifs_open || reactions_open || upload_picker.active() || folder_picker.active ||
             circle_recorder.active() || recorder.active();
     };
     auto chat_modal_open = [&]() {
@@ -2491,7 +2498,7 @@ int main() {
         if (bg_show && bg_media.circle) bg_media.y = std::min(bg_media.y,bg_bar.top()-kBgRadius-4);
         chat_corner_bottom = bg_show ? bg_bar.top() : 544.f;
         kMenuBottom = ui_layout::menu_bottom - (int)(544-chat_corner_bottom);
-        if (!bg_show) { bg_focus = false; bg_volume_open = false; }
+        if (!bg_show) { bg_focus = false; bg_volume_open = bg_speed_open = false; }
     };
     auto bg_duration = [&]() { return int64_t(bg_media.duration)*1000000; };
     auto bg_position = [&]() { return bg_media.circle ? video_note_animation.positionUs() : (int64_t)(voice.positionSeconds()*1000000); };
@@ -2510,6 +2517,10 @@ int main() {
         bg_volume = std::clamp(volume, 0, 100);
         if (bg_volume) bg_unmuted_volume = bg_volume;
         voice.setVolume(bg_volume); animation.setVolume(bg_volume); video_note_animation.setVolume(bg_volume);
+    };
+    auto bg_speed = [&] { return bg_media.circle ? video_note_animation.speed() : voice.speed(); };
+    auto bg_set_speed = [&](int speed) {
+        if (bg_media.circle) video_note_animation.setSpeed(speed); else voice.setSpeed(speed);
     };
     auto bg_switch_track = [&](int direction) {
         if (bg_media.circle || !tg.audioTrack()) return;
@@ -2533,18 +2544,26 @@ int main() {
                 (!tg.audioTrack()->stream || !tg.audioTrack()->stream->ready())) bg_autoplay = true;
             else voice.toggle();
             break;
-        case Volume: bg_volume_open = !bg_volume_open; break;
+        case Volume: bg_volume_open = !bg_volume_open; bg_speed_open = false; break;
         case Mute: bg_set_volume(bg_volume ? 0 : bg_unmuted_volume); break;
         case Shuffle: if (!bg_media.circle && tg.audioTrack()) tg.shuffleAudioQueue(); break;
         case Repeat: if (!bg_media.circle && tg.audioTrack()) tg.cycleAudioRepeat(); break;
-        case Speed: if (!bg_media.circle) voice.setSpeed(nextSpeed(voice.speed())); break;
+        case Speed:
+            bg_speed_open = !bg_speed_open; bg_volume_open = false;
+            if (bg_speed_open) bg_focus_control = Speed;
+            for (int i=0; i<7; ++i) if (speeds[i] == bg_speed()) bg_speed_index = i;
+            break;
         case Close:
             if (bg_media.circle) video_note_animation.setSource(""); else voice.setSource("");
             tg.clearAudioQueue(); history_voice_id = 0;
-            bg_media.live = false; bg_autoplay = bg_focus = bg_volume_open = false;
+            bg_media.live = false; bg_autoplay = bg_focus = bg_volume_open = bg_speed_open = false;
             bg_media.stream.reset();
             break;
-        default: break;
+        default:
+            if (control >= SpeedFirst && control < SpeedFirst+7) {
+                bg_set_speed(speeds[control-SpeedFirst]); bg_speed_open = false;
+            }
+            break;
         }
     };
     // Vault auto-lock. Wall-clock time keeps running while the console sleeps or the app sits behind the
@@ -2624,6 +2643,7 @@ int main() {
 #endif
     };
     while (running) {
+        folder_picker.poll();
         if (performance::enabled) ++performance::frame_context.frame;
         update_performance_context();
         performance::Scope frame_measurement(performance::Metric::Frame);
@@ -2642,7 +2662,7 @@ int main() {
                 if (circle_playback && circle_playback->playing()) circle_playback->toggle();
                 if (install_downloaded_vpk(saved)) {
                     tg.close(); running = false;
-                    break; // The updater installs and launches VitaGram after this process exits.
+                    break; // The updater installs and launches VitaPlane after this process exits.
                 }
                 sceCtrlPeekBufferPositive(0, &pad, 1); old_buttons = pad.buttons;
                 seek_touch_release = true; touch_down = false; touch_dragged = true;
@@ -2808,13 +2828,15 @@ int main() {
             const float tx = down ? touch.report[0].x / 2.f : bg_last_x, ty = down ? touch.report[0].y / 2.f : bg_last_y;
             if (bg_show && down && !bg_prev_touch && !touch_down) {
                 bg_touch_file = bg_media.file;
-                if (bg_media.circle && !bg_volume_open && !bg_bar.panel().contains(tx, ty) && std::hypot(tx - bg_media.x, ty - bg_media.y) <= kBgRadius) {
+                if (bg_media.circle && !bg_volume_open && !bg_speed_open && !bg_bar.panel().contains(tx, ty) && (bg_media.round ? std::hypot(tx - bg_media.x, ty - bg_media.y) <= kBgRadius :
+                    std::abs(tx-bg_media.x) <= kBgRadius && std::abs(ty-bg_media.y) <= kBgRadius)) {
                     bg_touch = true; bg_touch_bar = false; bg_touch_moved = false;
                     bg_touch_dx = bg_media.x - tx; bg_touch_dy = bg_media.y - ty; bg_start_x = tx; bg_start_y = ty;
-                } else if (bg_bar.panel().contains(tx, ty) || bg_volume_open) {
+                } else if (bg_bar.panel().contains(tx, ty) || bg_volume_open || bg_speed_open) {
                     bg_touch = true; bg_touch_bar = true;
-                    bg_control = bg_bar.hit(tx, ty, bg_volume_open);
+                    bg_control = bg_bar.hit(tx, ty, bg_volume_open, bg_speed_open);
                     bg_touch_file = bg_media.file;
+                    if (bg_control == audio_bar::None || (!bg_bar.speedPopup().contains(tx,ty) && bg_control != audio_bar::Speed)) bg_speed_open = false;
                     if (bg_control == audio_bar::None || (!bg_bar.popup().contains(tx, ty) && bg_control != audio_bar::Volume)) bg_volume_open = false;
                 }
             }
@@ -2835,7 +2857,7 @@ int main() {
                     bg_touch = false;
                     if (bg_show && bg_touch_bar && bg_touch_file == bg_media.file) {
                         if (bg_control == audio_bar::Seek) bg_seek(bg_seek_target);
-                        else if (bg_control == bg_bar.hit(tx, ty, bg_volume_open)) bg_action(bg_control);
+                        else if (bg_control == bg_bar.hit(tx, ty, bg_volume_open, bg_speed_open)) bg_action(bg_control);
                     } else if (bg_show && !bg_touch_bar && !bg_touch_moved && bg_touch_file == bg_media.file) bg_action(audio_bar::Play);
                     bg_control = audio_bar::None;
                 }
@@ -2847,19 +2869,27 @@ int main() {
         const bool player_chord = bg_show && bg_shoulders.update(pad.buttons,pressed,shoulders);
         if (!bg_show) bg_shoulders = {};
         else physical_pressed = (physical_pressed&~shoulders) | (pressed&shoulders);
-        if (player_chord) { bg_focus = !bg_focus; bg_volume_open = false; }
-        if (bg_focus || player_chord) {
+        if (player_chord) { bg_focus = !bg_focus; bg_volume_open = bg_speed_open = false; }
+        if (bg_focus || player_chord || bg_speed_open) {
             if (!player_chord) {
-                if (pressed & SCE_CTRL_LEFT) bg_focus_control = audio_bar::Control((int(bg_focus_control)+audio_bar::Count-1)%audio_bar::Count);
-                if (pressed & SCE_CTRL_RIGHT) bg_focus_control = audio_bar::Control((int(bg_focus_control)+1)%audio_bar::Count);
-                const int adjust = (pressed & SCE_CTRL_UP) ? 1 : (pressed & SCE_CTRL_DOWN) ? -1 : 0;
-                if (adjust) {
-                    if (bg_focus_control == audio_bar::Volume) { bg_volume_open = true; bg_set_volume(bg_volume+adjust*10); }
-                    else if (bg_focus_control == audio_bar::Speed && !bg_media.circle) voice.setSpeed(audio_bar::nextSpeed(voice.speed(), adjust));
-                    else bg_seek(bg_position()+adjust*int64_t(10000000));
+                if (bg_speed_open) {
+                    if (pressed & (SCE_CTRL_LEFT | SCE_CTRL_UP)) bg_speed_index = (bg_speed_index+6)%7;
+                    if (pressed & (SCE_CTRL_RIGHT | SCE_CTRL_DOWN)) bg_speed_index = (bg_speed_index+1)%7;
+                    if (pressed & SCE_CTRL_CROSS) { bg_set_speed(audio_bar::speeds[bg_speed_index]); bg_speed_open = false; }
+                    if (pressed & SCE_CTRL_CIRCLE) bg_speed_open = false;
+                } else {
+                    if (pressed & SCE_CTRL_LEFT) bg_focus_control = audio_bar::Control((int(bg_focus_control)+audio_bar::Count-1)%audio_bar::Count);
+                    if (pressed & SCE_CTRL_RIGHT) bg_focus_control = audio_bar::Control((int(bg_focus_control)+1)%audio_bar::Count);
+                    const int adjust = (pressed & SCE_CTRL_UP) ? 1 : (pressed & SCE_CTRL_DOWN) ? -1 : 0;
+                    if (adjust) {
+                        if (bg_focus_control == audio_bar::Volume) { bg_volume_open = true; bg_set_volume(bg_volume+adjust*10); }
+                        else if (bg_focus_control == audio_bar::Speed) { bg_speed_open = true; bg_volume_open = false;
+                            for (int i=0; i<7; ++i) if (audio_bar::speeds[i] == bg_speed()) bg_speed_index = i; }
+                        else bg_seek(bg_position()+adjust*int64_t(10000000));
+                    }
+                    if (pressed & SCE_CTRL_CROSS) bg_action(bg_focus_control);
+                    if (pressed & SCE_CTRL_CIRCLE) { bg_focus = false; bg_volume_open = bg_speed_open = false; bg_shoulders = {}; }
                 }
-                if (pressed & SCE_CTRL_CROSS) bg_action(bg_focus_control);
-                if (pressed & SCE_CTRL_CIRCLE) { bg_focus = false; bg_volume_open = false; bg_shoulders = {}; }
             }
             pressed = physical_pressed = 0; scroll_direction = {}; navigation_handled = true;
         }
@@ -2961,6 +2991,7 @@ int main() {
             }
         }
 
+        if (edit_keyboard && !tg.editingMessage()) { kb.close(); edit_keyboard = false; }
         post_step.next("post_composition");
         radial::Context compose_context;
         compose_context.chat = tg.currentChatId(); compose_context.topic = tg.currentTopicId();
@@ -3095,6 +3126,9 @@ int main() {
             !circle_recorder.active() && !recorder.active() && !seek_open && !seek_touch_release &&
             !confirm_leave && !spoiler_prompt && !unsupported_video_prompt && pending_web_link.empty() &&
             tg.inputKind() == InputKind::None;
+        if (reaction_context && post_open && (pressed & SCE_CTRL_SELECT) && !(pad.buttons & SCE_CTRL_START) && tg.ready()) {
+            upload_picker.openMenu(); chat_menu_open = false; pressed = 0;
+        }
         const auto reaction_press_result = reaction_press.update(reaction_context,
             pad.buttons & SCE_CTRL_CROSS, physical_pressed & SCE_CTRL_CROSS,
             reaction_resume || (physical_pressed & ~SCE_CTRL_CROSS) || scroll_direction.direction || touch.reportNum || touch_down,
@@ -3825,6 +3859,10 @@ int main() {
                 }
                 else if (item.special == 35) open_selected_set();
                 else if (item.special == 36) tg.installStickerSet();
+                else if (item.special == 37) {
+                    if (!tg.requestEdit(chat_menu_message)) browser_error = tr("message.edit_unavailable");
+                    radial_flow = false;
+                }
                 else if (item.special == 40) open_seek();
                 else if (item.special == 41 || item.special == 42) {
                     video_quality_menu = item.special == 41;
@@ -4026,14 +4064,12 @@ int main() {
             } else if (settings_open) {
                 if (settings_menu::backHit(touch_x, touch_y)) pressed |= SCE_CTRL_CIRCLE;
                 else if (folder_picker.active) {
-                    if (touch_y >= 500) pressed |= touch_x < 320 ? SCE_CTRL_SQUARE :
-                        touch_x < 640 ? SCE_CTRL_TRIANGLE : SCE_CTRL_CIRCLE;
-                    else if (touch_y >= 117 && touch_y < 461) {
-                        int index = (folder_picker.selected / 8) * 8 + (touch_y - 117) / 43;
-                        if (index < (int)folder_picker.folders.size()) {
-                            folder_picker.selected = index;
-                            pressed |= SCE_CTRL_CROSS;
-                        }
+                    const int action = DownloadFolderPicker::footerHit(touch_x, touch_y);
+                    const unsigned buttons[] = {SCE_CTRL_CROSS, SCE_CTRL_SQUARE, SCE_CTRL_TRIANGLE, SCE_CTRL_CIRCLE};
+                    if (action >= 0) pressed |= buttons[action];
+                    else {
+                        const int index = folder_picker.hit(touch_x, touch_y);
+                        if (index >= 0) { folder_picker.selected = index; pressed |= SCE_CTRL_CROSS; }
                     }
                 } else if (touch_y >= 500) pressed |= SCE_CTRL_CIRCLE;
                 else if (about_open) {
@@ -4172,7 +4208,8 @@ int main() {
             pressed = 0; tap = false;
         }
         if (!circle_recorder.active() && !recorder.active() && !settings_open && !(pressed & SCE_CTRL_START) && tg.inputKind() != InputKind::None && (tg.inputKind() == InputKind::Message || (pressed & SCE_CTRL_CROSS)) && !kb.active() && !kb.submitted() && !kb.cancelled()) {
-            kb.open(tg.inputPrompt(), tg.inputSecret(), "", tg.inputKind() == InputKind::Message);
+            edit_keyboard = tg.editingMessage();
+            kb.open(tg.inputPrompt(), tg.inputSecret(), tg.inputInitial(), tg.inputKind() == InputKind::Message, edit_keyboard);
         }
 
         // Sign-in: step back to the phone number, or ask Telegram for the code again.
@@ -4250,7 +4287,7 @@ int main() {
             kb.handle(pressed, pad.buttons, touching, touch_x, touch_y, now, &touch);
         } else if (kb.submitted()) {
             std::string v = kb.text();
-            kb.close();
+            kb.close(); edit_keyboard = false;
             if (upload_text_input) {
                 upload_text_input = false;
                 if (upload_picker.stage == UploadPicker::Stage::Review) upload_picker.caption = v;
@@ -4278,7 +4315,7 @@ int main() {
                 proxy_input = -1;
             } else tg.submitInput(v);
         } else if (kb.cancelled()) {
-            kb.close();
+            kb.close(); edit_keyboard = false;
             if (upload_text_input) upload_text_input = false;
             else if (gif_input) gif_input = false;
             else if (search_input) { search_input = false; if (tg.searchQuery().empty()) search_open = false; }
@@ -4452,20 +4489,30 @@ int main() {
             }
         } else if (settings_open && folder_picker.active) {
             repeat_scroll(ScrollContext::Folders, 8);
-            if ((pressed & SCE_CTRL_TRIANGLE) && !folder_picker.path.empty()) {
+            if ((pressed & SCE_CTRL_TRIANGLE) && !folder_picker.loading && !folder_picker.path.empty()) {
                 folder_name_input = true;
                 kb.open(tr("picker.new_folder_title"));
             }
             if (pressed & SCE_CTRL_CIRCLE) folder_picker.up();
-            if (pressed & SCE_CTRL_UP && !folder_picker.folders.empty())
-                folder_picker.selected = (folder_picker.selected + (int)folder_picker.folders.size() - 1) % (int)folder_picker.folders.size();
-            if (pressed & SCE_CTRL_DOWN && !folder_picker.folders.empty())
-                folder_picker.selected = (folder_picker.selected + 1) % (int)folder_picker.folders.size();
+            if (pressed & SCE_CTRL_UP && !folder_picker.entries.empty())
+                folder_picker.selected = (folder_picker.selected + (int)folder_picker.entries.size() - 1) % (int)folder_picker.entries.size();
+            if (pressed & SCE_CTRL_DOWN && !folder_picker.entries.empty())
+                folder_picker.selected = (folder_picker.selected + 1) % (int)folder_picker.entries.size();
             if (pressed & SCE_CTRL_CROSS) folder_picker.enter();
-            if ((pressed & SCE_CTRL_SQUARE) && !folder_picker.path.empty()) {
-                settings.download_dir = folder_picker.path;
-                settings_error = settings.save() ? "" : i18n::text("settings.save_failed");
-                folder_picker.active = false;
+            if ((pressed & SCE_CTRL_SQUARE) && !folder_picker.loading && !folder_picker.path.empty()) {
+                if (save_as_open) {
+                    tg.downloadDocument(save_as_message, folder_picker.path);
+                    settings.download_last_dir = folder_picker.path;
+                    settings_error = settings.save() ? "" : i18n::text("settings.save_failed");
+                    save_as_open = false; settings_open = false; save_as_message = MessageItem{};
+                } else {
+                    settings.download_dir = folder_picker.path;
+                    settings_error = settings.save() ? "" : i18n::text("settings.save_failed");
+                }
+                folder_picker.close();
+            }
+            if (save_as_open && !folder_picker.active) {
+                save_as_open = false; settings_open = false; save_as_message = MessageItem{};
             }
         } else if (settings_open && about_open) {
             const auto& layout = about_layout(font);
@@ -4626,6 +4673,9 @@ int main() {
                         if (language_choice(i) == settings.language) selected = i;
                     theme_picker.open(selected);
                     settings_error.clear();
+                } else if (source_row == 34) {
+                    settings.download_ask = !settings.download_ask;
+                    settings_error = settings.save() ? "" : i18n::text("settings.save_failed");
                 } else if (source_row == 33) {
                     confirm_logout = confirm_vault_off = false;
                     settings.user_colors = !settings.user_colors;
@@ -4907,7 +4957,6 @@ int main() {
                 }
             } else if (post_open) {
                 if (pressed & SCE_CTRL_CIRCLE) post_open = false;
-                if ((pressed & SCE_CTRL_SELECT) && !(pad.buttons & SCE_CTRL_START)) open_comments();
                 if ((pressed & SCE_CTRL_SQUARE) && message_index >= 0 && message_index < (int)messages.size()) {
                     reactions_open = true; reaction_index = 0;
                     tg.loadReactions(messages[message_index].id, true); pressed = 0;
@@ -4934,8 +4983,12 @@ int main() {
                     auto lines = post_lines(font, messages[message_index]);
                     if ((pressed & SCE_CTRL_CROSS) && messages[message_index].voice) toggle_voice = true;
                     if ((pressed & SCE_CTRL_CROSS) && messages[message_index].video) toggle_video = true;
-                    if ((pressed & SCE_CTRL_CROSS) && messages[message_index].document)
-                        tg.downloadDocument(messages[message_index], settings.download_dir);
+                    if ((pressed & SCE_CTRL_CROSS) && messages[message_index].document) {
+                        if (settings.download_ask) {
+                            save_as_message = messages[message_index]; save_as_open = true;
+                            folder_picker.open(settings.download_last_dir, settings.download_dir); settings_open = true;
+                        } else tg.downloadDocument(messages[message_index], settings.download_dir);
+                    }
                     repeat_scroll(ScrollContext::Post, (544.0-history_view.top) / post_pitch());
                     if (pressed & SCE_CTRL_UP) post_text_scroll -= post_pitch();
                     if (pressed & SCE_CTRL_DOWN) post_text_scroll += post_pitch();
@@ -5185,7 +5238,7 @@ int main() {
             animation_message->video_width > 0 && animation_message->video_height > 0 &&
             !VideoQuality::hardwareRasterSupported(animation_message->video_width, animation_message->video_height);
         if (animation_message && animation_message->video && !animation_message->video_note && !metadata_unsupported_video &&
-            animation.preparationRequired() && (tg.currentChatId() != raster_mismatch_chat || animation_message->id != raster_mismatch_message)) {
+            post_animation().preparationRequired() && (tg.currentChatId() != raster_mismatch_chat || animation_message->id != raster_mismatch_message)) {
             raster_mismatch_chat = tg.currentChatId(); raster_mismatch_message = animation_message->id;
         }
         const bool unsupported_video = metadata_unsupported_video || (animation_message && animation_message->video &&
@@ -5197,7 +5250,7 @@ int main() {
             animation_message->id != unsupported_video_message)) unsupported_video_prompt = false;
         const auto* picker_focus = upload_picker.stage == UploadPicker::Stage::Review ? upload_picker.focusedItem() : nullptr;
         const bool picker_video = picker_focus && picker_focus->kind == UploadPicker::Kind::Video;
-        AnimationPlayer& media_animation = !picker_video && animation_message && animation_message->video_note && (toggle_video ||
+        AnimationPlayer& media_animation = !picker_video && animation_message && animation_message->video && (toggle_video ||
             !bg_media.live || !bg_media.circle || bg_media.file == animation_message->animation_file_id) ? video_note_animation : animation;
         auto animation_stream = animation_message && !unsupported_video && animation_message->animation_error.empty() &&
             animation_message->animation_stream && animation_message->animation_stream->ready() ? animation_message->animation_stream : nullptr;
@@ -5254,7 +5307,8 @@ int main() {
             const bool same = bg_media.circle && bg_media.file == animation_message->animation_file_id;
             bg_media.live = video_note_animation.playing() || (same && bg_media.live);
             bg_media.circle = true; bg_media.message = animation_message->id; bg_media.duration = animation_message->video_duration;
-            bg_media.title = tr("chat.thumb.round"); bg_media.file = animation_message->animation_file_id;
+            bg_media.round = animation_message->video_note;
+            bg_media.title = tr(bg_media.round ? "chat.thumb.round" : "chat.thumb.video"); bg_media.file = animation_message->animation_file_id;
             bg_media.stream.reset();
             if (video_note_animation.playing()) { tg.clearAudioQueue(); bg_autoplay = false; }
         } else if (bg_media.circle) {
@@ -5536,7 +5590,7 @@ int main() {
             title_x = 50;
         }
         const unsigned int header_text = ui_skin::color("header_text", RGBA8(240,247,255,255));
-        std::string heading = settings_open ? (proxy_open ? tr("proxy.title") : logs_open ? tr("logs.title") : about_open ? tr("about.title") : keyboard_settings ? tr(keyboard_settings == 2 ? "settings.keyboard_languages" : "settings.keyboard") : tr(settings_menu::titles[settings_section])) : tg.currentChatId() ? std::string(tg.currentChatTitle()) : "VitaGram " VITAGRAM_VERSION;
+        std::string heading = settings_open ? (proxy_open ? tr("proxy.title") : logs_open ? tr("logs.title") : about_open ? tr("about.title") : keyboard_settings ? tr(keyboard_settings == 2 ? "settings.keyboard_languages" : "settings.keyboard") : tr(settings_menu::titles[settings_section])) : tg.currentChatId() ? std::string(tg.currentChatTitle()) : "VitaPlane " VITAGRAM_VERSION;
         std::string presence = settings_open ? "" : tg.currentUserStatus();
         if (combined_visible() && !post_open) {
             presence = tr(combined_list_focus ? "chat.focus_list" : "chat.focus_history");
@@ -5568,7 +5622,7 @@ int main() {
             vita2d_draw_line(28, 49, 35, 42, ink);
             vita2d_draw_line(28, 49, 35, 56, ink);
             draw_text(font, 44, 56, fit_text(font, tr("common.back"), 112, 0.5f), ink, 0.5f);
-            draw_text(font, 184, 56, fit_text(font, heading, 748, 0.55f), ink, 0.55f);
+            draw_text(font, 184, 56, fit_text(font, folder_picker.active ? tr(save_as_open ? "picker.save_as" : "settings.download_dir") : heading, 748, 0.55f), ink, 0.55f);
         }
         std::string update_notice = tg.updateNotice();
 
@@ -5578,19 +5632,28 @@ int main() {
             draw_text(font, 30, 462, fit_text(font, qr_scanner.status(), 900, 0.55f), ink, 0.55f);
             draw_text(font, 28, 528, tr("qr.footer"), ink, 0.6f);
         } else if (settings_open && folder_picker.active) {
-            draw_text(font, 30, 68, fit_text(font, folder_picker.path.empty() ? tr("picker.drives") : folder_picker.path, 900, 0.64f), ink, 0.64f);
-            draw_text(font, 32, 97, tr("picker.subtitle"), muted, 0.48f);
-            skin_frame(24, 109, 912, 356, separator, white);
-            int first = (folder_picker.selected / 8) * 8;
-            for (int row = 0; row < 8 && first + row < (int)folder_picker.folders.size(); ++row) {
-                int index = first + row;
-                if (index == folder_picker.selected) skin_row(32, 117 + row * 43, 896, 40, true, selected, true);
-                draw_text(font, 42, 144 + row * 43, fit_text(font, folder_picker.folders[index], 850, 0.65f), ink, 0.65f);
+            draw_text(font, 30, 90, fit_text(font, folder_picker.path.empty() ? tr("picker.drives") : folder_picker.path, 900, 0.56f), ink, 0.56f);
+            draw_text(font, 32, 116, fit_text(font, save_as_open ? tr("picker.save_as") + ": " +
+                safe_download_name(save_as_message.document_name, save_as_message.media_file_id) : tr("picker.subtitle"), 896, 0.48f), muted, 0.48f);
+            skin_frame(24, DownloadFolderPicker::list_top-8, 912, 356, separator, white);
+            int first = (folder_picker.selected / DownloadFolderPicker::rows) * DownloadFolderPicker::rows;
+            for (int row = 0; row < DownloadFolderPicker::rows && first + row < (int)folder_picker.entries.size(); ++row) {
+                const int index = first + row, y = DownloadFolderPicker::list_top + row * DownloadFolderPicker::row_height;
+                const auto& entry = folder_picker.entries[index];
+                if (index == folder_picker.selected) skin_row(DownloadFolderPicker::list_left, y, DownloadFolderPicker::list_width, DownloadFolderPicker::row_fill, true, selected, true);
+                if (entry.dir) {
+                    vita2d_draw_rectangle(44, y+9, 10, 4, ink);
+                    vita2d_draw_rectangle(42, y+13, 24, 16, ink);
+                } else ui_skin::icon(ui_skin::Icon::File, 42, y+9, 24, muted);
+                draw_text(font, 78, y+27, fit_text(font, entry.name + (entry.dir ? "/" : ""), 838, 0.60f), entry.dir ? ink : muted, 0.60f);
             }
-            if (folder_picker.folders.empty() && folder_picker.error.empty())
-                draw_text(font, 42, 144, tr("picker.empty"), muted, 0.55f);
-            if (!folder_picker.error.empty()) draw_text(font, 30, 484, folder_picker.error, ink, 0.55f);
-            draw_text(font, 28, 528, tr("picker.footer"), ink, 0.6f);
+            if (folder_picker.loading) draw_text(font, 42, DownloadFolderPicker::list_top+27, tr("picker.loading"), muted, 0.55f);
+            else if (folder_picker.entries.empty() && folder_picker.error.empty())
+                draw_text(font, 42, DownloadFolderPicker::list_top+27, tr("picker.empty"), muted, 0.55f);
+            if (!folder_picker.error.empty()) draw_text(font, 30, 502, fit_text(font, folder_picker.error, 900, 0.48f), ink, 0.48f);
+            const char* actions[] = {"picker.open_action", "picker.select_action", "picker.create_action", "picker.back_action"};
+            for (int i=0; i<4; ++i) draw_text(font, DownloadFolderPicker::footer_left+i*DownloadFolderPicker::footer_step+8, 528,
+                fit_text(font, tr(actions[i]), DownloadFolderPicker::footer_width-16, 0.48f), ink, 0.48f);
         } else if (settings_open && about_open) {
             const auto& layout = about_layout(font);
             about_offset = std::clamp(about_offset, 0, layout.maximum());
@@ -5703,7 +5766,7 @@ int main() {
                 tr("settings.font_size"), tr("settings.show_threads"), tr("settings.batch"), tr("settings.download_dir"), tr("proxy.title"),
                 tr("settings.auto_update"), tr("settings.update"), tr("vault.settings.encryption"), tr("vault.settings.change_key"), tr("vault.settings.check"),
                 tr("vault.settings.auto_lock"), tr("vault.settings.lock_on_leave"),
-                tr("settings.gyroscope"), tr("settings.opacity"), tr("settings.avatar_shape"), tr("settings.show_archive"), tr("settings.logs"), tr("about.title"), tr("settings.recording_shortcuts"), tr("settings.spoiler_reset"), tr("settings.scroll_speed"), tr("settings.keyboard"), tr("settings.allow_vpk_install"), tr("settings.chat_open"), tr("settings.view_mode"), tr("settings.video_quality"), tr("settings.font_family"), tr("settings.logout"), tr("cache.clear")};
+                tr("settings.gyroscope"), tr("settings.opacity"), tr("settings.avatar_shape"), tr("settings.show_archive"), tr("settings.logs"), tr("about.title"), tr("settings.recording_shortcuts"), tr("settings.spoiler_reset"), tr("settings.scroll_speed"), tr("settings.keyboard"), tr("settings.allow_vpk_install"), tr("settings.chat_open"), tr("settings.view_mode"), tr("settings.video_quality"), tr("settings.font_family"), tr("settings.logout"), tr("cache.clear"), "", tr("settings.download_ask")};
             std::string values[] = {
                 language_label(),
                 settings.retention == 4 ? tr("settings.always") : tr("settings.days", {std::to_string(AppSettings::days(settings.retention))}),
@@ -5738,7 +5801,7 @@ int main() {
                 settings.font_file.empty() ? tr("settings.font_default") : settings.font_file,
                 confirm_logout ? tr("settings.confirm_logout") : "",
                 tg.cacheMaintenance() ? tr("cache.cleaning") : cache_cleanup_requested ?
-                    (tg.cacheCleanupError().empty() ? tr("cache.done") : tr("cache.failed")) : ""};
+                    (tg.cacheCleanupError().empty() ? tr("cache.done") : tr("cache.failed")) : "", "", settings.download_ask ? tr("common.yes") : tr("common.no")};
             {
                 settings_scroll.configure(keyboard_settings ? keyboard_rows() : settings_menu::counts[settings_section], kSettingsRowHeight, kSettingsViewport);
                 // Same card geometry, opacity, focus bar and scrolling as the chat list.
@@ -7376,15 +7439,14 @@ int main() {
             for (int i = 0; i < audio_bar::Count; ++i) {
                 const auto control = audio_bar::Control(i);
                 const auto cell = bg_bar.cell(control);
-                const bool disabled = ((control == audio_bar::Previous || control == audio_bar::Next || control == audio_bar::Shuffle || control == audio_bar::Repeat) && !playlist) ||
-                    (control == audio_bar::Speed && bg_media.circle);
+                const bool disabled = ((control == audio_bar::Previous || control == audio_bar::Next || control == audio_bar::Shuffle || control == audio_bar::Repeat) && !playlist);
                 const bool selected_control = (control == audio_bar::Shuffle && playlist && tg.audioShuffle()) ||
                     (control == audio_bar::Repeat && playlist && tg.audioRepeat()) || (control == audio_bar::Volume && !bg_volume);
                 const unsigned color = disabled ? mix_color(surface, detail, 0.35f) : selected_control || control == audio_bar::Play ? active : detail;
                 if (control != audio_bar::Seek) {
                     draw_audio_control(control, cell.x+20, cell.y+20, playing, bg_volume, color);
                     if (control == audio_bar::Speed) {
-                        const int percent = bg_media.circle ? 100 : voice.speed();
+                        const int percent = bg_speed();
                         char speed[16]; std::snprintf(speed, sizeof(speed), percent%100 == 0 ? "%.0f×" : percent%50 == 0 ? "%.1f×" : "%.2f×", percent/100.0);
                         const float size = std::min(0.52f, 0.52f*36/std::max(1,rich_text_width(font,0.52f,speed)));
                         draw_text(font, cell.x+20-rich_text_width(font,size,speed)/2, cell.y+27, speed, color, size);
@@ -7414,13 +7476,42 @@ int main() {
             const float timer_size = std::min(0.48f,0.48f*120/std::max(1,rich_text_width(font,0.48f,timer.c_str())));
             draw_text(font,626,py+44,timer,text,timer_size);
             if (bg_media.circle) {
-                vita2d_draw_fill_circle(bg_media.x, bg_media.y, kBgRadius + 3, accent);
-                vita2d_draw_fill_circle(bg_media.x, bg_media.y, kBgRadius, RGBA8(0, 0, 0, 255));
+                if (bg_media.round) {
+                    vita2d_draw_fill_circle(bg_media.x, bg_media.y, kBgRadius + 3, accent);
+                    vita2d_draw_fill_circle(bg_media.x, bg_media.y, kBgRadius, RGBA8(0, 0, 0, 255));
+                } else {
+                    vita2d_draw_rectangle(bg_media.x-kBgRadius-3,bg_media.y-kBgRadius-3,2*kBgRadius+6,2*kBgRadius+6,accent);
+                    vita2d_draw_rectangle(bg_media.x-kBgRadius,bg_media.y-kBgRadius,2*kBgRadius,2*kBgRadius,RGBA8(0,0,0,255));
+                }
                 draw_texture_fit(video_note_animation.texture(), bg_media.x - kBgRadius, bg_media.y - kBgRadius, kBgRadius * 2, kBgRadius * 2);
                 if (!playing) {
                     vita2d_draw_fill_circle(bg_media.x, bg_media.y, 16, RGBA8(0, 0, 0, 130));
                     if (!ui_skin::icon(ui_skin::Icon::Play, bg_media.x - 11, bg_media.y - 11, 22, RGBA8(255, 255, 255, 230)))
                         draw_text(font, bg_media.x - 5, bg_media.y + 6, ">", RGBA8(255, 255, 255, 230), 0.6f);
+                }
+            }
+            if (bg_speed_open) {
+                const auto popup = bg_bar.speedPopup();
+                vita2d_draw_rectangle(popup.x,popup.y,popup.w,popup.h,surface);
+                vita2d_draw_rectangle(popup.x,popup.y,popup.w,1,active);
+                draw_text(font,popup.x+12,popup.y+24,tr("player.speed"),text,0.52f);
+                for (int i=0; i<7; ++i) {
+                    const auto cell = bg_bar.speedCell(i);
+                    const bool chosen = bg_speed() == audio_bar::speeds[i];
+                    if (chosen) vita2d_draw_rectangle(cell.x+2,cell.y+2,cell.w-4,cell.h-4,active);
+                    if (bg_speed_index == i) {
+                        vita2d_draw_rectangle(cell.x,cell.y,cell.w,1,text);
+                        vita2d_draw_rectangle(cell.x,cell.y+cell.h-1,cell.w,1,text);
+                        vita2d_draw_rectangle(cell.x,cell.y,1,cell.h,text);
+                        vita2d_draw_rectangle(cell.x+cell.w-1,cell.y,1,cell.h,text);
+                    }
+                    const unsigned color = chosen ? ui_color::on(active) : text;
+                    char label[12]; std::snprintf(label,sizeof(label),"%.2f×",audio_bar::speeds[i]/100.0);
+                    draw_text(font,cell.x+3,cell.y+25,label,color,0.4f);
+                    if (chosen) { // A graphical check remains distinct from the focus outline.
+                        vita2d_draw_line(cell.x+27,cell.y+32,cell.x+31,cell.y+36,color);
+                        vita2d_draw_line(cell.x+31,cell.y+36,cell.x+38,cell.y+29,color);
+                    }
                 }
             }
             if (bg_volume_open) {

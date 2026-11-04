@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-// Optional encryption of everything VitaGram stores on the memory card, unlocked by a key made
+// Optional encryption of everything VitaPlane stores on the memory card, unlocked by a key made
 // of console buttons.
 //
 // Key hierarchy
@@ -32,7 +32,7 @@
 // session keys are derived from it; the session keys are kept XOR-masked with a random pad in a
 // separate heap block and unmasked only on the stack for one operation. That defeats scanning for
 // the database key's known hex form and dumps that captured only one of the two regions - not a
-// debugger that understands VitaGram.
+// debugger that understands VitaPlane.
 namespace vault {
 // Clears every buffer it releases, including the old one when the vector grows: an entered key
 // leaves no copies in freed heap memory.
@@ -91,7 +91,7 @@ Method method(); // of the current vault; Buttons when there is none
 Result enable(const Pin& pin, Method method = Method::Buttons, Progress progress = nullptr, void* context = nullptr);
 // Also checks the signed security state in vault.json (mode, migration direction); see state_was_reset.
 Result unlock(const Pin& pin, Progress progress = nullptr, void* context = nullptr);
-// After unlock(): the state was edited outside VitaGram (or was an unsigned "disabling" from an old
+// After unlock(): the state was edited outside VitaPlane (or was an unsigned "disabling" from an old
 // version) and was reset to "encryption on, re-check every file". Tell the user.
 bool state_was_reset();
 // After unlock(): the state carried no valid signature (edited, stripped, or written by a version

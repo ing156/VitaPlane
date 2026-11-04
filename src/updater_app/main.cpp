@@ -1,7 +1,7 @@
-// VitaGram Updater: a tiny separate application that installs a staged VitaGram update.
-// The console cannot replace an application that is running, so VitaGram verifies and unpacks the
+// VitaPlane Updater: a tiny separate application that installs a staged VitaPlane update.
+// The console cannot replace an application that is running, so VitaPlane verifies and unpacks the
 // package, writes a hand-off file and starts this app (the scheme PSVitaAlive's self-updater uses);
-// this one closes VitaGram, installs the package and starts VitaGram again.
+// this one closes VitaPlane, installs the package and starts VitaPlane again.
 #include "package_promote.h"
 #include <dirent.h>
 #include <psp2/appmgr.h>
@@ -67,7 +67,7 @@ void draw(vita2d_pgf* font, const Handoff& text, float phase) {
         auto centered = [&](int y, unsigned int color, float scale, const std::string& line) {
             vita2d_pgf_draw_text(font, 480 - vita2d_pgf_text_width(font, scale, line.c_str()) / 2, y, color, scale, line.c_str());
         };
-        centered(225, RGBA8(35,135,210,255), 1.5f, "VitaGram");
+        centered(225, RGBA8(35,135,210,255), 1.5f, "VitaPlane");
         centered(285, RGBA8(231,238,245,255), 0.9f, text.title);
         centered(325, RGBA8(163,183,200,255), 0.65f, text.hint);
     }
@@ -92,7 +92,7 @@ struct Job {
 
 int install_thread(SceSize, void* argp) {
     Job& job = **static_cast<Job**>(argp);
-    // The updater was started by VitaGram, which exits right after; give the system a moment to finish
+    // The updater was started by VitaPlane, which exits right after; give the system a moment to finish
     // closing it, and try again if the promoter still refuses.
     for (int attempt = 0; attempt < 4 && !job.installed; ++attempt) {
         sceKernelDelayThread((attempt ? 3000 : 1500) * 1000);
@@ -112,7 +112,7 @@ int main() {
     draw(font, handoff, 0);
     draw(font, handoff, 0);
 
-    // PSVitaAlive's updater does the same first: make sure nothing else (VitaGram) is running.
+    // PSVitaAlive's updater does the same first: make sure nothing else (VitaPlane) is running.
     sceAppMgrDestroyOtherApp();
 
     const std::string result_path = handoff.work_dir + "/result.txt";
@@ -135,15 +135,15 @@ int main() {
     }
     if (job.installed) {
         for (const char* name : {"/update.vpk", "/update.sig", "/pending", "/result.txt"}) std::remove((handoff.work_dir + name).c_str());
-        // Tell the new VitaGram that this app has done its job and can be removed again.
+        // Tell the new VitaPlane that this app has done its job and can be removed again.
         if (FILE* flag = std::fopen((handoff.work_dir + "/cleanup").c_str(), "wb")) { std::fputc('1', flag); std::fclose(flag); }
     } else if (FILE* f = std::fopen(result_path.c_str(), "wb")) {
-        // VitaGram shows this reason in Settings at its next start; the verified VPK stays for VitaShell.
+        // VitaPlane shows this reason in Settings at its next start; the verified VPK stays for VitaShell.
         std::fwrite(job.detail.data(), 1, job.detail.size(), f);
         std::fclose(f);
     }
     remove_tree(job.package_dir);
-    // Close right away: show the finished bar for a moment, release the screen, start VitaGram and end this
+    // Close right away: show the finished bar for a moment, release the screen, start VitaPlane and end this
     // process (the launch hands over to the other title; PSVitaAlive's updater ends the same way).
     draw(font, handoff, job.installed ? 1.0f : 0.0f);
     sceKernelDelayThread(400 * 1000);

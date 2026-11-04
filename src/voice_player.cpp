@@ -108,7 +108,7 @@ int64_t VoicePlayer::seekLimitUs(int64_t duration) {
 }
 void VoicePlayer::setSpeed(int percent) {
     percent = std::max(50, std::min(200, percent));
-    if (speed_.exchange(percent) != percent) seekTo((int64_t)(positionSeconds() * 1000000));
+    if (speed_.exchange(percent) != percent) seekTo(video_ ? positionUs() : (int64_t)(positionSeconds() * 1000000));
 }
 void* VoicePlayer::entry(void* self) { static_cast<VoicePlayer*>(self)->run(); return nullptr; }
 void VoicePlayer::run() {
@@ -121,7 +121,7 @@ void VoicePlayer::run() {
     }
 }
 void VoicePlayer::decode(const std::string& path, unsigned gen, bool video, bool music, download_stream::Shared stream) {
-    const int speed = video ? 100 : speed_.load();
+    const int speed = speed_.load();
     AudioTempo tempo;
     const int64_t trace_origin = performance::now();
     auto trace = [&](const char* stage, int rc = 0) { audio_startup_trace::record(this, gen, stage, rc, trace_origin, stream); };
@@ -174,6 +174,7 @@ void VoicePlayer::decode(const std::string& path, unsigned gen, bool video, bool
         std::atomic<int64_t>* clock = nullptr;
         std::atomic<bool>* clock_ready = nullptr;
         std::atomic<int>* volume = nullptr;
+        int speed = 100;
         unsigned gen = 0;
         const void* trace_player = nullptr;
         int64_t trace_origin = 0;
@@ -191,7 +192,7 @@ void VoicePlayer::decode(const std::string& path, unsigned gen, bool video, bool
     ring.clock = &clock_us_;
     ring.clock_ready = &clock_ready_;
     ring.volume = &volume_;
-    ring.gen = gen;
+    ring.gen = gen; ring.speed = speed;
     ring.trace_player = this;
     ring.trace_origin = trace_origin;
     pthread_t output_thread{};
@@ -350,7 +351,7 @@ void VoicePlayer::decode(const std::string& path, unsigned gen, bool video, bool
                 if (priority > 34)
                     sceKernelChangeThreadPriority(sceKernelGetThreadId(), priority - 2);
                 int64_t last_output_us = 0;
-                int applied_volume = -1;
+                int applied_volume = -1, remainder = 0;
                 while (!queue->stop && !*queue->player_stop && *queue->generation == queue->gen) {
                     if (!queue->grains && !queue->done) {
                         pthread_mutex_lock(&queue->mutex);
@@ -404,9 +405,12 @@ void VoicePlayer::decode(const std::string& path, unsigned gen, bool video, bool
                     last_output_us = output_us;
                     ++queue->grains;
                     if (!*queue->player_stop && *queue->generation == queue->gen) {
-                        int64_t submitted = queue->samples->fetch_add(frames) + frames;
+                        remainder += frames * queue->speed;
+                        const int media_frames = remainder / 100;
+                        remainder %= 100;
+                        int64_t submitted = queue->samples->fetch_add(media_frames) + media_frames;
                         int rest = std::max(0, sceAudioOutGetRestSample(queue->port));
-                        queue->clock->store(*queue->start_us + std::max<int64_t>(0, submitted - rest) * 1000000 / 48000);
+                        queue->clock->store(*queue->start_us + std::max<int64_t>(0, submitted - rest * queue->speed / 100) * 1000000 / 48000);
                         queue->clock_ready->store(true);
                     }
                 }
@@ -505,7 +509,7 @@ void VoicePlayer::decode(const std::string& path, unsigned gen, bool video, bool
     if (video && generation_ == gen) {
         FILE* log = diag_log::open(diag_log::Kind::Audio, "ux0:data/vitagram/audio-video.log", "w");
         if (log) {
-            std::fprintf(log, "VitaGram %s\nqueue_limit=%u startup_grains=%u grains=%u empty_waits=%u max_gap_us=%lld peak_queued=%u samples=%lld failed=%d\n",
+            std::fprintf(log, "VitaPlane %s\nqueue_limit=%u startup_grains=%u grains=%u empty_waits=%u max_gap_us=%lld peak_queued=%u samples=%lld failed=%d\n",
                 VITAGRAM_VERSION, queued_limit, startup_grains, ring.grains.load(), ring.empty_waits.load(),
                 (long long)ring.maximum_gap_us.load(), ring.peak_queued,
                 (long long)samples_.load(), ring.failed ? 1 : 0);

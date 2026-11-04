@@ -1,12 +1,12 @@
 # Licenses and acknowledgements / Лицензии и благодарности
 
-[← VitaGram](../README.md)
+[← VitaPlane](../README.md)
 
-VitaGram's own source code is licensed under [MIT](../LICENSE). Third-party code,
+VitaPlane's own source code is licensed under [MIT](../LICENSE). Third-party code,
 fonts and adapted artwork keep their original licenses. AI assistance does not
 change those licenses or the attribution requirements.
 
-Собственный код VitaGram распространяется по [MIT](../LICENSE). Сторонний код,
+Собственный код VitaPlane распространяется по [MIT](../LICENSE). Сторонний код,
 шрифты и адаптированная графика сохраняют исходные лицензии. Использование AI
 не меняет лицензии и требования к указанию авторства.
 
@@ -46,13 +46,13 @@ The code's MIT license does not grant unrestricted rights to VHBB artwork.
 Those adapted assets require attribution, noncommercial use and the same license
 for adaptations, as described by [Creative Commons](https://creativecommons.org/licenses/by-nc-sa/4.0/).
 Screenshots can contain third-party names, avatars, stickers, logos and media;
-these are not relicensed as VitaGram source code.
+these are not relicensed as VitaPlane source code.
 
 MIT для кода не даёт неограниченных прав на графику VHBB. Адаптированные ресурсы
 требуют указания авторства, некоммерческого использования и той же лицензии
 для производных работ; условия описаны у [Creative Commons](https://creativecommons.org/licenses/by-nc-sa/4.0/).
 Имена, аватары, стикеры, логотипы и медиа на скриншотах не становятся частью
-собственного кода VitaGram под MIT.
+собственного кода VitaPlane под MIT.
 
 The current VPK recipe includes the project's license and notices for TDLib,
 vita2d, Jansson, OpenSSL, FFmpeg, rlottie (when enabled), Noto, minih264, quirc
@@ -68,11 +68,11 @@ Jansson, OpenSSL, FFmpeg, rlottie (если включён), Noto, minih264, qui
 
 ### Acknowledgements / Благодарности
 
-VitaGram builds on the work of these authors and communities. Thank you to every
+VitaPlane builds on the work of these authors and communities. Thank you to every
 upstream author, maintainer and contributor, including those named in the linked
 license and AUTHORS files.
 
-VitaGram основан на работе этих авторов и сообществ. Спасибо всем разработчикам,
+VitaPlane основан на работе этих авторов и сообществ. Спасибо всем разработчикам,
 сопровождающим и участникам, в том числе перечисленным в лицензиях и файлах AUTHORS.
 
 - **[Vladislav Atamanenko / Владислав Атаманенко](https://github.com/v-atamanenko)** —
@@ -115,8 +115,8 @@ VitaGram основан на работе этих авторов и сообщ�
 
 Thanks also to the PS Vita homebrew community, testers, translators and everyone
 who reports problems or contributes improvements. Credits acknowledge their work
-and do not imply endorsement of VitaGram.
+and do not imply endorsement of VitaPlane.
 
 Также спасибо сообществу homebrew PS Vita, тестировщикам, переводчикам и всем,
 кто сообщает об ошибках и помогает улучшать проект. Благодарность не означает
-официального одобрения VitaGram перечисленными авторами.
+официального одобрения VitaPlane перечисленными авторами.

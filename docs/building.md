@@ -1,6 +1,6 @@
 # Build and development / Сборка и разработка
 
-[← VitaGram](../README.md)
+[← VitaPlane](../README.md)
 
 Build on Linux or WSL with VitaSDK and its ARM toolchain, CMake (3.16+), Make,
 Git, curl, archive tools, a host C/C++ compiler, `gperf` and Python 3.
@@ -21,8 +21,8 @@ Jansson и rlottie закреплены на проверенных коммит
 скриптами сборки. Перед обновлением зависимостей сохраните локальные изменения.
 
 ```bash
-git clone --recurse-submodules https://github.com/ing156/VitaGram.git
-cd VitaGram
+git clone --recurse-submodules https://github.com/ing156/VitaPlane.git
+cd VitaPlane
 # For an existing checkout / Для существующей копии:
 git submodule update --init
 cp -n src/config.local.h.example src/config.local.h
@@ -99,7 +99,7 @@ cmake -S . -B build-modern \
 cmake --build build-modern --parallel "$(nproc)"
 ```
 
-**Output / Результат: `build-modern/vitagram.vpk`.**
+**Output / Результат: `build-modern/VitaPlane.vpk`.**
 For ordinary client changes, only the build command is needed.
 После обычных изменений клиента достаточно команды сборки.
 
@@ -133,13 +133,13 @@ Release signing and publication instructions: [RELEASING.md](../RELEASING.md).
 
 ### Storage latency probe / Проверка задержек накопителей
 
-Create an empty `ux0:data/vitagram/storage-test.request` and leave VitaGram idle
+Create an empty `ux0:data/vitagram/storage-test.request` and leave VitaPlane idle
 without playback or uploads. Results are written to
 `ux0:data/vitagram/storage-test.log` for `ux0:`, `ur0:` and `uma0:`.
 The test uses up to 8 MiB of temporary data per mount and preserves a 512 MiB
 free-space reserve. It does not change media storage locations.
 
-Создайте пустой `ux0:data/vitagram/storage-test.request` и оставьте VitaGram без
+Создайте пустой `ux0:data/vitagram/storage-test.request` и оставьте VitaPlane без
 воспроизведения и отправки файлов. Результаты для `ux0:`, `ur0:` и `uma0:` появятся
 в `ux0:data/vitagram/storage-test.log`. Тест использует до 8 МиБ временных данных
 на разделе и сохраняет резерв 512 МиБ свободного места. Расположение медиакэша

@@ -127,7 +127,7 @@ bool WebAppView::open(const std::string& url, bool same_origin, bool proxy_enabl
 #endif
         return false;
     }
-    if (engine_stopped) { s.error = "WebKit process stopped; restart VitaGram"; return false; }
+    if (engine_stopped) { s.error = "WebKit process stopped; restart VitaPlane"; return false; }
     if (s.origin.empty()) { s.error = "HTTPS required"; return false; }
     if (vitagram_webkit_ram_transport_version() != 1) { s.error = "WebKit RAM transport unavailable"; return false; }
     if (vitagram_webkit_process_isolation_version() != 1) { s.error = "WebKit process isolation unavailable"; return false; }
@@ -230,7 +230,7 @@ bool WebAppView::open(const std::string& url, bool same_origin, bool proxy_enabl
     navigation.didStartProvisionalNavigation = [](WKPageRef, WKNavigationRef, WKTypeRef, const void* data) { webapp_diagnostics::record(Stage::NavigationStart); static_cast<Impl*>(const_cast<void*>(data))->loading = true; };
     navigation.didCommitNavigation = [](WKPageRef, WKNavigationRef, WKTypeRef, const void*) { webapp_diagnostics::record(Stage::NavigationCommit); };
     navigation.didFinishNavigation = [](WKPageRef, WKNavigationRef, WKTypeRef, const void* data) { webapp_diagnostics::record(Stage::NavigationDone); static_cast<Impl*>(const_cast<void*>(data))->loading = false; };
-    navigation.webProcessDidCrash = [](WKPageRef, const void* data) { engine_stopped = true; webapp_diagnostics::record(Stage::ProcessStopped); static_cast<Impl*>(const_cast<void*>(data))->error = "WebKit process stopped; restart VitaGram"; };
+    navigation.webProcessDidCrash = [](WKPageRef, const void* data) { engine_stopped = true; webapp_diagnostics::record(Stage::ProcessStopped); static_cast<Impl*>(const_cast<void*>(data))->error = "WebKit process stopped; restart VitaPlane"; };
     WKPageSetPageNavigationClient(s.page, &navigation.base);
     webapp_diagnostics::record(Stage::LoadRequest);
     auto address = WKURLCreateWithUTF8CString(url.c_str()); WKPageLoadURL(s.page, address); WKRelease(address);

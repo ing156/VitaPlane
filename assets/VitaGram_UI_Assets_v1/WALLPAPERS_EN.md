@@ -1,4 +1,4 @@
-# VitaGram UI v1.1 — PS Vita-inspired wave wallpapers
+# VitaPlane UI v1.1 — PS Vita-inspired wave wallpapers
 
 The default files `themes/{dark,light,vhbb}/fixed/background_960x544.png` have been replaced with new static wave-pattern wallpapers. Alternative wallpapers with stronger wave saturation are available at `themes/{dark,light,vhbb}/fixed/background_alt_960x544.png`.
 

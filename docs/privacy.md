@@ -1,6 +1,6 @@
 # Privacy and local data / Приватность и локальные данные
 
-[← VitaGram](../README.md)
+[← VitaPlane](../README.md)
 
 ## English
 
@@ -33,11 +33,11 @@ conversion scratch files, explicit exports and diagnostic logs are outside this
 protection. Encryption does not hide filenames or sizes and cannot protect data
 from software controlling the running console.
 
-While encryption is on, VitaGram also limits what the running session leaves in RAM:
+While encryption is on, VitaPlane also limits what the running session leaves in RAM:
 freed memory blocks up to 1 MiB are zeroed, the master key is not kept after
 unlocking, and session keys are stored masked. Crash dumps (`ux0:data/psp2core-*.psp2dmp`)
-contain decrypted memory; VitaGram's dumps are overwritten and deleted after unlocking
-unless a diagnostic log is enabled. Key-entry screens name plugins loaded into VitaGram
+contain decrypted memory; VitaPlane's dumps are overwritten and deleted after unlocking
+unless a diagnostic log is enabled. Key-entry screens name plugins loaded into VitaPlane
 from `tai/config.txt` (`*ALL` or `*VITAGRM01`): they can read the key and messages.
 Kernel plugins cannot be detected or stopped by the app.
 
@@ -83,12 +83,12 @@ or account files. **Settings → About and diagnostics → About** contains proj
 этим режимом. Шифрование не скрывает имена и размеры файлов и не защищает от
 программ, контролирующих работающую консоль.
 
-При включённом шифровании VitaGram также сокращает следы сеанса в оперативной памяти:
+При включённом шифровании VitaPlane также сокращает следы сеанса в оперативной памяти:
 освобождаемые блоки памяти до 1 МиБ обнуляются, мастер-ключ после разблокировки
 не хранится, а сеансовые ключи хранятся в маскированном виде. Дампы падений
-(`ux0:data/psp2core-*.psp2dmp`) содержат расшифрованную память; дампы VitaGram
+(`ux0:data/psp2core-*.psp2dmp`) содержат расшифрованную память; дампы VitaPlane
 перезаписываются и удаляются после разблокировки, если не включён диагностический журнал.
-Экраны ввода ключа показывают плагины, загруженные в VitaGram из `tai/config.txt`
+Экраны ввода ключа показывают плагины, загруженные в VitaPlane из `tai/config.txt`
 (`*ALL` или `*VITAGRM01`): они могут прочитать ключ и сообщения. Плагины ядра
 приложение обнаружить и остановить не может.
 

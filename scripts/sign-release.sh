@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Signs a release VPK for the in-app updater.
-#   scripts/sign-release.sh build-modern/vitagram.vpk 0.36.0 [private-key.pem]
+#   scripts/sign-release.sh build-modern/VitaPlane.vpk 0.36.0 [private-key.pem]
 # Upload BOTH files to the GitHub release tagged v<version>:  <name>.vpk  and  <name>.vpk.sig
 # The key defaults to ~/.vitagram-release/update-signing.pem (its public half is src/update_key.h).
 set -euo pipefail
