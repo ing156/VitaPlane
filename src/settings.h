@@ -3,6 +3,7 @@
 #include "scroll_repeat.h"
 #include "keyboard_languages.h"
 #include "proxy_config.h"
+#include "proxy_pool.h"
 #include "secure_store.h"
 #include "vault.h"
 #include "ui_themes.h"
@@ -11,6 +12,7 @@
 #include <sys/stat.h>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <cctype>
 #include <algorithm>
 #include <string>
@@ -20,6 +22,8 @@ struct AppSettings {
     int opacity = 75;       // percent of the surface PNGs (rows, message cards) over the wallpaper, 5% steps
     int avatar_shape = 0;   // 0 rounded square, 1 circle
     int chat_open_position = 0; // Latest, Telegram read position, device read position.
+    bool unread_counter = false;
+    bool hide_muted_unread = false;
     bool combined_view = false; // Keep the classic full-screen navigation by default.
     int video_quality = 0; // Maximum: minimum, up to 360p, 480p or 720p.
     int scroll_speed = 0;   // Normal, Fast, Very fast: 2, 4, 6 pages per second.
@@ -30,7 +34,7 @@ struct AppSettings {
     bool user_colors = true;
     bool gyroscope_enabled = true;
     bool show_archive = true;  // Archive tab in the chat list folders
-    unsigned log_mask = 0;     // diag_log::Kind bits; every diagnostic log is off by default
+    unsigned log_mask = diag_log::kStartupMask; // Proxy diagnostics start automatically; other logs are opt-in.
     static constexpr int kSpoilerResetChoices = 4;
     int spoiler_reset = 3; // 0 off, 1 chat exit, 2 app leave, 3 both.
     bool spoilerHideChat() const { return (spoiler_reset & 1) != 0; }
@@ -42,14 +46,43 @@ struct AppSettings {
     // and after sleep or leaving the app with the PS button.
     int auto_lock = 3;
     bool lock_on_leave = true;
+    bool call_low_latency = false;
     bool proxy_enabled = false;
     std::string proxy_server, proxy_secret;
     int proxy_port = 443;
-    int proxy_type = 0; // ProxyKind: 0 MTProto, 1 SOCKS5, 2 HTTPS
+    int proxy_type = 0; // ProxyKind: 0 MTProto, 1 SOCKS5, 2 HTTP CONNECT, 3 WEB
     std::string proxy_username, proxy_password;
+    std::vector<ProxyConfig> proxies;
+    int active_proxy=-1;
+    bool proxy_auto_switch=true;
+    int proxy_switch_seconds=10;
+    void selectProxy(int index) {
+        active_proxy=index;
+        const ProxyConfig c=index>=0 && index<int(proxies.size())?proxies[index]:ProxyConfig{};
+        proxy_type=int(c.kind);proxy_server=c.server;proxy_port=c.port;proxy_secret=c.secret;
+        proxy_username=c.username;proxy_password=c.password;
+    }
+    bool storeProxyDraft(int index) {
+        const auto c=proxyConfig();
+        if (!c.complete() || c.server.size()>(c.kind==ProxyKind::Web?384u:253u) || c.secret.size()>1023 ||
+            c.username.size()>255 || c.password.size()>255 || c.server.find('\0')!=std::string::npos ||
+            c.secret.find('\0')!=std::string::npos || c.username.find('\0')!=std::string::npos || c.password.find('\0')!=std::string::npos) return false;
+        if (index<0) {
+            for (size_t i=0;i<proxies.size();++i) if (same_proxy(c,proxies[i])) { selectProxy(i);return true; }
+            if (proxies.size()>=ProxyPool::Limit) return false;
+            index=proxies.size();proxies.push_back(c);
+        } else if (index<int(proxies.size())) proxies[index]=c;
+        else return false;
+        selectProxy(index);return true;
+    }
+    void eraseProxy(int index) {
+        if (index<0 || index>=int(proxies.size())) return;
+        proxies.erase(proxies.begin()+index);
+        selectProxy(proxies.empty()?-1:active_proxy>index?active_proxy-1:std::min(active_proxy,int(proxies.size())-1));
+    }
     ProxyConfig proxyConfig() const {
         ProxyConfig c;
-        c.kind = proxy_kind_from_int(proxy_type); c.server = proxy_server; c.port = proxy_port;
+        c.kind = proxy_kind_from_int(proxy_type); c.server = proxy_server; c.port = c.kind == ProxyKind::Web ? 443 : proxy_port;
         c.secret = proxy_secret; c.username = proxy_username; c.password = proxy_password;
         return c;
     }
@@ -141,6 +174,10 @@ struct AppSettings {
         chat_open_position = value("chat_open_position", 0, 2);
         if (json_t* v = json_object_get(root, "combined_view"))
             if (json_is_boolean(v)) combined_view = json_is_true(v);
+        if (json_t* v = json_object_get(root, "unread_counter"))
+            if (json_is_boolean(v)) unread_counter = json_is_true(v);
+        if (json_t* v = json_object_get(root, "hide_muted_unread"))
+            if (json_is_boolean(v)) hide_muted_unread = json_is_true(v);
         font = value("font_size", 5, 6);
         request_batch_size = value("request_batch_size", 64, 64);
         opacity = std::max(kMinOpacity, std::min(kMaxOpacity, (value("opacity", 75, 100) + kOpacityStep / 2) / kOpacityStep * kOpacityStep));
@@ -190,9 +227,10 @@ struct AppSettings {
             if (json_is_boolean(v)) show_archive = json_is_true(v);
         if (json_t* v = json_object_get(root, "log_mask"))
             if (json_is_integer(v)) log_mask = (unsigned)json_integer_value(v) & diag_log::kAll;
+        call_low_latency = json_is_true(json_object_get(root, "call_low_latency"));
         proxy_enabled = json_is_true(json_object_get(root, "proxy_enabled"));
         proxy_port = value("proxy_port", 443, 65535);
-        proxy_type = value("proxy_type", 0, 2);
+        proxy_type = value("proxy_type", 0, 3);
         auto string_value = [&](const char* key) {
             const char* v = json_string_value(json_object_get(root, key));
             return std::string(v ? v : "");
@@ -209,6 +247,35 @@ struct AppSettings {
         proxy_secret = secret_value("proxy_secret");
         proxy_username = secret_value("proxy_username");
         proxy_password = secret_value("proxy_password");
+        proxy_auto_switch=!json_is_false(json_object_get(root,"proxy_auto_switch"));
+        proxy_switch_seconds=ProxyPool::SwitchSeconds[ProxyPool::switchIndex(
+            json_integer_value(json_object_get(root,"proxy_switch_seconds")))];
+        if (auto* list=json_object_get(root,"proxies");json_is_array(list)) {
+            const auto count=std::min(json_array_size(list),ProxyPool::Limit);
+            for (size_t i=0;i<count;++i) {
+                auto* item=json_array_get(list,i);ProxyConfig c;
+                auto field=[&](const char* key,size_t limit,bool protected_value) {
+                    const auto* v=json_object_get(item,key);
+                    const char* text=json_string_value(v);
+                    if (!text || std::strlen(text)!=json_string_length(v) || json_string_length(v)>limit*4+128) return std::string{};
+                    std::string result=text;
+                    if (protected_value) {
+                        std::string plain;secure_store::reveal(result,plain);
+                        if (!result.empty() && !secure_store::is_protected(result) && secure_store::available()) migrate=true;
+                        result=std::move(plain);
+                    }
+                    return result.size()<=limit?result:std::string{};
+                };
+                const auto type=json_integer_value(json_object_get(item,"type"));
+                c.kind=proxy_kind_from_int(type>=0 && type<=3?int(type):0);
+                c.server=field("server",384,false);c.secret=field("secret",1023,true);
+                c.username=field("username",255,true);c.password=field("password",255,true);
+                const auto port=json_integer_value(json_object_get(item,"port"));
+                c.port=c.kind==ProxyKind::Web?443:port>=1 && port<=65535?int(port):0;
+                proxies.push_back(std::move(c));
+            }
+            selectProxy(proxies.empty()?-1:value("active_proxy",0,int(proxies.size())-1));
+        } else if (!proxy_server.empty() || !proxy_secret.empty() || !proxy_username.empty() || !proxy_password.empty()) { proxies.push_back(proxyConfig());active_proxy=0; }
         language = string_value("language");
         font_file = string_value("font_file");
         if (!user_fonts::valid_filename(font_file)) font_file.clear();
@@ -222,6 +289,12 @@ struct AppSettings {
         if (migrate) save();
     }
     bool save() const {
+        bool secrets_ok=true;
+        auto protect=[&](const std::string& plain) {
+            auto stored=secure_store::protect(plain);
+            if (!plain.empty() && stored.empty()) secrets_ok=false;
+            return stored;
+        };
         json_t* root = json_pack("{s:i,s:i,s:i,s:i,s:i,s:b}", "retention", retention, "capacity", capacity,
             "theme", ui_themes::custom(theme) ? 1 : ui_themes::saved_id(theme), "font_size", font, "request_batch_size", request_batch_size, "show_threads", show_threads);
         if (const auto* custom = ui_themes::custom(theme))
@@ -233,6 +306,8 @@ struct AppSettings {
         json_object_set_new(root, "avatar_shape", json_integer(avatar_shape));
         json_object_set_new(root, "chat_open_position", json_integer(chat_open_position));
         json_object_set_new(root, "combined_view", json_boolean(combined_view));
+        json_object_set_new(root, "unread_counter", json_boolean(unread_counter));
+        json_object_set_new(root, "hide_muted_unread", json_boolean(hide_muted_unread));
         json_object_set_new(root, "video_quality", json_integer(video_quality));
         json_object_set_new(root, "scroll_speed", json_integer(scroll_speed));
         json_object_set_new(root, "keyboard_split", json_integer(keyboard_split));
@@ -248,19 +323,34 @@ struct AppSettings {
         json_object_set_new(root, "check_updates", json_boolean(check_updates));
         json_object_set_new(root, "auto_lock", json_integer(auto_lock));
         json_object_set_new(root, "lock_on_leave", json_boolean(lock_on_leave));
+        json_object_set_new(root, "call_low_latency", json_boolean(call_low_latency));
         json_object_set_new(root, "proxy_enabled", json_boolean(proxy_enabled));
         json_object_set_new(root, "proxy_server", json_string(proxy_server.c_str()));
         json_object_set_new(root, "proxy_port", json_integer(proxy_port));
-        json_object_set_new(root, "proxy_secret", json_string(secure_store::protect(proxy_secret).c_str()));
+        json_object_set_new(root, "proxy_secret", json_string(protect(proxy_secret).c_str()));
         json_object_set_new(root, "proxy_type", json_integer(proxy_type));
-        json_object_set_new(root, "proxy_username", json_string(secure_store::protect(proxy_username).c_str()));
-        json_object_set_new(root, "proxy_password", json_string(secure_store::protect(proxy_password).c_str()));
+        json_object_set_new(root, "proxy_username", json_string(protect(proxy_username).c_str()));
+        json_object_set_new(root, "proxy_password", json_string(protect(proxy_password).c_str()));
+        json_t* proxy_list=json_array();
+        const bool legacy=proxies.empty() && (!proxy_server.empty() || !proxy_secret.empty() || !proxy_username.empty() || !proxy_password.empty());
+        const auto saved_proxies=legacy?std::vector<ProxyConfig>{proxyConfig()}:proxies;
+        for (size_t i=0;i<std::min(saved_proxies.size(),ProxyPool::Limit);++i) {
+            const auto& c=saved_proxies[i];
+            json_array_append_new(proxy_list,json_pack("{s:i,s:s,s:i,s:s,s:s,s:s}","type",int(c.kind),"server",c.server.c_str(),
+                "port",c.port,"secret",protect(c.secret).c_str(),
+                "username",protect(c.username).c_str(),"password",protect(c.password).c_str()));
+        }
+        json_object_set_new(root,"proxies",proxy_list);
+        json_object_set_new(root,"active_proxy",json_integer(legacy?0:active_proxy));
+        json_object_set_new(root,"proxy_auto_switch",json_boolean(proxy_auto_switch));
+        json_object_set_new(root,"proxy_switch_seconds",json_integer(proxy_switch_seconds));
         json_object_set_new(root, "cache_storage", json_integer(cache_storage));
         json_object_set_new(root, "download_ask", json_boolean(download_ask));
         json_object_set_new(root, "download_last_dir", json_string(download_last_dir.c_str()));
         json_object_set_new(root, "download_dir", json_string(download_dir.c_str()));
         json_object_set_new(root, "language", json_string(language.c_str()));
         json_object_set_new(root, "font_file", json_string(font_file.c_str()));
+        if (!secrets_ok) { json_decref(root);return false; }
         saveThemeHint();
         char* dumped = json_dumps(root, JSON_COMPACT);
         json_decref(root);

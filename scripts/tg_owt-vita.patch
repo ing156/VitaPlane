@@ -1,0 +1,496 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 30ddea6..b7e1287 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -2398,7 +2398,7 @@ if (is_x86 OR is_x64)
+     )
+ endif()
+ 
+-if (UNIX AND NOT APPLE AND NOT TG_OWT_USE_X11)
++if ((UNIX OR CMAKE_CXX_COMPILER MATCHES "arm-vita-eabi") AND NOT APPLE AND NOT TG_OWT_USE_X11)
+     remove_target_sources(tg_owt ${webrtc_loc}
+         # src/modules/desktop_capture/BUILD.gn (rtc_use_x11_extensions)
+         modules/desktop_capture/linux/x11/mouse_cursor_monitor_x11.cc
+@@ -2624,11 +2624,20 @@ if (WIN32 OR APPLE)
+     )
+ endif()
+ 
+-if (WIN32)
++if (WIN32 OR CMAKE_CXX_COMPILER MATCHES "arm-vita-eabi")
+     remove_target_sources(tg_owt ${webrtc_loc}
+         rtc_base/ifaddrs_converter.cc
+     )
+ endif()
++if (CMAKE_CXX_COMPILER MATCHES "arm-vita-eabi")
++    remove_target_sources(tg_owt ${webrtc_loc}
++        rtc_base/net_test_helpers.cc
++        modules/video_capture/linux/device_info_linux.cc
++        modules/video_capture/linux/device_info_v4l2.cc
++        modules/video_capture/linux/video_capture_linux.cc
++        modules/video_capture/linux/video_capture_v4l2.cc
++    )
++endif()
+ 
+ set(export_targets tg_owt)
+ if (is_x86 OR is_x64)
+@@ -2703,3 +2712,7 @@ install(
+     FILES ${CMAKE_CURRENT_BINARY_DIR}/tg_owtConfig.cmake
+     DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/tg_owt
+ )
++
++if(TG_OWT_VITA_PROBE)
++    include("${TG_OWT_VITA_PROBE}")
++endif()
+diff --git a/cmake/external.cmake b/cmake/external.cmake
+index 0bcdf60..dd8aa8e 100644
+--- a/cmake/external.cmake
++++ b/cmake/external.cmake
+@@ -233,7 +233,7 @@ endfunction()
+ 
+ # dl
+ function(link_dl target_name)
+-    if (TG_OWT_PACKAGED_BUILD)
++    if (TG_OWT_PACKAGED_BUILD AND NOT CMAKE_CXX_COMPILER MATCHES "arm-vita-eabi")
+         target_link_libraries(${target_name} PRIVATE ${CMAKE_DL_LIBS})
+     endif()
+ endfunction()
+diff --git a/src/modules/audio_coding/neteq/reorder_optimizer.cc b/src/modules/audio_coding/neteq/reorder_optimizer.cc
+index f6e073f..2cc657f 100644
+--- a/src/modules/audio_coding/neteq/reorder_optimizer.cc
++++ b/src/modules/audio_coding/neteq/reorder_optimizer.cc
+@@ -8,6 +8,8 @@
+  *  be found in the AUTHORS file in the root of the source tree.
+  */
+ 
++#include <cstdint>
++
+ #include "modules/audio_coding/neteq/reorder_optimizer.h"
+ 
+ #include <algorithm>
+diff --git a/src/modules/audio_device/fine_audio_buffer.h b/src/modules/audio_device/fine_audio_buffer.h
+index 7af41d3..6a88f9a 100644
+--- a/src/modules/audio_device/fine_audio_buffer.h
++++ b/src/modules/audio_device/fine_audio_buffer.h
+@@ -54,6 +54,9 @@ class FineAudioBuffer {
+   // WebRTC and when it is played out on the speaker.
+   void GetPlayoutData(rtc::ArrayView<int16_t> audio_buffer,
+                       int playout_delay_ms);
++#if defined(__vita__)
++  void SetPlayoutDelay(int delay_ms) { playout_delay_ms_ = delay_ms; }
++#endif
+ 
+   // Consumes the audio data in `audio_buffer` and sends it to the WebRTC layer
+   // in chunks of 10ms. The sum of the provided delay estimate in
+diff --git a/src/modules/audio_device/include/test_audio_device.cc b/src/modules/audio_device/include/test_audio_device.cc
+index b3923ae..cb40761 100644
+--- a/src/modules/audio_device/include/test_audio_device.cc
++++ b/src/modules/audio_device/include/test_audio_device.cc
+@@ -452,10 +452,12 @@ rtc::scoped_refptr<AudioDeviceModule> TestAudioDeviceModule::Create(
+   auto audio_device = rtc::make_ref_counted<TestAudioDeviceModuleImpl>(
+       task_queue_factory, std::move(capturer), std::move(renderer), speed);
+ 
++#if !defined(__vita__)
+   // Ensure that the current platform is supported.
+   if (audio_device->CheckPlatform() == -1) {
+     return nullptr;
+   }
++#endif  // Vita uses the injected TestAudioDevice and no platform audio backend.
+ 
+   // Create the platform-dependent implementation.
+   if (audio_device->CreatePlatformSpecificObjects() == -1) {
+diff --git a/src/modules/video_capture/video_capture_factory.cc b/src/modules/video_capture/video_capture_factory.cc
+index 563ef5a..8e90f67 100644
+--- a/src/modules/video_capture/video_capture_factory.cc
++++ b/src/modules/video_capture/video_capture_factory.cc
+@@ -16,7 +16,7 @@ namespace webrtc {
+ 
+ rtc::scoped_refptr<VideoCaptureModule> VideoCaptureFactory::Create(
+     const char* deviceUniqueIdUTF8) {
+-#if defined(WEBRTC_ANDROID) || defined(WEBRTC_MAC)
++#if defined(WEBRTC_ANDROID) || defined(WEBRTC_MAC) || defined(__vita__)
+   return nullptr;
+ #else
+   return videocapturemodule::VideoCaptureImpl::Create(deviceUniqueIdUTF8);
+@@ -37,7 +37,7 @@ rtc::scoped_refptr<VideoCaptureModule> VideoCaptureFactory::Create(
+ }
+ 
+ VideoCaptureModule::DeviceInfo* VideoCaptureFactory::CreateDeviceInfo() {
+-#if defined(WEBRTC_ANDROID) || defined(WEBRTC_MAC)
++#if defined(WEBRTC_ANDROID) || defined(WEBRTC_MAC) || defined(__vita__)
+   return nullptr;
+ #else
+   return videocapturemodule::VideoCaptureImpl::CreateDeviceInfo();
+diff --git a/src/pc/peer_connection.cc b/src/pc/peer_connection.cc
+index 76cf13a..494765d 100644
+--- a/src/pc/peer_connection.cc
++++ b/src/pc/peer_connection.cc
+@@ -14,6 +14,7 @@
+ #include <stddef.h>
+ 
+ #include <algorithm>
++#include <limits>
+ #include <memory>
+ #include <set>
+ #include <string>
+@@ -600,7 +601,7 @@ PeerConnection::PeerConnection(
+       // o line MUST be representable with a "64 bit signed integer".
+       // Due to this constraint session id `session_id_` is max limited to
+       // LLONG_MAX.
+-      session_id_(rtc::ToString(rtc::CreateRandomId64() & LLONG_MAX)),
++      session_id_(rtc::ToString(rtc::CreateRandomId64() & std::numeric_limits<int64_t>::max())),
+       dtls_enabled_(dtls_enabled),
+       data_channel_controller_(this),
+       message_handler_(signaling_thread()),
+diff --git a/src/rtc_base/byte_order.h b/src/rtc_base/byte_order.h
+index 0ebaaaf..697ab0e 100644
+--- a/src/rtc_base/byte_order.h
++++ b/src/rtc_base/byte_order.h
+@@ -38,7 +38,7 @@
+ #define le32toh(v) OSSwapLittleToHostInt32(v)
+ #define le64toh(v) OSSwapLittleToHostInt64(v)
+ 
+-#elif defined(WEBRTC_WIN) || defined(__native_client__)
++#elif defined(WEBRTC_WIN) || defined(__native_client__) || defined(__vita__)
+ 
+ #if defined(WEBRTC_WIN)
+ #include <stdlib.h>
+@@ -62,7 +62,7 @@
+ #define htobe64(v) _byteswap_uint64(v)
+ #define be64toh(v) _byteswap_uint64(v)
+ #endif  // defined(WEBRTC_WIN)
+-#if defined(__native_client__)
++#if defined(__native_client__) || defined(__vita__)
+ #define htobe64(v) __builtin_bswap64(v)
+ #define be64toh(v) __builtin_bswap64(v)
+ #endif  // defined(__native_client__)
+@@ -82,7 +82,7 @@
+ #define htobe64(v) (v)
+ #define be64toh(v) (v)
+ #endif  // defined(WEBRTC_WIN)
+-#if defined(__native_client__)
++#if defined(__native_client__) || defined(__vita__)
+ #define htobe64(v) (v)
+ #define be64toh(v) (v)
+ #endif  // defined(__native_client__)
+diff --git a/src/rtc_base/ip_address.cc b/src/rtc_base/ip_address.cc
+index 04fbc9b..6b28a24 100644
+--- a/src/rtc_base/ip_address.cc
++++ b/src/rtc_base/ip_address.cc
+@@ -30,6 +30,12 @@
+ 
+ namespace rtc {
+ 
++#if defined(__vita__)
++static const in6_addr in6addr_any{};
++static const in6_addr in6addr_loopback = {{{0, 0, 0, 0, 0, 0, 0, 0,
++                                          0, 0, 0, 0, 0, 0, 0, 1}}};
++#endif
++
+ // Prefixes used for categorizing IPv6 addresses.
+ static const in6_addr kV4MappedPrefix = {
+     {{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xFF, 0xFF, 0}}};
+diff --git a/src/rtc_base/network.cc b/src/rtc_base/network.cc
+index 4be6eed..61942e0 100644
+--- a/src/rtc_base/network.cc
++++ b/src/rtc_base/network.cc
+@@ -13,7 +13,10 @@
+ #include "absl/strings/string_view.h"
+ #include "rtc_base/experiments/field_trial_parser.h"
+ 
+-#if defined(WEBRTC_POSIX)
++#if defined(__vita__)
++#include <arpa/inet.h>
++#include <psp2/net/netctl.h>
++#elif defined(WEBRTC_POSIX)
+ #include <net/if.h>
+ #endif  // WEBRTC_POSIX
+ 
+@@ -21,7 +24,7 @@
+ #include <iphlpapi.h>
+ 
+ #include "rtc_base/win32.h"
+-#elif !defined(__native_client__)
++#elif !defined(__native_client__) && !defined(__vita__)
+ #include "rtc_base/ifaddrs_converter.h"
+ #endif
+ 
+@@ -345,7 +348,7 @@ std::vector<const Network*> NetworkManagerBase::GetAnyAddressNetworks() {
+   networks.push_back(ipv4_any_address_network_.get());
+ 
+   if (!ipv6_any_address_network_) {
+-    const rtc::IPAddress ipv6_any_address(in6addr_any);
++    const rtc::IPAddress ipv6_any_address = GetAnyIP(AF_INET6);
+     ipv6_any_address_network_ =
+         CreateNetwork("any", "any", ipv6_any_address, 0, ADAPTER_TYPE_ANY);
+     ipv6_any_address_network_->set_default_local_address_provider(this);
+@@ -581,6 +584,36 @@ bool BasicNetworkManager::CreateNetworks(
+   return false;
+ }
+ 
++#elif defined(__vita__)
++
++bool BasicNetworkManager::CreateNetworks(
++    bool include_ignored,
++    std::vector<std::unique_ptr<Network>>* networks) const {
++  SceNetCtlInfo address{};
++  SceNetCtlInfo netmask{};
++  if (sceNetCtlInetGetInfo(SCE_NETCTL_INFO_GET_IP_ADDRESS, &address) < 0) {
++    return true;
++  }
++  in_addr ip{};
++  in_addr mask{};
++  if (inet_pton(AF_INET, address.ip_address, &ip) != 1 || ip.s_addr == INADDR_ANY) {
++    return false;
++  }
++  const IPAddress local_ip(ip);
++  const bool have_netmask = sceNetCtlInetGetInfo(SCE_NETCTL_INFO_GET_NETMASK, &netmask) >= 0 &&
++      inet_pton(AF_INET, netmask.netmask, &mask) == 1 && mask.s_addr != INADDR_ANY;
++  const int prefix_length = have_netmask ? CountIPMaskBits(IPAddress(mask)) : 32;
++  auto network = CreateNetwork("vita", "Vita network", TruncateIP(local_ip, prefix_length),
++                               prefix_length, ADAPTER_TYPE_UNKNOWN);
++  network->set_default_local_address_provider(this);
++  network->AddIP(InterfaceAddress(local_ip));
++  network->set_ignored(IsIgnoredNetwork(*network));
++  if (include_ignored || !network->ignored()) {
++    networks->push_back(std::move(network));
++  }
++  return true;
++}
++
+ #elif defined(WEBRTC_POSIX)
+ NetworkMonitorInterface::InterfaceInfo BasicNetworkManager::GetInterfaceInfo(
+     struct ifaddrs* cursor) const {
+diff --git a/src/rtc_base/physical_socket_server.cc b/src/rtc_base/physical_socket_server.cc
+index 727e200..dffbd7d 100644
+--- a/src/rtc_base/physical_socket_server.cc
++++ b/src/rtc_base/physical_socket_server.cc
+@@ -12,6 +12,10 @@
+ #include <cstdint>
+ #include <utility>
+ 
++#if defined(__vita__)
++#include <arpa/inet.h>
++#endif
++
+ #if defined(_MSC_VER) && _MSC_VER < 1300
+ #pragma warning(disable : 4786)
+ #endif
+@@ -28,7 +32,9 @@
+ #elif defined(WEBRTC_USE_POLL)
+ #include <poll.h>
+ #endif
++#if !defined(__vita__)
+ #include <sys/ioctl.h>
++#endif
+ #include <sys/select.h>
+ #include <unistd.h>
+ #endif
+@@ -334,7 +340,7 @@ int PhysicalSocket::SetOption(Option opt, int value) {
+     value <<= 2;
+ #endif
+   }
+-#if defined(WEBRTC_POSIX)
++#if defined(WEBRTC_POSIX) && defined(IPV6_TCLASS)
+   if (sopt == IPV6_TCLASS) {
+     // Set the IPv4 option in all cases to support dual-stack sockets.
+     // Don't bother checking the return code, as this is expected to fail if
+@@ -353,7 +359,7 @@ int PhysicalSocket::SetOption(Option opt, int value) {
+ int PhysicalSocket::Send(const void* pv, size_t cb) {
+   int sent = DoSend(
+       s_, reinterpret_cast<const char*>(pv), static_cast<int>(cb),
+-#if defined(WEBRTC_POSIX) && !defined(WEBRTC_ANDROID) && !defined(WEBRTC_MAC)
++#if defined(WEBRTC_POSIX) && defined(MSG_NOSIGNAL) && !defined(WEBRTC_ANDROID) && !defined(WEBRTC_MAC)
+       // Suppress SIGPIPE. Without this, attempting to send on a socket whose
+       // other end is closed will result in a SIGPIPE signal being raised to
+       // our process, which by default will terminate the process, which we
+@@ -382,7 +388,7 @@ int PhysicalSocket::SendTo(const void* buffer,
+   size_t len = addr.ToSockAddrStorage(&saddr);
+   int sent =
+       DoSendTo(s_, static_cast<const char*>(buffer), static_cast<int>(length),
+-#if defined(WEBRTC_POSIX) && !defined(WEBRTC_ANDROID) && !defined(WEBRTC_MAC)
++#if defined(WEBRTC_POSIX) && defined(MSG_NOSIGNAL) && !defined(WEBRTC_ANDROID) && !defined(WEBRTC_MAC)
+                // Suppress SIGPIPE. See above for explanation.
+                MSG_NOSIGNAL,
+ #else
+@@ -477,7 +483,7 @@ int PhysicalSocket::DoReadFromSocket(void* buffer,
+   socklen_t addr_len = sizeof(addr_storage);
+   sockaddr* addr = reinterpret_cast<sockaddr*>(&addr_storage);
+ 
+-#if defined(WEBRTC_POSIX)
++#if defined(WEBRTC_POSIX) && !defined(__vita__)
+   int received = 0;
+   if (read_scm_timestamp_experiment_) {
+     iovec iov = {.iov_base = buffer, .iov_len = length};
+@@ -689,8 +695,12 @@ int PhysicalSocket::TranslateOption(Option opt, int* slevel, int* sopt) {
+     case OPT_DSCP:
+ #if defined(WEBRTC_POSIX)
+       if (family_ == AF_INET6) {
++#if defined(IPV6_TCLASS)
+         *slevel = IPPROTO_IPV6;
+         *sopt = IPV6_TCLASS;
++#else
++        return -1;
++#endif
+       } else {
+         *slevel = IPPROTO_IP;
+         *sopt = IP_TOS;
+@@ -1051,29 +1061,54 @@ class Signaler : public Dispatcher {
+         afd_([] {
+           std::array<int, 2> afd = {-1, -1};
+ 
++#if defined(__vita__)
++          // VitaSDK's pipe fallback uses a kernel message pipe that select cannot watch.
++          afd[0] = socket(AF_INET, SOCK_DGRAM, 0);
++          afd[1] = socket(AF_INET, SOCK_DGRAM, 0);
++          sockaddr_in local{};
++          local.sin_family = AF_INET;
++          local.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
++          socklen_t size = sizeof(local);
++          if (afd[0] >= 0 && afd[1] >= 0 &&
++              bind(afd[0], reinterpret_cast<sockaddr*>(&local), size) == 0 &&
++              getsockname(afd[0], reinterpret_cast<sockaddr*>(&local), &size) == 0 &&
++              connect(afd[1], reinterpret_cast<sockaddr*>(&local), size) == 0) {
++            return afd;
++          }
++          for (int fd : afd) {
++            if (fd >= 0) close(fd);
++          }
++          RTC_LOG(LS_ERROR) << "Vita wake socket setup failed";
++          return std::array<int, 2>{-1, -1};
++#else
+           if (pipe(afd.data()) < 0) {
+             RTC_LOG(LS_ERROR) << "pipe failed";
+           }
+           return afd;
++#endif
+         }()),
+         fSignaled_(false),
+         flag_to_clear_(flag_to_clear) {
+-    ss_->Add(this);
++    if (afd_[0] >= 0) ss_->Add(this);
+   }
+ 
+   ~Signaler() override {
+-    ss_->Remove(this);
+-    close(afd_[0]);
+-    close(afd_[1]);
++    if (afd_[0] >= 0) ss_->Remove(this);
++    for (int fd : afd_) {
++      if (fd >= 0) close(fd);
++    }
+   }
+ 
+   virtual void Signal() {
+     webrtc::MutexLock lock(&mutex_);
+-    if (!fSignaled_) {
++    if (!fSignaled_ && afd_[1] >= 0) {
+       const uint8_t b[1] = {0};
++#if defined(__vita__)
++      const ssize_t res = send(afd_[1], b, sizeof(b), MSG_DONTWAIT);
++#else
+       const ssize_t res = write(afd_[1], b, sizeof(b));
+-      RTC_DCHECK_EQ(1, res);
+-      fSignaled_ = true;
++#endif
++      fSignaled_ = res == 1;
+     }
+   }
+ 
+@@ -1086,7 +1121,11 @@ class Signaler : public Dispatcher {
+     webrtc::MutexLock lock(&mutex_);
+     if (fSignaled_) {
+       uint8_t b[4];  // Allow for reading more than 1 byte, but expect 1.
++#if defined(__vita__)
++      const ssize_t res = recv(afd_[0], b, sizeof(b), MSG_DONTWAIT);
++#else
+       const ssize_t res = read(afd_[0], b, sizeof(b));
++#endif
+       RTC_DCHECK_EQ(1, res);
+       fSignaled_ = false;
+     }
+@@ -1290,7 +1329,11 @@ bool PhysicalSocketServer::Wait(webrtc::TimeDelta max_wait_duration,
+   // We don't support reentrant waiting.
+   RTC_DCHECK(!waiting_);
+   ScopedSetTrue s(&waiting_);
+-  const int cmsWait = ToCmsWait(max_wait_duration);
++  int cmsWait = ToCmsWait(max_wait_duration);
++#if defined(__vita__)
++  // A failed wake datagram must not strand queued RTC tasks in an infinite wait.
++  if (cmsWait == kForeverMs || cmsWait > 50) cmsWait = 50;
++#endif
+ 
+ #if defined(WEBRTC_USE_POLL)
+   return WaitPoll(cmsWait, process_io);
+diff --git a/src/rtc_base/platform_thread_types.cc b/src/rtc_base/platform_thread_types.cc
+index 74e732f..2ea22af 100644
+--- a/src/rtc_base/platform_thread_types.cc
++++ b/src/rtc_base/platform_thread_types.cc
+@@ -52,7 +52,7 @@ PlatformThreadId CurrentThreadId() {
+   return syscall(__NR_gettid);
+ #elif defined(WEBRTC_FREEBSD)
+   return pthread_getthreadid_np();
+-#elif defined(__EMSCRIPTEN__)
++#elif defined(__EMSCRIPTEN__) || defined(__vita__)
+   return static_cast<PlatformThreadId>(pthread_self());
+ #else
+   // Default implementation for nacl and solaris.
+diff --git a/src/rtc_base/socket_address.cc b/src/rtc_base/socket_address.cc
+index 8601fc9..1ce2ddc 100644
+--- a/src/rtc_base/socket_address.cc
++++ b/src/rtc_base/socket_address.cc
+@@ -20,7 +20,7 @@
+ #if defined(OPENBSD)
+ #include <netinet/in_systm.h>
+ #endif
+-#if !defined(__native_client__)
++#if !defined(__native_client__) && !defined(__vita__)
+ #include <netinet/ip.h>
+ #endif
+ #include <arpa/inet.h>
+@@ -346,7 +346,7 @@ SocketAddress EmptySocketAddressWithFamily(int family) {
+   if (family == AF_INET) {
+     return SocketAddress(IPAddress(INADDR_ANY), 0);
+   } else if (family == AF_INET6) {
+-    return SocketAddress(IPAddress(in6addr_any), 0);
++    return SocketAddress(GetAnyIP(AF_INET6), 0);
+   }
+   return SocketAddress();
+ }
+diff --git a/src/rtc_base/thread.cc b/src/rtc_base/thread.cc
+index 6f101ac..a29db47 100644
+--- a/src/rtc_base/thread.cc
++++ b/src/rtc_base/thread.cc
+@@ -612,9 +612,17 @@ bool Thread::Start() {
+   }
+ #elif defined(WEBRTC_POSIX)
+   pthread_attr_t attr;
+-  pthread_attr_init(&attr);
+-
+-  int error_code = pthread_create(&thread_, &attr, PreRun, this);
++  int error_code = pthread_attr_init(&attr);
++  if (error_code == 0) {
++#if defined(__vita__)
++    // Vita's select() can use more than the SDK's default explicit-attribute stack.
++    error_code = pthread_attr_setstacksize(&attr, 256 * 1024);
++#endif
++    if (error_code == 0) {
++      error_code = pthread_create(&thread_, &attr, PreRun, this);
++    }
++    pthread_attr_destroy(&attr);
++  }
+   if (0 != error_code) {
+     RTC_LOG(LS_ERROR) << "Unable to create pthread, error " << error_code;
+     thread_ = 0;
+diff --git a/src/media/engine/webrtc_voice_engine.cc b/src/media/engine/webrtc_voice_engine.cc
+index 23a1b19..ef2939c 100644
+--- a/src/media/engine/webrtc_voice_engine.cc
++++ b/src/media/engine/webrtc_voice_engine.cc
+@@ -496,7 +496,7 @@ void WebRtcVoiceEngine::ApplyOptions(const AudioOptions& options_in) {
+     options.echo_cancellation = false;
+     RTC_LOG(LS_INFO) << "Always disable AEC on iOS. Use built-in instead.";
+   }
+-#elif defined(WEBRTC_ANDROID)
++#elif defined(WEBRTC_ANDROID) || defined(__vita__)
+   use_mobile_software_aec = true;
+ #endif
+ 

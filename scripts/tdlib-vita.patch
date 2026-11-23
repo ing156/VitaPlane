@@ -292,18 +292,76 @@ index dd5a1d7..9d35e90 100644
      yield_flag_ = false;
    };
 diff --git a/tdnet/td/net/GetHostByNameActor.cpp b/tdnet/td/net/GetHostByNameActor.cpp
-index 3e37113..e82c054 100644
+index e82c054..614fa2b 100644
 --- a/tdnet/td/net/GetHostByNameActor.cpp
 +++ b/tdnet/td/net/GetHostByNameActor.cpp
-@@ -51,7 +51,7 @@ class GoogleDnsResolver final : public Actor {
+@@ -15,10 +15,11 @@
+ #include "td/utils/logging.h"
+ #include "td/utils/misc.h"
+ #include "td/utils/Slice.h"
+ #include "td/utils/SliceBuilder.h"
+ #include "td/utils/Time.h"
++#include "td/utils/VitaDnsTrace.h"
+
+ namespace td {
+ namespace detail {
+
+ class GoogleDnsResolver final : public Actor {
+@@ -31,10 +32,11 @@ class GoogleDnsResolver final : public Actor {
+   std::string host_;
+   bool prefer_ipv6_;
+   Promise<IPAddress> promise_;
+   ActorOwn<Wget> wget_;
+   double begin_time_ = 0;
++  VitaDnsTrace dns_trace_;
+
+   void start_up() final {
+     auto r_address = IPAddress::get_ip_address(host_);
+     if (r_address.is_ok()) {
+       promise_.set_value(r_address.move_as_ok());
+@@ -42,10 +44,11 @@ class GoogleDnsResolver final : public Actor {
+     }
+
+     const int timeout = 10;
+     const int ttl = 3;
+     begin_time_ = Time::now();
++    dns_trace_.start(1, prefer_ipv6_);
+     auto wget_promise = PromiseCreator::lambda([actor_id = actor_id(this)](Result<unique_ptr<HttpQuery>> r_http_query) {
+       send_closure(actor_id, &GoogleDnsResolver::on_result, std::move(r_http_query));
+     });
+     wget_ = create_actor<Wget>(
          "GoogleDnsResolver", std::move(wget_promise),
-         PSTRING() << "https://dns.google/resolve?name=" << url_encode(host_) << "&type=" << (prefer_ipv6_ ? 28 : 1),
-         std::vector<std::pair<string, string>>({{"Host", "dns.google"}}), timeout, ttl, prefer_ipv6_,
--        SslCtx::VerifyPeer::Off);
-+        SslCtx::VerifyPeer::On);  // an unverified answer would let any network attacker choose the proxy address
+@@ -88,11 +91,15 @@ class GoogleDnsResolver final : public Actor {
+     }
    }
 
-   static Result<IPAddress> get_ip_address(Result<unique_ptr<HttpQuery>> r_http_query) {
+   void on_result(Result<unique_ptr<HttpQuery>> r_http_query) {
+     auto end_time = Time::now();
++    const int http_status = r_http_query.is_ok() ? r_http_query.ok()->code_ : 0;
+     auto result = get_ip_address(std::move(r_http_query));
++    int result_code = result.is_ok() ? 0 : result.error().code();
++    if (result.is_error() && result_code == 0) result_code = -2;
++    dns_trace_.finish(result_code, http_status);
+     VLOG(dns_resolver) << "Init IPv" << (prefer_ipv6_ ? "6" : "4") << " host = " << host_ << " in "
+                        << end_time - begin_time_ << " seconds to "
+                        << (result.is_ok() ? (PSLICE() << result.ok()) : CSlice("[invalid]"));
+     promise_.set_result(std::move(result));
+     stop();
+@@ -129,10 +136,14 @@ class NativeDnsResolver final : public Actor {
+
+ int VERBOSITY_NAME(dns_resolver) = VERBOSITY_NAME(DEBUG);
+
+ GetHostByNameActor::GetHostByNameActor(Options options) : options_(std::move(options)) {
+   CHECK(!options_.resolver_types.empty());
++#if TD_VITA
++  // System DNS can stall the only TDLib scheduler for 30 seconds after Wi-Fi trouble.
++  options_.resolver_types = {ResolverType::Google};
++#endif
+ }
+
+ void GetHostByNameActor::run(string host, int port, bool prefer_ipv6, Promise<IPAddress> promise) {
+   TRY_RESULT_PROMISE(promise, ascii_host, idn_to_ascii(host));
+   if (ascii_host.empty()) {
 diff --git a/tdnet/td/net/HttpProxy.cpp b/tdnet/td/net/HttpProxy.cpp
 index 2585ad7..a5045a5 100644
 --- a/tdnet/td/net/HttpProxy.cpp
@@ -631,37 +689,74 @@ diff --git a/tdutils/td/utils/port/FileFd.cpp b/tdutils/td/utils/port/FileFd.cpp
    if (detail::skip_eintr([&] { return fcntl(get_native_fd().fd(), F_FULLFSYNC); }) == -1) {
 
 diff --git a/tdutils/td/utils/port/IPAddress.cpp b/tdutils/td/utils/port/IPAddress.cpp
-index 8a08d34..2108476 100644
+index 2108476..66db486 100644
 --- a/tdutils/td/utils/port/IPAddress.cpp
 +++ b/tdutils/td/utils/port/IPAddress.cpp
-@@ -7,6 +7,7 @@
+@@ -6,10 +6,11 @@
+ //
  #define _WINSOCK_DEPRECATED_NO_WARNINGS  // we need to use inet_addr instead of inet_pton
 
  #include "td/utils/port/IPAddress.h"
-+#include "td/utils/VitaTrace.h"
+ #include "td/utils/VitaTrace.h"
++#include "td/utils/VitaDnsTrace.h"
 
  #include "td/utils/format.h"
  #include "td/utils/logging.h"
-@@ -303,7 +304,11 @@ void IPAddress::init_ipv6_any() {
-   is_valid_ = true;
-   std::memset(&ipv6_addr_, 0, sizeof(ipv6_addr_));
-   ipv6_addr_.sin6_family = AF_INET6;
-+#if TD_VITA
-+  std::memset(&ipv6_addr_.sin6_addr, 0, sizeof(ipv6_addr_.sin6_addr));
-+#else
-   ipv6_addr_.sin6_addr = in6addr_any;
+ #include "td/utils/misc.h"
+ #include "td/utils/port/SocketFd.h"
+@@ -415,30 +416,52 @@ Status IPAddress::init_host_port(CSlice host, CSlice port, bool prefer_ipv6) {
+   }
+ #endif
+   TRY_RESULT(ascii_host, idn_to_ascii(host));
+   host = ascii_host;  // assign string to CSlice
+
++#if defined(__vita__) || defined(VITAGRAM_TD_DNS_TEST)
++  if (host == "dns.google" && port == "443") {
++    // shortcut: use the resolver's anycast IPv4 until Vita system DNS is reliable.
++    VitaDnsTrace bootstrap;
++    bootstrap.start(2, false, true);
++    auto status = init_ipv4_port("8.8.8.8", 443);
++    bootstrap.finish(status.is_ok() ? 0 : -2, 0);
++    return status;
++  }
 +#endif
-   ipv6_addr_.sin6_port = 0;
- }
++
+   if (host[0] == '[' && host.back() == ']') {
+     auto port_int = to_integer<int>(port);
+     return init_ipv6_port(host, port_int == 0 ? 1 : port_int);
+   }
 
-@@ -399,6 +404,7 @@ Status IPAddress::init_host_port(CSlice host, int port, bool prefer_ipv6) {
- }
+   // some getaddrinfo implementations use inet_pton instead of inet_aton and support only decimal-dotted IPv4 form,
+   // and so doesn't recognize 0x12.0x34.0x56.0x78, or 0x12345678, or 0x7f.001 as valid IPv4 addresses
+   auto ipv4_numeric_addr = inet_addr(host.c_str());
+   if (ipv4_numeric_addr != INADDR_NONE) {
+     host = ::td::get_ip_str(AF_INET, &ipv4_numeric_addr);
++#if defined(__vita__) || defined(VITAGRAM_TD_DNS_TEST)
++    auto numeric_port = to_integer_safe<int>(port);
++    if (numeric_port.is_ok()) {
++      return init_ipv4_port(host, numeric_port.ok() == 0 ? 1 : numeric_port.ok());
++    }
++#endif
+   }
 
- Status IPAddress::init_host_port(CSlice host, CSlice port, bool prefer_ipv6) {
-+  VitaTrace trace(VitaPhase::Dns);
-   is_valid_ = false;
-   if (host.empty()) {
-     return Status::Error("Host is empty");
+   addrinfo hints;
+   addrinfo *info = nullptr;
+   std::memset(&hints, 0, sizeof(hints));
+   hints.ai_family = AF_UNSPEC;
+   hints.ai_socktype = SOCK_STREAM;
+   hints.ai_protocol = IPPROTO_TCP;
+   LOG(DEBUG + 10) << "Trying to init IP address of " << host << " with port " << port;
++  VitaDnsTrace dns_trace;
++  dns_trace.start(0, prefer_ipv6, host == "dns.google");
+   auto err = getaddrinfo(host.c_str(), port.c_str(), &hints, &info);
++  const int dns_errno = errno;
++  dns_trace.finish(err, err ? dns_errno : 0);
++  errno = dns_errno;
+   if (err != 0) {
+ #if TD_WINDOWS
+     return OS_SOCKET_ERROR("Failed to resolve host");
+ #else
+     return Status::Error(PSLICE() << "Failed to resolve host: " << gai_strerror(err));
 diff --git a/tdutils/td/utils/port/IoSlice.h b/tdutils/td/utils/port/IoSlice.h
 index aea2613..6dfb9d2 100644
 --- a/tdutils/td/utils/port/IoSlice.h
@@ -714,63 +809,99 @@ index 29ac027..a2f8dbc 100644
  #else
    if (file_fd.empty()) {
 diff --git a/tdutils/td/utils/port/SocketFd.cpp b/tdutils/td/utils/port/SocketFd.cpp
-index 5f784c4..bb9f075 100644
+index bb9f075..fc5afe5 100644
 --- a/tdutils/td/utils/port/SocketFd.cpp
 +++ b/tdutils/td/utils/port/SocketFd.cpp
-@@ -5,6 +5,7 @@
- // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
- //
- #include "td/utils/port/SocketFd.h"
-+#include "td/utils/VitaTrace.h"
+@@ -35,10 +35,11 @@
+ #include <sys/types.h>
+ #include <unistd.h>
+ #endif
 
- #include "td/utils/common.h"
- #include "td/utils/format.h"
-@@ -408,6 +409,17 @@ class SocketFdImpl {
-   }
+ #include <atomic>
++#include "td/utils/VitaDnsTrace.h"
+ #include <cstring>
 
-   Result<size_t> writev(Span<IoSlice> slices) {
-+#if TD_VITA
-+    size_t total = 0;
-+    for (const auto &slice : slices) {
-+      TRY_RESULT(written, write(slice));
-+      total += written;
-+      if (written != slice.size()) {
-+        break;
-+      }
-+    }
-+    return total;
-+#else
-     int native_fd = get_native_fd().socket();
-     TRY_RESULT(slices_size, narrow_cast_safe<int>(slices.size()));
-     auto write_res = detail::skip_eintr([&] {
-@@ -435,9 +447,11 @@ class SocketFdImpl {
-                  << " bytes";
-     }
-     return write_finish();
-+#endif
+ namespace td {
+ namespace detail {
+ #if TD_PORT_WINDOWS
+@@ -450,10 +451,14 @@ class SocketFdImpl {
+ #endif
    }
 
    Result<size_t> write(Slice slice) {
-+    VitaTrace trace(VitaPhase::SocketWrite);
+     VitaTrace trace(VitaPhase::SocketWrite);
++#if TD_VITA || defined(VITAGRAM_TD_DNS_TEST)
++    // Large upload parts must not be enqueued into Vita's shared network pool in one call.
++    slice = slice.substr(0, 16 * 1024);
++#endif
      int native_fd = get_native_fd().socket();
      auto write_res = detail::skip_eintr([&] {
        return
-@@ -492,6 +506,7 @@ class SocketFdImpl {
-     }
+ #ifdef MSG_NOSIGNAL
+           send(native_fd, slice.begin(), slice.size(), MSG_NOSIGNAL);
+@@ -471,19 +476,23 @@ class SocketFdImpl {
    }
-   Result<size_t> read(MutableSlice slice) {
-+    VitaTrace trace(VitaPhase::SocketRead);
-     if (get_poll_info().get_flags_local().has_pending_error()) {
-       TRY_STATUS(get_pending_error());
-     }
-@@ -629,6 +644,7 @@ Result<SocketFd> SocketFd::from_native_fd(NativeFd fd) {
- }
 
- Result<SocketFd> SocketFd::open(const IPAddress &address) {
-+  VitaTrace trace(VitaPhase::SocketConnect);
- #if TD_DARWIN_WATCH_OS
-   return SocketFd{};
+   Result<size_t> write_finish() {
+     auto write_errno = errno;
+     if (write_errno == EAGAIN
++#if TD_VITA || defined(VITAGRAM_TD_DNS_TEST)
++        || write_errno == ENOBUFS
++#endif
+ #if EAGAIN != EWOULDBLOCK
+         || write_errno == EWOULDBLOCK
  #endif
+     ) {
+       get_poll_info().clear_flags(PollFlags::Write());
+       return 0;
+     }
+
+     auto error = Status::PosixError(write_errno, PSLICE() << "Write to " << get_native_fd() << " has failed");
++    vita_dns_event(0, 0, write_errno, 4);
+     switch (write_errno) {
+       case EBADF:
+       case ENXIO:
+       case EFAULT:
+       case EINVAL:
+@@ -523,18 +532,22 @@ class SocketFdImpl {
+       auto result = narrow_cast<size_t>(read_res);
+       CHECK(result <= slice.size());
+       return result;
+     }
+     if (read_errno == EAGAIN
++#if TD_VITA || defined(VITAGRAM_TD_DNS_TEST)
++        || read_errno == ENOBUFS
++#endif
+ #if EAGAIN != EWOULDBLOCK
+         || read_errno == EWOULDBLOCK
+ #endif
+     ) {
+       get_poll_info().clear_flags(PollFlags::Read());
+       return 0;
+     }
+     auto error = Status::PosixError(read_errno, PSLICE() << "Read from " << get_native_fd() << " has failed");
++    vita_dns_event(0, 0, read_errno, 3);
+     switch (read_errno) {
+       case EISDIR:
+       case EBADF:
+       case ENXIO:
+       case EINVAL:
+@@ -577,13 +590,15 @@ Status get_socket_pending_error(const NativeFd &fd) {
+   socklen_t errlen = sizeof(error);
+   if (getsockopt(fd.socket(), SOL_SOCKET, SO_ERROR, static_cast<void *>(&error), &errlen) == 0) {
+     if (error == 0) {
+       return Status::OK();
+     }
++    vita_dns_event(0, 0, error, 1);
+     return Status::PosixError(error, PSLICE() << "Error on " << fd);
+   }
+   auto status = OS_SOCKET_ERROR(PSLICE() << "Can't load error on socket " << fd);
++  vita_dns_event(0, 0, status.code(), 2);
+   LOG(INFO) << "Can't load pending socket error: " << status;
+   return status;
+ }
+ #elif TD_PORT_WINDOWS
+ Status get_socket_pending_error(const NativeFd &fd, WSAOVERLAPPED *overlapped, Status iocp_error) {
 diff --git a/tdutils/td/utils/port/Stat.cpp b/tdutils/td/utils/port/Stat.cpp
 index 98b96d8..728a956 100644
 --- a/tdutils/td/utils/port/Stat.cpp
@@ -1143,3 +1274,411 @@ index ee2b2a0..ebc9b4a 100644
 
    void wakeup_after(double after) {
      auto now = Time::now_cached();
+diff --git a/sqlite/sqlite/sqlite3.c b/sqlite/sqlite/sqlite3.c
+--- a/sqlite/sqlite/sqlite3.c
++++ b/sqlite/sqlite/sqlite3.c
+@@ -43868,7 +43868,14 @@
+ ){
+   int nPath = tdsqlite3Strlen30(zPath);
+   int iOff = 0;
+-  if( zPath[0]!='/' ){
++  int volumeAbsolute = 0;
++#if defined(__vita__) || defined(VITAGRAM_SQLITE_VITA_TEST)
++  /* Vita mount paths are absolute even without a leading Unix slash. */
++  const char *colon = strchr(zPath, ':');
++  const char *slash = strchr(zPath, '/');
++  volumeAbsolute = colon && colon>zPath && (!slash || colon<slash);
++#endif
++  if( zPath[0]!='/' && !volumeAbsolute ){
+     if( osGetcwd(zOut, nOut-2)==0 ){
+       return unixLogError(SQLITE_CANTOPEN_BKPT, "getcwd", zPath);
+     }
+@@ -45445,6 +45452,9 @@
+     UNIXVFS("unix",          autolockIoFinder ),
+ #elif OS_VXWORKS
+     UNIXVFS("unix",          vxworksIoFinder ),
++#elif defined(__vita__) || defined(VITAGRAM_SQLITE_VITA_TEST)
++    /* Vita has no POSIX record locks; retain mutual exclusion with mkdir locks. */
++    UNIXVFS("unix",          dotlockIoFinder ),
+ #else
+     UNIXVFS("unix",          posixIoFinder ),
+ #endif
+diff --git a/td/telegram/TdDb.cpp b/td/telegram/TdDb.cpp
+--- a/td/telegram/TdDb.cpp
++++ b/td/telegram/TdDb.cpp
+@@ -374,10 +374,17 @@
+   was_dialog_db_created_ = false;
+
+   if (!use_sqlite) {
++#if !TD_VITA
+     SqliteDb::destroy(sql_database_path).ignore();
++#endif
++    // Preserve the Vita file index while its synchronous SQLite path is disabled.
+     return Status::OK();
+   }
+
++#if TD_VITA
++  // Vita runs one instance of this title; discard a crash-left lock before any SQL connection exists.
++  td::rmdir(sql_database_path + ".lock").ignore();
++#endif
+   TRY_RESULT(db_instance, SqliteDb::change_key(sql_database_path, true, key, old_key));
+   sql_connection_ = std::make_shared<SqliteConnectionSafe>(sql_database_path, key, db_instance.get_cipher_version());
+   sql_connection_->set(std::move(db_instance));
+@@ -572,8 +579,14 @@
+     }
+   }
+   if (drop_sqlite_key) {
+-    binlog_pmc->erase("sqlite_key");
+-    binlog_pmc->force_sync(Auto(), "TdDb::open_impl 2");
++#if TD_VITA
++    if (parameters.use_file_database_) {
++#endif
++      binlog_pmc->erase("sqlite_key");
++      binlog_pmc->force_sync(Auto(), "TdDb::open_impl 2");
++#if TD_VITA
++    }
++#endif
+   }
+
+   VLOG(td_init) << "Create concurrent_binlog_pmc";
+diff --git a/tddb/td/db/SqliteDb.cpp b/tddb/td/db/SqliteDb.cpp
+--- a/tddb/td/db/SqliteDb.cpp
++++ b/tddb/td/db/SqliteDb.cpp
+@@ -11,6 +11,7 @@
+ #include "td/utils/logging.h"
+ #include "td/utils/port/path.h"
+ #include "td/utils/port/Stat.h"
++#include "td/utils/port/path.h"
+ #include "td/utils/SliceBuilder.h"
+ #include "td/utils/Status.h"
+ #include "td/utils/StringBuilder.h"
+@@ -306,5 +307,8 @@
+   return std::move(new_db);
+ }
+ Status SqliteDb::destroy(Slice path) {
++#if TD_VITA
++  td::rmdir(path.str() + ".lock").ignore();
++#endif
+   return detail::RawSqliteDb::destroy(path);
+ }
+diff --git a/tdutils/td/utils/VitaDnsTrace.h b/tdutils/td/utils/VitaDnsTrace.h
+new file mode 100644
+--- /dev/null
++++ b/tdutils/td/utils/VitaDnsTrace.h
+@@ -0,0 +1,53 @@
++#pragma once
++#include <chrono>
++#include <cstdint>
++#include <cerrno>
++
++namespace td {
++#if defined(__vita__) || defined(VITAGRAM_TD_DNS_TEST)
++// Numeric diagnostics only: names, addresses and response bodies stay inside TDLib.
++extern "C" uint64_t vitagram_dns_begin(unsigned method, unsigned family, unsigned resolver) __attribute__((weak));
++extern "C" void vitagram_dns_end(uint64_t id, unsigned method, int code, int detail, int64_t elapsed_us) __attribute__((weak));
++extern "C" void vitagram_dns_event(uint64_t id, unsigned phase, int code, int detail, int64_t aux) __attribute__((weak));
++inline void vita_dns_event(uint64_t id, unsigned phase, int code, int detail = 0, int64_t aux = 0) {
++  const int saved_errno = errno;
++  if (vitagram_dns_event) vitagram_dns_event(id, phase, code, detail, aux);
++  errno = saved_errno;
++}
++class VitaDnsTrace {
++ public:
++  void start(unsigned method, bool prefer_ipv6, bool resolver = false) {
++    method_ = method;
++    if (vitagram_dns_begin && vitagram_dns_end) {
++      begin_ = std::chrono::steady_clock::now();
++      id_ = vitagram_dns_begin(method, prefer_ipv6 ? 6 : 4, resolver);
++    }
++  }
++  void finish(int code, int detail) {
++    if (!id_) return;
++    auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - begin_).count();
++    vitagram_dns_end(id_, method_, code, detail, elapsed);
++    id_ = 0;
++  }
++  void event(unsigned phase, int code, int detail = 0, int64_t aux = 0) {
++    if (id_) vita_dns_event(id_, phase, code, detail, aux);
++  }
++  ~VitaDnsTrace() { finish(-1, 0); }
++  VitaDnsTrace() = default;
++  VitaDnsTrace(const VitaDnsTrace &) = delete;
++  VitaDnsTrace &operator=(const VitaDnsTrace &) = delete;
++ private:
++  uint64_t id_ = 0;
++  unsigned method_ = 0;
++  std::chrono::steady_clock::time_point begin_;
++};
++#else
++inline void vita_dns_event(uint64_t, unsigned, int, int = 0, int64_t = 0) {}
++class VitaDnsTrace {
++ public:
++  void start(unsigned, bool, bool = false) {}
++  void finish(int, int) {}
++  void event(unsigned, int, int = 0, int64_t = 0) {}
++};
++#endif
++}  // namespace td
+diff --git a/tdnet/td/net/Wget.h b/tdnet/td/net/Wget.h
+--- a/tdnet/td/net/Wget.h
++++ b/tdnet/td/net/Wget.h
+@@ -15,6 +15,7 @@
+ #include "td/utils/common.h"
+ #include "td/utils/Promise.h"
+ #include "td/utils/Status.h"
++#include "td/utils/VitaDnsTrace.h"
+
+ #include <utility>
+
+@@ -48,6 +49,8 @@
+   SslCtx::VerifyPeer verify_peer_;
+   string content_;
+   string content_type_;
++  VitaDnsTrace dns_transport_;
++  unsigned dns_phase_ = 0;
+ };
+
+ }  // namespace td
+diff --git a/tdnet/td/net/Wget.cpp b/tdnet/td/net/Wget.cpp
+--- a/tdnet/td/net/Wget.cpp
++++ b/tdnet/td/net/Wget.cpp
+@@ -41,6 +41,7 @@
+ Status Wget::try_init() {
+   TRY_RESULT(url, parse_url(input_url_));
+   TRY_RESULT_ASSIGN(url.host_, idn_to_ascii(url.host_));
++  if (url.host_ == "dns.google") dns_transport_.start(3, prefer_ipv6_);
+
+   HttpHeaderCreator hc;
+   if (content_.empty()) {
+@@ -75,7 +76,10 @@
+   IPAddress addr;
+   TRY_STATUS(addr.init_host_port(url.host_, url.port_, prefer_ipv6_));
+
+-  TRY_RESULT(fd, SocketFd::open(addr));
++  dns_phase_ = 0;
++  auto r_fd = SocketFd::open(addr);
++  dns_transport_.event(0, r_fd.is_ok() ? 0 : r_fd.error().code());
++  TRY_RESULT(fd, std::move(r_fd));
+   if (fd.empty()) {
+     return Status::Error("Sockets are not supported");
+   }
+@@ -84,8 +88,14 @@
+                                                        std::numeric_limits<std::size_t>::max(), 0, 0,
+                                                        ActorOwn<HttpOutboundConnection::Callback>(actor_id(this)));
+   } else {
+-    TRY_RESULT(ssl_ctx, SslCtx::create(CSlice() /* certificate */, verify_peer_));
+-    TRY_RESULT(ssl_stream, SslStream::create(url.host_, std::move(ssl_ctx)));
++    dns_phase_ = 1;
++    auto r_ctx = SslCtx::create(CSlice() /* certificate */, verify_peer_);
++    dns_transport_.event(1, r_ctx.is_ok() ? 0 : r_ctx.error().code());
++    TRY_RESULT(ssl_ctx, std::move(r_ctx));
++    dns_phase_ = 2;
++    auto r_stream = SslStream::create(url.host_, std::move(ssl_ctx));
++    dns_transport_.event(2, r_stream.is_ok() ? 0 : r_stream.error().code());
++    TRY_RESULT(ssl_stream, std::move(r_stream));
+     connection_ = create_actor<HttpOutboundConnection>(
+         "Connect", BufferedFd<SocketFd>(std::move(fd)), std::move(ssl_stream), std::numeric_limits<std::size_t>::max(),
+         0, 0, ActorOwn<HttpOutboundConnection::Callback>(actor_id(this)));
+@@ -93,6 +103,7 @@
+
+   send_closure(connection_, &HttpOutboundConnection::write_next, BufferSlice(header));
+   send_closure(connection_, &HttpOutboundConnection::write_ok);
++  dns_phase_ = 4;
+   return Status::OK();
+ }
+
+@@ -116,6 +127,7 @@
+ void Wget::on_ok(unique_ptr<HttpQuery> http_query_ptr) {
+   CHECK(promise_);
+   CHECK(http_query_ptr);
++  dns_transport_.event(4, http_query_ptr->code_);
+   if ((http_query_ptr->code_ == 301 || http_query_ptr->code_ == 302 || http_query_ptr->code_ == 307 ||
+        http_query_ptr->code_ == 308) &&
+       ttl_ > 0) {
+@@ -123,9 +135,11 @@
+     input_url_ = http_query_ptr->get_header("location").str();
+     LOG(DEBUG) << input_url_;
+     ttl_--;
++    dns_transport_.finish(http_query_ptr->code_, 1);
+     connection_.reset();
+     yield();
+   } else if (http_query_ptr->code_ >= 200 && http_query_ptr->code_ < 300) {
++    dns_transport_.finish(http_query_ptr->code_, 0);
+     promise_.set_value(std::move(http_query_ptr));
+     stop();
+   } else {
+@@ -136,6 +150,8 @@
+ void Wget::on_error(Status error) {
+   CHECK(error.is_error());
+   CHECK(promise_);
++  dns_transport_.event(5, error.code() ? error.code() : -2, dns_phase_);
++  dns_transport_.finish(-2, dns_phase_);
+   promise_.set_error(std::move(error));
+   stop();
+ }
+diff --git a/tdnet/td/net/SslStream.cpp b/tdnet/td/net/SslStream.cpp
+--- a/tdnet/td/net/SslStream.cpp
++++ b/tdnet/td/net/SslStream.cpp
+@@ -14,6 +14,7 @@
+ #include "td/utils/port/IPAddress.h"
+ #include "td/utils/Status.h"
+ #include "td/utils/Time.h"
++#include "td/utils/VitaDnsTrace.h"
+
+ #include <openssl/bio.h>
+ #include <openssl/err.h>
+@@ -140,6 +141,7 @@
+ class SslStreamImpl {
+  public:
+   Status init(CSlice host, SslCtx ssl_ctx, bool check_ip_address_as_host) {
++    if (host == "dns.google") dns_trace_.start(4, false);
+     if (!ssl_ctx) {
+       return Status::Error("Invalid SSL context provided");
+     }
+@@ -200,6 +202,7 @@
+
+  private:
+   SslHandle ssl_handle_;
++  VitaDnsTrace dns_trace_;
+
+   friend class SslReadByteFlow;
+   friend class SslWriteByteFlow;
+@@ -208,6 +211,7 @@
+     clear_openssl_errors("Before SslFd::write");
+     auto start_time = Time::now();
+     auto size = SSL_write(ssl_handle_.get(), slice.data(), static_cast<int>(slice.size()));
++    if (size > 0 && SSL_is_init_finished(ssl_handle_.get())) dns_trace_.finish(0, SSL_get_verify_result(ssl_handle_.get()));
+     auto elapsed_time = Time::now() - start_time;
+     if (elapsed_time >= 0.1) {
+       LOG(WARNING) << "SSL_write of size " << slice.size() << " took " << elapsed_time << " seconds and returned "
+@@ -223,6 +227,7 @@
+     clear_openssl_errors("Before SslFd::read");
+     auto start_time = Time::now();
+     auto size = SSL_read(ssl_handle_.get(), slice.data(), static_cast<int>(slice.size()));
++    if (size > 0 && SSL_is_init_finished(ssl_handle_.get())) dns_trace_.finish(0, SSL_get_verify_result(ssl_handle_.get()));
+     auto elapsed_time = Time::now() - start_time;
+     if (elapsed_time >= 0.1) {
+       LOG(WARNING) << "SSL_read took " << elapsed_time << " seconds and returned " << size << ' '
+@@ -295,6 +300,13 @@
+   Result<size_t> process_ssl_error(int ret) {
+     auto os_error = OS_ERROR("SSL_ERROR_SYSCALL");
+     int error = SSL_get_error(ssl_handle_.get(), ret);
++    if (error != SSL_ERROR_NONE && error != SSL_ERROR_WANT_READ && error != SSL_ERROR_WANT_WRITE &&
++        error != SSL_ERROR_WANT_CONNECT && error != SSL_ERROR_WANT_ACCEPT && error != SSL_ERROR_WANT_X509_LOOKUP) {
++      const int saved_errno = errno;
++      dns_trace_.event(3, error, SSL_get_verify_result(ssl_handle_.get()),
++                       error == SSL_ERROR_SYSCALL ? saved_errno : ERR_peek_last_error());
++      errno = saved_errno;
++    }
+     switch (error) {
+       case SSL_ERROR_NONE:
+         LOG(ERROR) << "SSL_get_error returned no error";
+
+diff --git a/td/telegram/files/FileManager.cpp b/td/telegram/files/FileManager.cpp
+index ea77106..8da30b6 100644
+--- a/td/telegram/files/FileManager.cpp
++++ b/td/telegram/files/FileManager.cpp
+@@ -3527,13 +3527,37 @@ void FileManager::resume_upload(FileUploadId file_upload_id, vector<int> bad_par
+     callback->on_upload_ok(file_upload_id, nullptr);
+     return;
+   }
+
+   if (file_view.has_full_local_location()) {
++#if TD_VITA
++    auto local = node->local_.full();
++    // A growing document can change before its first upload; never replace bytes already in flight.
++    const bool can_recheck = local.file_type_ == FileType::Document && !node->upload_id_ && !node->download_id_ &&
++                            !node->remote_.partial && !node->remote_.full && !node->generate_;
++#endif
+     auto status = check_local_location(node, false);
+     if (status.is_error()) {
+       LOG(INFO) << "Full local location of " << file_upload_id << " for upload is invalid: " << status;
++#if TD_VITA
++      if (can_recheck && (status.message() == "File size has changed" || status.message() == "File was modified")) {
++        local.mtime_nsec_ = 0;
++        auto info = check_full_local_location({std::move(local), 0}, false);
++        if (info.is_ok() && !bad_paths_.count(info.ok().location_.path_) &&
++            (!local_location_to_file_id_.count(info.ok().location_) ||
++             local_location_to_file_id_.at(info.ok().location_) == file_upload_id.get_file_id())) {
++          local_location_to_file_id_.erase(info.ok().location_);
++          node->set_size(info.ok().size_);
++          auto registered = register_local(info.ok().location_, node->owner_dialog_id_, info.ok().size_, false, false,
++                                           file_upload_id.get_file_id());
++          if (registered.is_ok()) {
++            node = get_sync_file_node(file_upload_id.get_file_id());
++            file_view = FileView(node);
++          }
++        }
++      }
++#endif
+     }
+   }
+
+   if (!file_view.has_full_local_location() && !file_view.has_generate_location() &&
+       !file_view.has_alive_remote_location()) {
+diff --git a/td/telegram/files/FileManager.cpp b/td/telegram/files/FileManager.cpp
+--- a/td/telegram/files/FileManager.cpp
++++ b/td/telegram/files/FileManager.cpp
+@@ -46,6 +46,10 @@
+ #include <numeric>
+ #include <tuple>
+ #include <utility>
++
++#ifdef __vita__
++extern "C" bool vitagram_document_target(int id, char *path, size_t capacity, int64_t *prefix);
++#endif
+ 
+ namespace td {
+ namespace {
+@@ -3330,6 +3334,29 @@
+     download_limit += download_offset;
+     download_offset = 0;
+   }
++#ifdef __vita__
++  // Supply an explicit document's destination as TDLib's own partial file.
++  if (node->encryption_key_.empty()) {
++    for (auto alias : node->file_ids_) {
++      char path[1200];
++      int64_t prefix = 0;
++      if (!vitagram_document_target(alias.get(), path, sizeof(path), &prefix)) {
++        continue;
++      }
++      constexpr int32 part_size = 128 * 1024;
++      auto local = node->local_;
++      if (local.type() != LocalFileLocation::Type::Partial || local.partial().path_ != path) {
++        auto ready = td::min<int64>(prefix, node->size_) / part_size;
++        local = LocalFileLocation(PartialLocalFileLocation{node->remote_.full.value().file_type_, part_size, path,
++                                  "", Bitmask(Bitmask::Ones{}, ready).encode(), ready * part_size});
++      }
++      send_closure(file_download_manager_, &FileDownloadManager::download, query_id, node->remote_.full.value(),
++                   std::move(local), node->size_, string(1, '\0'), node->encryption_key_, false,
++                   download_offset, download_limit, priority);
++      return;
++    }
++  }
++#endif
+   send_closure(file_download_manager_, &FileDownloadManager::download, query_id, node->remote_.full.value(),
+                node->local_, node->size_, node->suggested_path(), node->encryption_key_, node->can_search_locally_,
+                download_offset, download_limit, priority);
+diff --git a/td/telegram/files/FileDownloader.cpp b/td/telegram/files/FileDownloader.cpp
+--- a/td/telegram/files/FileDownloader.cpp
++++ b/td/telegram/files/FileDownloader.cpp
+@@ -508,6 +508,9 @@
+       }
+     }
+   }
++  if (name_ == string(1, '\0') && fd_.empty()) {
++    return on_error(Status::Error("Document destination is unavailable"));
++  }
+   if (need_search_file_ && fd_.empty() && size_ > 0 && encryption_key_.empty() && !remote_.is_web()) {
+     auto r_path = search_file(remote_.file_type_, name_, size_);
+     if (r_path.is_ok()) {
+@@ -587,7 +590,7 @@
+       size = path_stat.size_;
+     }
+     string path;
+-    if (only_check_) {
++    if (only_check_ || name_ == string(1, '\0')) {
+       path = path_;
+     } else {
+       TRY_RESULT_ASSIGN(path, create_from_temp(remote_.file_type_, path_, name_));

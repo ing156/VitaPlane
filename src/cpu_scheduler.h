@@ -3,7 +3,7 @@
 #include <string>
 
 namespace cpu_scheduler {
-enum class Role { Ui, Audio, Video, Network, Parser, Storage, Prefetch };
+enum class Role { Ui, Audio, Video, Network, Parser, Storage, Prefetch, CallCapture };
 // Register only application-owned threads, never system or library threads.
 class Thread {
 public:

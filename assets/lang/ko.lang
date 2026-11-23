@@ -115,9 +115,12 @@ doc.download_failed = 다운로드 실패: {0}
 doc.downloading = 다운로드 중: {0}
 doc.exists = 이미 저장됨: {0}
 doc.invalid_path = 다운로드 경로가 올바르지 않습니다
+doc.queue_full = 다운로드 대기열이 가득 찼습니다(작업 8개)
 doc.save_failed = 파일을 저장하지 못했습니다
 doc.saved = 저장됨: {0}
 doc.saving = 저장 중: {0}
+doc.source_changed = 원본 파일이 변경되었습니다
+doc.source_unavailable = 원본 파일을 안전하게 복원할 수 없습니다
 folder.all = 모든 채팅
 folder.default = 폴더
 folder.archive = 보관됨
@@ -835,7 +838,7 @@ about.description = VitaSDK, vita2d, TDLib 기반의 비공식 오픈 소스 Tel
 about.development = 활발히 개발 중입니다. 모든 Telegram 기능이 지원되지는 않으며 일부 기능에는 제한이나 오류가 있을 수 있습니다.
 about.privacy_title = 개인정보 보호
 about.privacy_servers = VitaPlane은 메시지, 파일, 진단 로그를 개발자의 서버로 보내지 않습니다.
-about.privacy_logs = 진단 로그에는 기술 정보가 포함되며 기본적으로 꺼져 있습니다. 메시지 내용, 전화번호, 비밀번호는 기록하지 않습니다. 로그는 콘솔에만 남고 자동 전송되지 않습니다. 문제 발생 시 원하면 진단을 위해 개발자에게 직접 보낼 수 있습니다.
+about.privacy_logs = 프록시 연결 로그는 자동으로 켜지며 다른 진단 로그는 기본적으로 꺼져 있습니다. 메시지 내용, 전화번호, 비밀번호는 기록하지 않습니다. 로그는 콘솔에만 남고 자동 전송되지 않습니다. 문제 발생 시 원하면 진단을 위해 개발자에게 직접 보낼 수 있습니다.
 about.privacy_connections = 클라이언트는 Telegram 서버에 연결합니다. 업데이트 확인과 다운로드는 GitHub를 사용합니다. TDLib은 프록시 호스트 이름 확인과 연결 설정을 위해 외부 서비스에 접속할 수 있습니다. 프록시 사용 시 선택한 서버를 거칩니다.
 about.security_title = 보안과 위험
 about.security_intro = VitaPlane은 비공식 클라이언트입니다. 앱 오류와 플랫폼 제한이 보안에 영향을 줄 수 있습니다.
@@ -1062,6 +1065,10 @@ settings.section.chats = 채팅
 settings.section.controls = 조작 및 입력
 settings.section.data = 데이터 및 저장 공간
 settings.section.connection = 연결
+settings.call_audio = 통화 오디오
+settings.call_audio_stable = 안정
+settings.call_audio_low = 저지연
+settings.call_audio_hint = 저지연에서는 음성이 더 자주 끊길 수 있습니다. 다음 통화부터 적용됩니다.
 settings.section.security = 데이터 보호
 settings.section.updates = 업데이트 및 설치
 settings.section.about = 앱 정보 및 진단
@@ -1106,3 +1113,106 @@ message.edit_invalid = 빈 텍스트는 안 됩니다. UTF-8 기준 최대 1023�
 message.edit_changed = 메시지가 변경되었습니다. 취소한 뒤 다시 여세요.
 message.edit_timeout = 응답이 없습니다. 재시도 전에 메시지를 확인하세요.
 keyboard.save = 저장
+
+# --- Download panel ---
+downloads.title = 다운로드
+downloads.queued = 대기 중
+downloads.paused = 일시 정지됨
+downloads.pause = 일시 정지
+downloads.resume = 계속
+downloads.saving = 저장 중
+downloads.restoring = 복원 중
+downloads.error = 다시 시도 필요
+downloads.hint = 탭 / {cross}: 파일 · L+R: 패널 선택
+downloads.priority = 우선순위
+downloads.list_hint = {cross}: 일시 정지 / 계속 · ←/→ 우선순위 · {square} 취소 · {circle}: 뒤로
+downloads.carousel_hint = 위아래로 밀기 ↑/↓
+
+proxy.type.web = WEB (HTTPS)
+proxy.web.invalid = WEB needs a DNS hostname, optional path, secret and HTTPS port 443
+proxy.web.failed = WEB connection failed; save and apply to retry
+proxy.web.tls = WEB TLS connection failed; check the certificate and network
+proxy.web.unsupported = Unsupported WEB transport: only https is supported
+
+proxy.pool.auto = Auto-switch on failure
+proxy.pool.analyze = Check all proxies
+proxy.pool.add = Add proxy
+proxy.pool.unknown = Not checked
+proxy.pool.checking = Checking...
+proxy.pool.available = {0} ms
+proxy.pool.unavailable = Unavailable
+proxy.pool.limit = Up to 16 proxies can be saved
+proxy.pool.empty = Add a proxy manually or scan its QR code
+proxy.pool.saving = Saving proxy settings...
+proxy.pool.hint = Auto-switch chooses a reachable alternative after a sustained connection failure
+proxy.pool.delete_confirm = Delete this saved proxy?
+proxy.pool.use = {cross} Select
+proxy.pool.edit = {square} Edit
+proxy.pool.delete = {triangle} Delete
+proxy.pool.back = {circle} Back
+proxy.pool.confirm = {cross} Delete
+
+proxy.pool.invalid = Proxy fields are incomplete or too long
+
+proxy.check.dns = Cannot resolve the proxy address: DNS error
+proxy.check.error = Proxy unreachable: TDLib connection error ({0})
+
+proxy.pool.checked = Proxy checks complete
+
+logs.proxy = Proxy connections
+
+tg.init_failed = Telegram initialization failed; see proxy.log
+
+# Emoji picker and expanded draft
+emoji.faces = 표정
+emoji.people = 사람
+emoji.nature = 자연
+emoji.food = 음식
+emoji.travel = 여행
+emoji.activities = 활동
+emoji.objects = 물건
+emoji.symbols = 기호
+emoji.flags = 깃발
+emoji.recent = 최근
+emoji.back = ABC
+emoji.empty = 최근 이모지가 없습니다
+emoji.help = {cross} 삽입 / 길게: 변형 · L/R: 페이지 · {circle} ABC
+keyboard.expand_help = 밀기 / 화살표: 스크롤 · 누르기 / {cross}: 키보드 · 길게: 돋보기
+
+emoji.categories = 이모지 분류
+emoji.category_help = ↑↓ / 밀기: 스크롤 · {cross} 선택 · {circle} 뒤로
+
+proxy.pool.interval = 전환 대기 시간
+proxy.pool.seconds = {0}초
+
+presence.typing = {0} 입력 중…
+
+settings.unread_counter = 읽지 않은 메시지 수
+
+settings.hide_muted_unread = 알림 끈 채팅의 읽지 않음 배지 대체
+emoji.premium = 프리미엄
+emoji.insert = 이모지 삽입
+
+call.start = 음성 통화
+call.hang_up = 통화 종료
+call.dialing = 발신 중…
+call.connected = 통화 연결됨
+call.ended = 통화 종료됨
+call.failed = 통화 실패
+call.place = 전화 걸기
+call.connecting = 연결 중…
+call.mute = 마이크 끄기
+call.unmute = 마이크 켜기
+call.close = 닫기
+call.confirm_hint = {cross} 확인   {circle} 취소
+call.active_hint = {cross} 확인   {circle} 통화 종료
+call.accept = 받기
+call.decline = 거절
+call.history_incoming = 수신 통화
+call.history_outgoing = 발신 통화
+call.history_missed = 부재중 전화
+call.history_unanswered = 응답 없는 통화
+call.history_declined = 거절된 통화
+call.history_disconnected = 통화 연결 끊김
+call.history_video = 영상 통화
+call.incoming_hint = {cross} 받기   {circle} 거절

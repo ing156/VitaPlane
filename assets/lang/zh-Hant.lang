@@ -115,9 +115,12 @@ doc.download_failed = 下載失敗：{0}
 doc.downloading = 正在下載：{0}
 doc.exists = 已儲存：{0}
 doc.invalid_path = 下載路徑無效
+doc.queue_full = 下載佇列已滿（8 個工作）
 doc.save_failed = 無法儲存檔案
 doc.saved = 已儲存：{0}
 doc.saving = 正在儲存: {0}
+doc.source_changed = 來源檔案已變更
+doc.source_unavailable = 無法安全復原來源檔案
 folder.all = 所有聊天
 folder.default = 資料夾
 folder.archive = 已封存
@@ -835,7 +838,7 @@ about.description = 基於 VitaSDK、vita2d 和 TDLib 的非官方開放原始�
 about.development = 專案正在積極開發。尚未支援全部 Telegram 功能，部分功能可能有限制或錯誤。
 about.privacy_title = 隱私
 about.privacy_servers = VitaPlane 不會將訊息、檔案或診斷日誌傳送到作者的伺服器。
-about.privacy_logs = 診斷日誌包含技術資訊，預設關閉。VitaPlane 不在其中記錄訊息內容、電話號碼或密碼。日誌僅儲存在主機上，絕不會自動傳送。遇到問題時，您可以自願手動傳送給開發者進行診斷。
+about.privacy_logs = 代理連線日誌自動開啟，其他診斷日誌預設關閉。VitaPlane 不在其中記錄訊息內容、電話號碼或密碼。日誌僅儲存在主機上，絕不會自動傳送。遇到問題時，您可以自願手動傳送給開發者進行診斷。
 about.privacy_connections = 用戶端連線至 Telegram 伺服器。更新檢查與下載使用 GitHub。TDLib 也可能存取外部服務以解析代理主機名稱和取得連線設定。使用代理時，連線經過您選擇的伺服器。
 about.security_title = 安全與風險
 about.security_intro = VitaPlane 是非官方用戶端。應用程式錯誤和平台限制可能影響安全。
@@ -1062,6 +1065,10 @@ settings.section.chats = 聊天
 settings.section.controls = 操作與輸入
 settings.section.data = 資料與儲存
 settings.section.connection = 連線
+settings.call_audio = 通話音訊
+settings.call_audio_stable = 穩定
+settings.call_audio_low = 低延遲
+settings.call_audio_hint = 低延遲可能使聲音更易中斷。從下一次通話起生效。
 settings.section.security = 資料保護
 settings.section.updates = 更新與安裝
 settings.section.about = 關於與診斷
@@ -1106,3 +1113,106 @@ message.edit_invalid = 請輸入非空文字，最多1023個UTF-8位元組。
 message.edit_changed = 訊息已被變更。請取消後重新開啟。
 message.edit_timeout = 沒有回應。重試前請檢查訊息。
 keyboard.save = 儲存
+
+# --- Download panel ---
+downloads.title = 下載
+downloads.queued = 排隊中
+downloads.paused = 已暫停
+downloads.pause = 暫停
+downloads.resume = 繼續
+downloads.saving = 儲存中
+downloads.restoring = 還原中
+downloads.error = 需要重試
+downloads.hint = 點選 / {cross}：檔案 · L+R：選擇面板
+downloads.priority = 優先順序
+downloads.list_hint = {cross}：暫停 / 繼續 · ←/→ 優先順序 · {square} 取消 · {circle}：返回
+downloads.carousel_hint = 上下滑動 ↑/↓
+
+proxy.type.web = WEB (HTTPS)
+proxy.web.invalid = WEB needs a DNS hostname, optional path, secret and HTTPS port 443
+proxy.web.failed = WEB connection failed; save and apply to retry
+proxy.web.tls = WEB TLS connection failed; check the certificate and network
+proxy.web.unsupported = Unsupported WEB transport: only https is supported
+
+proxy.pool.auto = Auto-switch on failure
+proxy.pool.analyze = Check all proxies
+proxy.pool.add = Add proxy
+proxy.pool.unknown = Not checked
+proxy.pool.checking = Checking...
+proxy.pool.available = {0} ms
+proxy.pool.unavailable = Unavailable
+proxy.pool.limit = Up to 16 proxies can be saved
+proxy.pool.empty = Add a proxy manually or scan its QR code
+proxy.pool.saving = Saving proxy settings...
+proxy.pool.hint = Auto-switch chooses a reachable alternative after a sustained connection failure
+proxy.pool.delete_confirm = Delete this saved proxy?
+proxy.pool.use = {cross} Select
+proxy.pool.edit = {square} Edit
+proxy.pool.delete = {triangle} Delete
+proxy.pool.back = {circle} Back
+proxy.pool.confirm = {cross} Delete
+
+proxy.pool.invalid = Proxy fields are incomplete or too long
+
+proxy.check.dns = Cannot resolve the proxy address: DNS error
+proxy.check.error = Proxy unreachable: TDLib connection error ({0})
+
+proxy.pool.checked = Proxy checks complete
+
+logs.proxy = Proxy connections
+
+tg.init_failed = Telegram initialization failed; see proxy.log
+
+# Emoji picker and expanded draft
+emoji.faces = 表情
+emoji.people = 人物
+emoji.nature = 自然
+emoji.food = 食物
+emoji.travel = 旅行
+emoji.activities = 活動
+emoji.objects = 物品
+emoji.symbols = 符號
+emoji.flags = 旗幟
+emoji.recent = 最近
+emoji.back = ABC
+emoji.empty = 暫無最近使用的表情
+emoji.help = {cross} 插入 / 長按：變體 · L/R：翻頁 · {circle} ABC
+keyboard.expand_help = 滑動 / 方向鍵：捲動 · 點按 / {cross}：鍵盤 · 長按：放大鏡
+
+emoji.categories = 表情分類
+emoji.category_help = ↑↓ / 滑動：捲動 · {cross} 選擇 · {circle} 返回
+
+proxy.pool.interval = 切換等待時間
+proxy.pool.seconds = {0}秒
+
+presence.typing = {0} 正在輸入…
+
+settings.unread_counter = 未讀訊息計數
+
+settings.hide_muted_unread = 靜音聊天：替換未讀標記
+emoji.premium = 進階表情
+emoji.insert = 插入表情
+
+call.start = 語音通話
+call.hang_up = 結束通話
+call.dialing = 正在呼叫…
+call.connected = 通話已接通
+call.ended = 通話已結束
+call.failed = 通話失敗
+call.place = 撥打
+call.connecting = 正在連線…
+call.mute = 關閉麥克風
+call.unmute = 開啟麥克風
+call.close = 關閉
+call.confirm_hint = {cross} 確認   {circle} 取消
+call.active_hint = {cross} 確認   {circle} 掛斷
+call.accept = 接聽
+call.decline = 拒接
+call.history_incoming = 來電
+call.history_outgoing = 撥出通話
+call.history_missed = 未接來電
+call.history_unanswered = 無人接聽
+call.history_declined = 已拒接
+call.history_disconnected = 通話中斷
+call.history_video = 視訊通話
+call.incoming_hint = {cross} 接聽   {circle} 拒接

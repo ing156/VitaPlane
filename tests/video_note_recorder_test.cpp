@@ -5,6 +5,7 @@
 #include "video_note_capture_buffer.h"
 #include "cpu_scheduler.h"
 #include <psp2/camera.h>
+#include <psp2/motion.h>
 #include <vita2d.h>
 #include <atomic>
 #include <cassert>
@@ -29,6 +30,8 @@ static unsigned encoded_frames=0, encoded_rear_frames=0;
 static std::atomic<bool> stall_disk{false},disk_blocked{false},release_disk{false};
 static std::atomic<bool> write_error{false},close_error{false},buffer_error{false};
 static std::atomic<unsigned> gpu_waits{0};
+static std::atomic<int> orientation_x{0};
+static bool motion_active=false, portrait_test=false;
 extern "C" size_t __real_fwrite(const void*,size_t,size_t,FILE*);
 extern "C" int __real_fclose(FILE*);
 extern "C" int __real_setvbuf(FILE*,char*,int,size_t);
@@ -68,6 +71,7 @@ int sceCameraOpen(int d,SceCameraInfo* info) {
     camera_start=std::chrono::steady_clock::now(); camera_frame=-1;
     std::memset(camera_memory,128,sizeof(camera_memory)); std::memset(camera_memory,d ? 160 : 100,320*240);
     if (d) { std::memset(camera_memory+320*240,96,320*240/4); std::memset(camera_memory+320*240*5/4,160,320*240/4); }
+    if (portrait_test) camera_memory[56*320+70]=200;
     return 0;
 }
 int sceCameraStart(int d) { assert(opened && d==device); streaming=true; return 0; }
@@ -98,6 +102,15 @@ void vita2d_texture_set_filters(vita2d_texture* t,int min,int mag) {
 void* vita2d_texture_get_datap(vita2d_texture* t) { return t->pixels.data(); }
 unsigned vita2d_texture_get_stride(vita2d_texture*) { return Side*4; }
 void vita2d_free_texture(vita2d_texture* t) { --textures; delete t; }
+int sceMotionStartSampling() { assert(!motion_active); motion_active=true; return 0; }
+int sceMotionStopSampling() { assert(motion_active); motion_active=false; return 0; }
+int sceMotionGetState(SceMotionState* state) {
+    assert(motion_active);
+    state->basicOrientation.x=orientation_x;
+    state->basicOrientation.y=state->basicOrientation.x==0 ? 1 : 0;
+    return 0;
+}
+int sceCameraGetReverse(int d,int* mode) { assert(d==device && streaming); *mode=SCE_CAMERA_REVERSE_OFF; return 0; }
 bool exists(const std::string& path) { FILE* f=std::fopen(path.c_str(),"rb"); if (!f) return false; std::fclose(f); return true; }
 bool encode_video_note(const std::string& raw,const std::string& pcm,const std::string& out,uint32_t samples,
     const std::atomic<bool>& cancel,std::atomic<int>& progress,i18n::Text&) {
@@ -112,6 +125,7 @@ bool encode_video_note(const std::string& raw,const std::string& pcm,const std::
         assert(frame[0]==y && frame[Side*Side]==(y==160 ? 96 : 128));
         assert(frame[Side*Side+60*(Side/2)+60]==(y==160 ? 96 : 128));
         assert(frame[Side*Side*5/4+60*(Side/2)+60]==(y==160 ? 160 : 128));
+        if (portrait_test) assert(frame[y==160 ? 209*Side+56 : 30*Side+183]==200);
         if (y==160) ++rear;
     }
     assert(count); std::fclose(f);
@@ -127,7 +141,7 @@ template<class F> void until(F predicate) {
     assert(predicate());
 }
 void clean(VideoNoteRecorder& r,const std::string& path,bool keep=false) {
-    assert(!r.active() && !allocated && !opened && !streaming && !audio && textures==0);
+    assert(!r.active() && !allocated && !opened && !streaming && !audio && !motion_active && textures==0);
     assert(!exists(path+".pcm") && !exists(path+".frames") && exists(path)==keep);
 }
 int main(int argc,char** argv) {
@@ -137,8 +151,15 @@ int main(int argc,char** argv) {
     auto preview=[&] { assert(r.open(path)); until([&]{return r.state()==State::Preview;}); assert(!r.rearCamera()); };
     auto record=[&] { r.record(); until([&]{return r.seconds()>=2;}); assert(r.state()==State::Recording); };
     preview(); r.switchCamera(); until([&]{return r.rearCamera();}); r.cancel(); clean(r,path);
-    preview(); record(); r.switchCamera(); until([&]{return r.rearCamera();});
+    portrait_test=true; orientation_x=1;
+    preview();
+    until([&] { r.upload(); auto* pixels=static_cast<uint32_t*>(vita2d_texture_get_datap(r.preview()));
+        return (pixels[30*Side+183] & 0xffffff) == 0xd6d6d6; });
+    assert(r.previewTurns()==1);
+    record(); orientation_x=-1;
+    r.switchCamera(); until([&]{return r.rearCamera();});
     until([&] { r.upload(); auto* pixels=static_cast<uint32_t*>(vita2d_texture_get_datap(r.preview())); return pixels[120*Side+120]==0xff679adbu; });
+    assert(r.previewTurns()==1);
     int rear_second=r.seconds(); until([&] { return r.seconds()>rear_second; });
     r.switchCamera(); until([&]{return !r.rearCamera();}); r.finish(); until([&]{return r.state()==State::Review;});
     assert(exists(path) && r.percent()==100 && encoded_rear_frames>0);
@@ -146,7 +167,7 @@ int main(int argc,char** argv) {
         assert(i18n::select(language));
         assert(r.status() == tr("vnr.ready")); // Retained worker status, no new recorder event.
     }
-    r.upload(); r.cancel(); clean(r,path);
+    r.upload(); r.cancel(); clean(r,path); portrait_test=false; orientation_x=0;
     preview(); record(); r.finish(); until([&]{return r.state()==State::Review;}); r.releaseFile(); clean(r,path,true); std::remove(path.c_str());
     preview(); record(); r.cancel(); clean(r,path);
     hold_encode=true; preview(); record(); r.finish(); until([&]{return r.state()==State::Encoding;}); r.cancel(); clean(r,path); hold_encode=false;

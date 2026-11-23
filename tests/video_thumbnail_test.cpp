@@ -22,10 +22,15 @@ int main(int argc, char** argv) {
     { std::ofstream file("preview.gif", std::ios::binary); file.write(reinterpret_cast<const char*>(gif), sizeof(gif)); }
     image = decode_image("video-thumb:preview.gif", [] { return true; });
     assert(image.width == 1 && image.height == 1 && image.rgba[0] == 255);
-    if (argc == 2) {
+    if (argc >= 2) {
         image = decode_image(std::string("video-thumb:") + argv[1], [] { return true; });
         assert(image.width && image.height && image.width <= 320 && image.height <= 320);
-        std::printf("MP4 first frame: %ux%u\n", image.width, image.height);
+        bool transparent=false, opaque=false;
+        for (size_t i=3;i<image.rgba.size();i+=4) {
+            transparent=transparent || image.rgba[i]==0; opaque=opaque || image.rgba[i]==255;
+        }
+        if (argc==3) assert(transparent && opaque);
+        std::printf("Video first frame: %ux%u\n", image.width, image.height);
     }
     vault::set_config_path("vault.json"); vault::load();
     assert(vault::enable({0,4,2,6,7,3,1,5,4,0,6,2}) == vault::Result::Ok);

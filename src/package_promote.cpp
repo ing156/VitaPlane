@@ -8,10 +8,10 @@
 #include <psp2/sysmodule.h>
 
 namespace {
+// Keep PAF loaded: native dialogs can still use it after an ordinary package installation.
 int g_paf = 0;
-// Modules stay loaded afterwards: the process ends soon, and unloading PAF right after a promote has
-// been seen to upset the shell.
-bool ensure_modules(std::string& detail) {
+}
+bool prepare_package_promoter(std::string& detail) {
     static bool loaded_once = false;
     if (loaded_once) return true;
     char text[200];
@@ -24,8 +24,17 @@ bool ensure_modules(std::string& detail) {
     paf_option.flags = (int)sizeof(paf_option);
     paf_option.result = &paf_result;
     paf_option.unused[0] = paf_option.unused[1] = -1;
-    g_paf = sceSysmoduleLoadModuleInternalWithArg(SCE_SYSMODULE_INTERNAL_PAF, sizeof(paf_args), paf_args, &paf_option);
+    if (sceSysmoduleIsLoadedInternal(SCE_SYSMODULE_INTERNAL_PAF) != SCE_SYSMODULE_LOADED) {
+        g_paf = sceSysmoduleLoadModuleInternalWithArg(SCE_SYSMODULE_INTERNAL_PAF, sizeof(paf_args), paf_args, &paf_option);
+        std::fprintf(stderr, "VPK: PAF load=0x%08X start=0x%08X\n", (unsigned)g_paf, (unsigned)paf_result);
+        if (g_paf < 0 || paf_result < 0) {
+            std::snprintf(text, sizeof(text), "paf module: 0x%08X (start: 0x%08X)", g_paf, paf_result);
+            detail = text;
+            return false;
+        }
+    }
     int rc = sceSysmoduleLoadModuleInternal(SCE_SYSMODULE_INTERNAL_PROMOTER_UTIL);
+    std::fprintf(stderr, "VPK: promoter load=0x%08X\n", (unsigned)rc);
     if (rc < 0) {
         // Already loaded counts as loaded; the diagnostics line keeps all codes for a bug report.
         int loaded = sceSysmoduleIsLoadedInternal(SCE_SYSMODULE_INTERNAL_PROMOTER_UTIL);
@@ -38,10 +47,9 @@ bool ensure_modules(std::string& detail) {
     loaded_once = true;
     return true;
 }
-}
 
 bool delete_package(const char* title_id, std::string& detail) {
-    if (!ensure_modules(detail)) return false;
+    if (!prepare_package_promoter(detail)) return false;
     int rc = scePromoterUtilityInit();
     if (rc < 0) { char text[80]; std::snprintf(text, sizeof(text), "promoter init: 0x%08X", rc); detail = text; return false; }
     rc = scePromoterUtilityDeletePkg(title_id);
@@ -59,7 +67,7 @@ bool delete_package(const char* title_id, std::string& detail) {
 
 bool promote_package(const std::string& package_dir, std::string& detail, const char* installed_eboot, long long expected_size) {
     char text[200];
-    if (!ensure_modules(detail)) return false;
+    if (!prepare_package_promoter(detail)) return false;
     const int paf = g_paf;
 
     int rc = scePromoterUtilityInit();
@@ -128,6 +136,10 @@ bool promote_package(const std::string& package_dir, std::string& detail, const 
     return ok;
 }
 #else
+bool prepare_package_promoter(std::string& detail) {
+    detail = "installing is only possible on the console";
+    return false;
+}
 bool promote_package(const std::string&, std::string& detail, const char*, long long) {
     detail = "installing is only possible on the console";
     return false;

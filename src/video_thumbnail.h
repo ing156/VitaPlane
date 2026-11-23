@@ -1,5 +1,6 @@
 #pragma once
 #include "image_decoder.h"
+#include "webm_alpha.h"
 #include <algorithm>
 #include <cstring>
 #include <climits>
@@ -64,12 +65,12 @@ inline DecodedImage decode(const std::vector<uint8_t>& bytes, const std::functio
     d.format->probesize = 256 * 1024;
     d.format->max_analyze_duration = 1000000;
     AVDictionary* options = nullptr;
-    av_dict_set(&options, "format_whitelist", "mov,gif", 0);
+    av_dict_set(&options, "format_whitelist", "mov,gif,matroska,webm", 0);
     const int opened = avformat_open_input(&d.format, nullptr, nullptr, &options);
     av_dict_free(&options);
     if (!proceed()) return {};
     if (opened < 0) return image_failure("video_demux");
-    // MP4/GIF headers describe the stream; avoid scanning for stream information.
+    // Container headers describe the stream; avoid scanning for stream information.
     int stream = -1;
     for (unsigned i = 0; i < d.format->nb_streams; ++i)
         if (d.format->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) { stream = int(i); break; }
@@ -77,22 +78,28 @@ inline DecodedImage decode(const std::vector<uint8_t>& bytes, const std::functio
     const auto* params = d.format->streams[stream]->codecpar;
     if (params->width <= 0 || params->height <= 0 || params->width > max_side || params->height > max_side ||
         int64_t(params->width) * params->height > max_pixels ||
-        (params->codec_id != AV_CODEC_ID_H264 && params->codec_id != AV_CODEC_ID_GIF)) return image_failure("video_format_limits");
+        (params->codec_id != AV_CODEC_ID_H264 && params->codec_id != AV_CODEC_ID_GIF &&
+         params->codec_id != AV_CODEC_ID_VP8 && params->codec_id != AV_CODEC_ID_VP9)) return image_failure("video_format_limits");
+    if ((params->codec_id==AV_CODEC_ID_VP8 || params->codec_id==AV_CODEC_ID_VP9) &&
+        (params->width>512 || params->height>512)) return image_failure("video_format_limits");
     // Software H.264 avoids competing with the playback hardware decoder.
-    const AVCodec* decoder = avcodec_find_decoder_by_name(params->codec_id == AV_CODEC_ID_H264 ? "h264" : "gif");
+    const AVCodec* decoder = params->codec_id == AV_CODEC_ID_H264 ? avcodec_find_decoder_by_name("h264") : avcodec_find_decoder(params->codec_id);
     d.codec = decoder ? avcodec_alloc_context3(decoder) : nullptr;
     if (!d.codec || avcodec_parameters_to_context(d.codec, params) < 0) return image_failure("video_codec");
     d.codec->thread_count = 1; d.codec->max_pixels = max_pixels;
     if (avcodec_open2(d.codec, decoder, nullptr) < 0) return image_failure("video_codec_open");
     d.packet = av_packet_alloc(); d.frame = av_frame_alloc();
     if (!d.packet || !d.frame) return {};
+    WebmAlpha alpha;
     for (unsigned packets = 0; packets < 64 && proceed(); ++packets) {
         const int read = av_read_frame(d.format, d.packet);
         if (read >= 0 && d.packet->stream_index != stream) { av_packet_unref(d.packet); continue; }
+        if (read>=0 && alpha.send(d.packet,d.codec)<0) return image_failure("video_alpha");
         const int sent = avcodec_send_packet(d.codec, read < 0 ? nullptr : d.packet);
         av_packet_unref(d.packet);
         if (sent < 0) return image_failure("video_packet");
         if (avcodec_receive_frame(d.codec, d.frame) == 0) {
+            if (alpha.attach(d.frame)<0) return image_failure("video_alpha");
             if (!proceed() || d.frame->width <= 0 || d.frame->height <= 0 ||
                 d.frame->width > max_side || d.frame->height > max_side ||
                 int64_t(d.frame->width) * d.frame->height > max_pixels) return {};

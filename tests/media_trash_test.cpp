@@ -24,6 +24,18 @@ int main() {
     const std::string photos = VITAGRAM_DB_DIR "/profile_photos", stickers = VITAGRAM_DB_DIR "/stickers";
     fill(photos, 70); fill(stickers, 5); fill(VITAGRAM_FILES_DIR "/photos", 3);
 
+    // Resumable numeric parts belong to TDLib, including above the old 300-entry
+    // threshold and with rotation flags left by older versions.
+    for (const char* root : {VITAGRAM_DB_DIR, VITAGRAM_FILES_DIR}) {
+        const std::string temp = std::string(root) + "/temp";
+        assert(!mkdir(temp.c_str(), 0777));
+        for (int i = 0; i < 301; ++i) {
+            FILE* file = std::fopen((temp + "/" + std::to_string(i)).c_str(), "wb");
+            assert(file); assert(std::fputs("partial bytes", file) >= 0); assert(!std::fclose(file));
+        }
+        assert(!mkdir((temp + "/nested").c_str(), 0777)); fill(temp + "/nested", 1);
+        FILE* flag = std::fopen((temp + ".rotate").c_str(), "wb"); assert(flag); assert(!std::fclose(flag));
+    }
     // First start of this layout: bloated media directories are swapped out,
     // stickers stay, and the move happens only once.
     assert(media_trash::rotate() == 2);
@@ -61,5 +73,15 @@ int main() {
     fill(stickers, 1);
     assert(media_trash::rotate() == 0 && exists(stickers + "/file_0.jpg"));
     { media_trash::Sweeper sweeper; sweep(sweeper); }
+    for (const char* root : {VITAGRAM_DB_DIR, VITAGRAM_FILES_DIR}) {
+        const std::string temp = std::string(root) + "/temp";
+        assert(exists(temp + ".rotate") && !exists(temp + ".trash1"));
+        assert(exists(temp + "/nested/file_0.jpg"));
+        for (int i = 0; i < 301; ++i) {
+            FILE* file = std::fopen((temp + "/" + std::to_string(i)).c_str(), "rb"); assert(file);
+            char bytes[14]{}; assert(std::fread(bytes, 1, 13, file) == 13); assert(!std::fclose(file));
+            assert(std::string(bytes) == "partial bytes");
+        }
+    }
     std::puts("Media trash: one-time rotation, batched sweep, limit flag and rotation passed");
 }

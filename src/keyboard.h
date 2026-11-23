@@ -12,20 +12,24 @@ public:
     void configure(bool custom, bool dark, const std::vector<std::string>& languages = {}, int split_level = 1);
     bool systemActive() const { return active_ && !custom_active_; }
     bool ownsScreen() const { return active_ && custom_active_; }
-    void open(const std::string& title, bool secret = false, const std::string& initial = "", bool message = false, bool editing = false);
+    void open(const std::string& title, bool secret = false, const std::string& initial = "", bool message = false, bool editing = false, bool premium = true);
     void close();
     void clear(); // overwrites the typed text (passphrases)
+    bool pickingEmoji() const { return picking_emoji_; }
+    bool composeCustomEmoji(const std::string& title, const std::string& text, int64_t id);
+    bool resumeEmoji(const std::string& text = "", int64_t id = 0);
+    const std::vector<CustomEmojiSpan>& customEmojis() const { return custom_.customEmojis(); }
     bool active() const { return active_; }
     bool submitted() const { return submitted_; }
     bool cancelled() const { return cancelled_; }
     const std::string& text() const { return text_; }
     void handle(unsigned int pressed, unsigned int held, bool touching, int x, int y, uint64_t now, const SceTouchData* touches = nullptr);
-    void draw(vita2d_pgf* font) const;
+    void draw(vita2d_pgf* font, const CustomEmojiDraw& draw_emoji = {}) const;
 private:
     void openSystem(const std::string& title, bool secret, const std::string& initial, const std::string& language);
     CustomKeyboard custom_;
     std::vector<std::string> languages_;
-    bool secret_ = false;
+    bool secret_ = false, picking_emoji_ = false;
     bool prefer_custom_ = false, custom_active_ = false, dark_ = true, suppress_opening_input_ = false;
     std::string caption_;
     static constexpr unsigned int MaxTextLength = 1023;

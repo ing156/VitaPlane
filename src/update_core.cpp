@@ -160,6 +160,7 @@ bool HttpResponse::parseHeaders() {
     if (status_line.compare(0, 5, "HTTP/") != 0 || status_line.size() < 12) return false;
     status_ = std::atoi(status_line.c_str() + status_line.find(' ') + 1);
     if (status_ < 100) return false;
+    bool seen_range = false, seen_etag = false;
     while (line_end != std::string::npos) {
         size_t next = head.find("\r\n", line_end + 2);
         std::string line = head.substr(line_end + 2, next == std::string::npos ? std::string::npos : next - line_end - 2);
@@ -169,7 +170,17 @@ bool HttpResponse::parseHeaders() {
         std::string key = lower(line.substr(0, colon)), value = line.substr(colon + 1);
         value.erase(0, value.find_first_not_of(" \t"));
         value.erase(value.find_last_not_of(" \t") + 1);
-        if (key == "content-length") content_length_ = std::strtoll(value.c_str(), nullptr, 10);
+        if (key == "content-length") {
+            if (content_length_ >= 0 || value.empty()) return false;
+            uint64_t length = 0;
+            for (char c : value) {
+                if (c < '0' || c > '9' || length > ((uint64_t)INT64_MAX - (c - '0')) / 10) return false;
+                length = length * 10 + (c - '0');
+            }
+            content_length_ = (int64_t)length;
+        }
+        else if (key == "content-range") { if (seen_range) return false; seen_range = true; content_range_ = value; }
+        else if (key == "etag") { if (seen_etag) return false; seen_etag = true; etag_ = value; }
         else if (key == "location") location_ = value;
         else if (key == "transfer-encoding" && lower(value).find("chunked") != std::string::npos) chunked_ = true;
     }
@@ -253,6 +264,9 @@ SignatureVerifier::~SignatureVerifier() {
 }
 
 bool SignatureVerifier::begin(const std::string& version, const char* public_key_pem, Kind kind) {
+    if (impl_->ctx) EVP_MD_CTX_destroy(impl_->ctx);
+    if (impl_->key) EVP_PKEY_free(impl_->key);
+    impl_->ctx = nullptr; impl_->key = nullptr;
     const char* pem = public_key_pem ? public_key_pem : VITAGRAM_UPDATE_PUBLIC_KEY;
     BIO* bio = BIO_new_mem_buf((void*)pem, -1);
     if (!bio) return false;

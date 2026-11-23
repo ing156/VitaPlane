@@ -1,4 +1,5 @@
 #include "video_note_frame.h"
+#include "video_note_input.h"
 #include "video_note_message.h"
 #include <cassert>
 #include <cstring>
@@ -13,6 +14,36 @@ int main() {
     assert(square[Side*Side]==128 && square[FrameBytes-1]==128);
     std::vector<uint32_t> pixels(Side*Side); rgba(square.data(),pixels.data());
     assert((pixels[0]>>24)==0 && (pixels.back()>>24)==0 && (pixels[Side*120+120]>>24)==255);
+    for (int turns = 0; turns < 4; ++turns) {
+        source[56*320+70]=201;
+        source[320*240+28*160+35]=202;
+        source[320*240*5/4+28*160+35]=203;
+        crop(source.data(),square.data(),turns);
+        for (int plane = 0; plane < 3; ++plane) {
+            const int side=plane ? Side/2 : Side;
+            const int offset=plane==0 ? 0 : plane==1 ? Side*Side : Side*Side*5/4;
+            int x=plane ? 15 : 30, y=plane ? 28 : 56;
+            for (int n=0; n<turns; ++n) { int old_x=x; x=side-1-y; y=old_x; }
+            assert(square[offset+y*side+x]==201+plane);
+        }
+    }
+    RearDoubleTap rear_taps;
+    SceTouchData touch{};
+    auto sample=[&](int ms, unsigned count, unsigned x=500) {
+        touch.reportNum=count; touch.report[0].x=x;
+        return rear_taps.update(touch,ms*1000);
+    };
+    assert(!sample(0,1) && !sample(30,0)); // Finger already on the panel when it starts.
+    assert(!sample(60,1) && !sample(100,0));
+    assert(!sample(350,1) && sample(395,0) && !sample(410,0));
+    assert(!sample(420,1) && !sample(440,0)); // Third tap starts a fresh pair.
+    assert(!sample(450,1) && !sample(460,1,800) && !sample(480,0));
+    assert(!sample(500,1) && !sample(535,0));
+    assert(!sample(550,2) && !sample(565,0));
+    assert(!sample(600,1) && !sample(800,0)); // Long hold.
+    assert(!sample(850,1) && !sample(900,0));
+    assert(!sample(1000,1,800) && !sample(1050,0)); // Too far from the previous tap.
+    assert(!sample(1450,1,800) && !sample(1500,0)); // Too late for that location.
     // Preview and playback share coverage, preserve edge colour and stay symmetric
     // at both the camera size and decoder's maximum video-note size.
     for (int side : {240,270}) {

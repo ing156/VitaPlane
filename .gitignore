@@ -41,6 +41,7 @@ tests/fixtures/*
 !tests/fixtures/README.md
 !tests/fixtures/invalid-proxy-qr.txt
 !tests/fixtures/mtproxy-qr.txt
+!tests/fixtures/webproxy-qr.txt
 !tests/fixtures/unrelated-qr.txt
 !tests/fixtures/palettes/
 tests/fixtures/palettes/*

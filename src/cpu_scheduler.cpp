@@ -137,7 +137,8 @@ void init() {
 Thread::Thread(Role role) : id_(sceKernelGetThreadId()) {
     pthread_mutex_lock(&mutex);
     // Prefetch runs just behind the decoder it feeds, ahead of the other background work.
-    int offset = role == Role::Audio ? -8 : role == Role::Ui ? 0 : role == Role::Video ? 12 :
+    const bool audio = role == Role::Audio || role == Role::CallCapture;
+    int offset = audio ? -8 : role == Role::Ui ? 0 : role == Role::Video ? 12 :
         role == Role::Prefetch ? 16 : role == Role::Storage ? 28 : 24;
     check("priority", sceKernelChangeThreadPriority(id_, std::max(32, base_priority + offset)));
     for (auto& thread : threads) if (thread.id < 0) {
@@ -269,7 +270,8 @@ std::string threadStatus() {
         if (thread.id < 0) continue;
         switch (thread.role) {
             case Role::Ui: ++ui; break;
-            case Role::Audio: ++audio; break;
+            case Role::Audio:
+            case Role::CallCapture: ++audio; break;
             case Role::Video: ++video; break;
             case Role::Network: ++network; break;
             case Role::Parser: ++parser; break;

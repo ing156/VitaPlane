@@ -8,14 +8,21 @@ constexpr int Side = 240, FrameBytes = Side * Side * 3 / 2;
 constexpr int SampleRate = 16000, MaxSeconds = 60, FrameRate = 30;
 constexpr int KeyframeInterval = FrameRate * 2;
 // Crop to a square, keeping colour beneath the display mask's feathered edge.
-inline void crop(const uint8_t* camera, uint8_t* out) {
+inline void crop(const uint8_t* camera, uint8_t* out, int turns = 0) {
     for (int plane = 0; plane < 3; ++plane) {
         int scale = plane ? 2 : 1, side = Side / scale, width = 320 / scale;
         int source_offset = plane == 0 ? 0 : plane == 1 ? 320*240 : 320*240*5/4;
         int dest_offset = plane == 0 ? 0 : plane == 1 ? Side*Side : Side*Side*5/4;
-        for (int y = 0; y < side; ++y) for (int x = 0; x < side; ++x) {
-            out[dest_offset + y*side + x] =
-                camera[source_offset + y*width + x + (width-side)/2];
+        int start = source_offset + (width-side)/2, dx = 1, dy = width;
+        switch (turns) {
+        case 1: start += (side-1)*width; dx = -width; dy = 1; break;
+        case 2: start += (side-1)*(width+1); dx = -1; dy = -width; break;
+        case 3: start += side-1; dx = width; dy = -1; break;
+        }
+        for (int y = 0; y < side; ++y) {
+            int source = start + y*dy;
+            for (int x = 0; x < side; ++x, source += dx)
+                out[dest_offset + y*side + x] = camera[source];
         }
     }
 }

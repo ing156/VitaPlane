@@ -1,6 +1,9 @@
 #pragma once
 #include <string>
 
+// Load PAF/promoter on a worker before opening native dialogs; subsequent calls reuse the modules.
+bool prepare_package_promoter(std::string& detail);
+
 // Installs the extracted package in `package_dir` through the system package promoter (the same
 // calls VitaShell's installer makes: PAF, ScePromoterUtil, promote with RIF). The title being replaced
 // must not be running - the console refuses to overwrite a live application, which is why the update is

@@ -4,6 +4,16 @@
 #include <cstdio>
 
 int main() {
+    for (int cell=0; cell<StickerGrid::page_size; ++cell) {
+        const int x=StickerGrid::x(cell), y=StickerGrid::y(cell);
+        assert(StickerGrid::hit(x,y,0,18)==cell);
+        assert(StickerGrid::hit(x+143,y+103,0,18)==cell);
+        assert(StickerGrid::hit(x+144,y,0,18)==-1);
+        assert(StickerGrid::hit(x,y+104,0,18)==-1);
+    }
+    assert(StickerGrid::hit(29,130,0,18)==-1 && StickerGrid::hit(30,129,0,18)==-1);
+    assert(StickerGrid::hit(30,130,18,19)==18 && StickerGrid::hit(180,130,18,19)==-1);
+    assert(StickerGrid::hit(30,130,0,0)==-1);
     ReactionPress press;
     auto sample = [&](int64_t now, bool down, bool fresh = false, bool context = true,
                       bool cancel = false, int64_t chat = 42, int64_t message = 55, int topic = 0) {

@@ -15,7 +15,7 @@ python3 "$root/tests/video_packet_wait_test.py" "$root" "$build_dir"
   "$root/tests/video_sync_test.cpp" -o "$build_dir/video-sync"
 "$build_dir/video-sync"
 "${CXX:-c++}" -std=c++17 -Wall -Wextra -Werror -I "$root/src" -I "$root/tests" -DVITAGRAM_LANG_DIR='"'"$root/assets/lang"'"' \
-  -I "$root/build-modern/external/jansson/include" "$root/tests/video_note_test.cpp" \
+  -I "$root/tests/photo-stubs" -I "$root/build-modern/external/jansson/include" "$root/tests/video_note_test.cpp" \
   -l:libjansson.so.4 -o "$build_dir/message_test"
 "$build_dir/message_test"
 "${CXX:-c++}" -std=c++17 -O2 -Wall -Wextra -Werror -pthread -I "$root/src" \
@@ -24,7 +24,7 @@ python3 "$root/tests/video_packet_wait_test.py" "$root" "$build_dir"
 "${CXX:-c++}" -std=c++17 -O2 -Wall -Wextra -Werror -I "$root/src" \
   "$root/tests/portrait_video_cache_test.cpp" -o "$build_dir/portrait_cache_test"
 "$build_dir/portrait_cache_test"
-"${CXX:-c++}" -std=c++17 -O2 -Wall -Wextra -Werror -pthread -I "$root/tests/stubs" -I "$root/src" -I "$root/tests" -DVITAGRAM_LANG_DIR='"'"$root/assets/lang"'"' \
+"${CXX:-c++}" -std=c++17 -O2 -Wall -Wextra -Werror -pthread -I "$root/tests/stubs" -I "$root/tests/photo-stubs" -I "$root/src" -I "$root/tests" -DVITAGRAM_LANG_DIR='"'"$root/assets/lang"'"' \
   "$root/src/video_note_recorder.cpp" "$root/src/i18n.cpp" "$root/tests/video_note_recorder_test.cpp" \
   -Wl,--wrap=fwrite -Wl,--wrap=fclose -Wl,--wrap=setvbuf -o "$build_dir/recorder_test"
 "$build_dir/recorder_test" "$build_dir"

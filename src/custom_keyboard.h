@@ -1,4 +1,5 @@
 #pragma once
+#include "custom_emoji.h"
 #include <cstddef>
 #include <cstdint>
 #include <memory>
@@ -10,10 +11,10 @@ struct SceTouchData;
 // Shared on-screen keyboard for vault secrets and ordinary text. No system IME calls.
 class CustomKeyboard {
 public:
-    enum class Result { None, Submitted, Cancelled, System };
+    enum class Result { None, Submitted, Cancelled, System, CustomEmoji };
     CustomKeyboard();
     ~CustomKeyboard();
-    void open(const std::string& initial, bool secret, bool message, size_t max_bytes, bool allow_system = false, bool auto_capitalize = true, bool editing = false);
+    void open(const std::string& initial, bool secret, bool message, size_t max_bytes, bool allow_system = false, bool auto_capitalize = true, bool editing = false, bool premium = true);
     void clear();
     void setSplitLevel(int level);
     void setLanguages(const std::vector<std::string>& codes);
@@ -22,8 +23,10 @@ public:
     bool systemRequested() const;
     Result handle(unsigned pressed, unsigned held, bool touch_down, int x, int y, uint64_t now, const SceTouchData* touches = nullptr);
     void ignoreTouchHistory(const SceTouchData* touches);
-    void draw(vita2d_pgf* font, bool dark, const std::string& title, bool keyboard_only = false) const;
+    void draw(vita2d_pgf* font, bool dark, const std::string& title, bool keyboard_only = false, const CustomEmojiDraw& draw_emoji = {}) const;
     const std::string& text() const;
+    bool insertCustomEmoji(const std::string& text, int64_t id);
+    const std::vector<CustomEmojiSpan>& customEmojis() const;
     bool split() const;
     size_t cursor() const; // UTF-8 byte offset.
 private:

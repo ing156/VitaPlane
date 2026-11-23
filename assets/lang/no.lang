@@ -120,9 +120,12 @@ doc.download_failed = Nedlasting mislyktes: {0}
 doc.downloading = Laster ned: {0}
 doc.exists = Allerede lagret: {0}
 doc.invalid_path = Ugyldig nedlastingsbane
+doc.queue_full = Nedlastingskøen er full (8 oppgaver)
 doc.save_failed = Filen kunne ikke lagres
 doc.saved = Lagret: {0}
 doc.saving = Lagrer: {0}
+doc.source_changed = Kildefilen er endret
+doc.source_unavailable = Kildefilen kan ikke gjenopprettes trygt
 folder.all = Alle samtaler
 folder.default = Mappe
 folder.archive = Arkiverte
@@ -840,7 +843,7 @@ about.description = En uoffisiell Telegram-klient med åpen kildekode, basert p�
 about.development = Prosjektet utvikles aktivt. Ikke alle Telegram-funksjoner er tilgjengelige ennå; noen kan ha begrensninger eller feil.
 about.privacy_title = Personvern
 about.privacy_servers = VitaPlane sender ikke meldingene, filene eller diagnoseloggene dine til forfatterens servere.
-about.privacy_logs = Logger inneholder teknisk informasjon og er av som standard. VitaPlane lagrer ikke meldingstekst, telefonnumre eller passord i dem. De forblir på konsollen og sendes aldri automatisk. Ved problemer kan du frivillig sende dem manuelt til utvikleren for feilsøking.
+about.privacy_logs = Logger for proxytilkobling starter automatisk; andre diagnoselogger er av som standard. VitaPlane lagrer ikke meldingstekst, telefonnumre eller passord i dem. De forblir på konsollen og sendes aldri automatisk. Ved problemer kan du frivillig sende dem manuelt til utvikleren for feilsøking.
 about.privacy_connections = Klienten kobler til Telegrams servere. Oppdateringskontroll og nedlasting bruker GitHub. TDLib kan kontakte eksterne tjenester for å slå opp proxyvertsnavn og hente tilkoblingsinnstillinger. Med proxy går tilkoblingen gjennom valgt server.
 about.security_title = Sikkerhet og risiko
 about.security_intro = VitaPlane er en uoffisiell klient. Programfeil og plattformbegrensninger kan påvirke sikkerheten.
@@ -1067,6 +1070,10 @@ settings.section.chats = Samtaler
 settings.section.controls = Kontroller og inndata
 settings.section.data = Data og lagring
 settings.section.connection = Tilkobling
+settings.call_audio = Samtalelyd
+settings.call_audio_stable = Stabil
+settings.call_audio_low = Lav forsinkelse
+settings.call_audio_hint = Lav forsinkelse kan gi flere lydavbrudd. Gjelder fra neste samtale.
 settings.section.security = Databeskyttelse
 settings.section.updates = Oppdateringer og installasjon
 settings.section.about = Om og diagnostikk
@@ -1111,3 +1118,106 @@ message.edit_invalid = Skriv inn tekst, høyst 1023 UTF-8-byte.
 message.edit_changed = Meldingen er endret. Avbryt og åpne på nytt.
 message.edit_timeout = Ingen svar. Kontroller meldingen før nytt forsøk.
 keyboard.save = Lagre
+
+# --- Download panel ---
+downloads.title = Nedlastinger
+downloads.queued = I kø
+downloads.paused = Satt på pause
+downloads.pause = Pause
+downloads.resume = Fortsett
+downloads.saving = Lagrer
+downloads.restoring = Gjenoppretter
+downloads.error = Prøv igjen
+downloads.hint = Trykk / {cross}: filer · L+R: velg panel
+downloads.priority = Prioritet
+downloads.list_hint = {cross}: pause / fortsett · ←/→ Prioritet · {square} Avbryt · {circle}: tilbake
+downloads.carousel_hint = Sveip ↑/↓
+
+proxy.type.web = WEB (HTTPS)
+proxy.web.invalid = WEB needs a DNS hostname, optional path, secret and HTTPS port 443
+proxy.web.failed = WEB connection failed; save and apply to retry
+proxy.web.tls = WEB TLS connection failed; check the certificate and network
+proxy.web.unsupported = Unsupported WEB transport: only https is supported
+
+proxy.pool.auto = Auto-switch on failure
+proxy.pool.analyze = Check all proxies
+proxy.pool.add = Add proxy
+proxy.pool.unknown = Not checked
+proxy.pool.checking = Checking...
+proxy.pool.available = {0} ms
+proxy.pool.unavailable = Unavailable
+proxy.pool.limit = Up to 16 proxies can be saved
+proxy.pool.empty = Add a proxy manually or scan its QR code
+proxy.pool.saving = Saving proxy settings...
+proxy.pool.hint = Auto-switch chooses a reachable alternative after a sustained connection failure
+proxy.pool.delete_confirm = Delete this saved proxy?
+proxy.pool.use = {cross} Select
+proxy.pool.edit = {square} Edit
+proxy.pool.delete = {triangle} Delete
+proxy.pool.back = {circle} Back
+proxy.pool.confirm = {cross} Delete
+
+proxy.pool.invalid = Proxy fields are incomplete or too long
+
+proxy.check.dns = Cannot resolve the proxy address: DNS error
+proxy.check.error = Proxy unreachable: TDLib connection error ({0})
+
+proxy.pool.checked = Proxy checks complete
+
+logs.proxy = Proxy connections
+
+tg.init_failed = Telegram initialization failed; see proxy.log
+
+# Emoji picker and expanded draft
+emoji.faces = Ansikter
+emoji.people = Personer
+emoji.nature = Natur
+emoji.food = Mat
+emoji.travel = Reiser
+emoji.activities = Aktiviteter
+emoji.objects = Gjenstander
+emoji.symbols = Symboler
+emoji.flags = Flagg
+emoji.recent = Nylige
+emoji.back = ABC
+emoji.empty = Ingen nylige emojier
+emoji.help = {cross} Sett inn / hold: varianter · L/R: sider · {circle} ABC
+keyboard.expand_help = Sveip / piler: rull · Trykk / {cross}: tastatur · Hold: lupe
+
+emoji.categories = Emojikategorier
+emoji.category_help = ↑↓ / sveip: rull · {cross} Velg · {circle} Tilbake
+
+proxy.pool.interval = Bytt etter
+proxy.pool.seconds = {0} s
+
+presence.typing = {0} skriver…
+
+settings.unread_counter = Antall uleste meldinger
+
+settings.hide_muted_unread = Dempede chatter: erstatt ulest-merke
+emoji.premium = Premium
+emoji.insert = Sett inn emoji
+
+call.start = Lydanrop
+call.hang_up = Avslutt anrop
+call.dialing = Ringer…
+call.connected = Anrop tilkoblet
+call.ended = Anrop avsluttet
+call.failed = Anrop mislyktes
+call.place = Ring
+call.connecting = Kobler til…
+call.mute = Slå av mikrofon
+call.unmute = Slå på mikrofon
+call.close = Lukk
+call.confirm_hint = {cross} Bekreft   {circle} Avbryt
+call.active_hint = {cross} Bekreft   {circle} Legg på
+call.accept = Svar
+call.decline = Avvis
+call.history_incoming = Innkommende anrop
+call.history_outgoing = Utgående anrop
+call.history_missed = Ubesvart anrop
+call.history_unanswered = Anrop uten svar
+call.history_declined = Avvist anrop
+call.history_disconnected = Anrop avbrutt
+call.history_video = Videosamtale
+call.incoming_hint = {cross} Svar   {circle} Avvis

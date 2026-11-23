@@ -2,6 +2,9 @@
 #include "inline_thumbnail.h"
 #include "performance.h"
 #include "vault.h"
+#ifdef VITAGRAM_RLOTTIE
+#include "tgs_animation.h"
+#endif
 #if defined(__vita__) || defined(VITAGRAM_VIDEO_THUMBNAILS)
 #include "video_thumbnail.h"
 #endif
@@ -29,7 +32,7 @@ bool valid(unsigned w, unsigned h) { return w && h && w <= 4096 && h <= 4096 && 
 struct JpegError { jpeg_error_mgr base; jmp_buf jump; };
 void jpeg_failed(j_common_ptr p) { longjmp(reinterpret_cast<JpegError*>(p->err)->jump, 1); }
 // No C++ objects are constructed inside the libjpeg longjmp boundary.
-bool jpeg_pixels(const uint8_t* data, size_t size, DecodedImage& out, const std::function<bool()>& proceed) {
+bool jpeg_pixels(const uint8_t* data, size_t size, DecodedImage& out, const std::function<bool()>& proceed, unsigned max_side) {
     auto* decoder = static_cast<jpeg_decompress_struct*>(std::calloc(1, sizeof(jpeg_decompress_struct)));
     if (!decoder) return false;
     JpegError error{};
@@ -39,28 +42,53 @@ bool jpeg_pixels(const uint8_t* data, size_t size, DecodedImage& out, const std:
     decoder->mem->max_memory_to_use = jpeg_memory_limit; // exceeding it raises a normal libjpeg error (longjmp above)
     jpeg_read_header(decoder, TRUE);
     if (!decoder->image_width || !decoder->image_height || decoder->image_width>jpeg_max_side || decoder->image_height>jpeg_max_side || uint64_t(decoder->image_width)*decoder->image_height>jpeg_max_pixels) { jpeg_destroy_decompress(decoder); std::free(decoder); return false; }
-    // Vita's screen is 960 pixels wide. Decode large JPEGs at a native reduced scale.
-    while (decoder->scale_denom < 8 && (decoder->image_width/decoder->scale_denom > 1024 || decoder->image_height/decoder->scale_denom > 1024)) decoder->scale_denom *= 2;
+    // Use native reduced JPEG scales before allocating RGBA pixels.
+    while (decoder->scale_denom < 8 && (std::max(decoder->image_width,decoder->image_height)/(decoder->scale_denom*2) >= max_side)) decoder->scale_denom *= 2;
+#ifdef JCS_EXTENSIONS
+    decoder->out_color_space = JCS_EXT_RGBA;
+#else
     decoder->out_color_space = JCS_RGB;
+#endif
     jpeg_start_decompress(decoder);
     if (!valid(decoder->output_width,decoder->output_height)) { jpeg_destroy_decompress(decoder); std::free(decoder); return false; }
     out.width = decoder->output_width; out.height = decoder->output_height;
     try { out.rgba.resize(size_t(out.width)*out.height*4); }
     catch (...) { jpeg_destroy_decompress(decoder); std::free(decoder); throw; }
+#ifndef JCS_EXTENSIONS
     JSAMPARRAY row = (*decoder->mem->alloc_sarray)(reinterpret_cast<j_common_ptr>(decoder), JPOOL_IMAGE, out.width*3, 1);
+#endif
     while (decoder->output_scanline < decoder->output_height) {
         if (!proceed()) { jpeg_destroy_decompress(decoder); std::free(decoder); return false; }
         unsigned y = decoder->output_scanline;
-        jpeg_read_scanlines(decoder, row, 1);
         auto* dst = out.rgba.data()+size_t(y)*out.width*4;
+#ifdef JCS_EXTENSIONS
+        JSAMPROW row = dst;
+        jpeg_read_scanlines(decoder, &row, 1);
+#else
+        jpeg_read_scanlines(decoder, row, 1);
         for (unsigned x=0; x<out.width; ++x) { std::memcpy(dst+x*4, row[0]+x*3, 3); dst[x*4+3]=255; }
+#endif
     }
     jpeg_finish_decompress(decoder); jpeg_destroy_decompress(decoder); std::free(decoder); return true;
 }
 }
-DecodedImage decode_image(const std::string& path, const std::function<bool()>& proceed) {
+DecodedImage decode_image(const std::string& path, const std::function<bool()>& proceed, unsigned max_side) {
     DecodedImage out;
+    max_side = std::max(1u, std::min(1024u, max_side));
     if (!proceed()) return out;
+    if (path.compare(0,10,"tgs-thumb:")==0) {
+#ifdef VITAGRAM_RLOTTIE
+        TgsAnimation animation;
+        if (const char* error=animation.open(path.substr(10),proceed,256*1024)) return image_failure(error);
+        if (!proceed()) return out;
+        int width=0,height=0;
+        animation.render(animation.frames()/2,std::min(128u,max_side),out.rgba,width,height);
+        if (!proceed()) return {};
+        out.width=width; out.height=height; return out;
+#else
+        return image_failure("tgs_unavailable");
+#endif
+    }
     std::vector<uint8_t> bytes;
     const bool video = path.compare(0, 12, "video-thumb:") == 0;
     if (path.compare(0, 12, inline_thumbnail::prefix) == 0) {
@@ -81,13 +109,14 @@ DecodedImage decode_image(const std::string& path, const std::function<bool()>& 
     }
     if (video) {
 #if defined(__vita__) || defined(VITAGRAM_VIDEO_THUMBNAILS)
-        return video_thumbnail::decode(bytes, proceed);
+        out = video_thumbnail::decode(bytes, proceed);
+        if (out.rgba.empty()) return out;
 #else
         return {};
 #endif
     }
-    bool ok=false;
-    if (bytes.size()>=8 && !png_sig_cmp(bytes.data(),0,8)) {
+    bool ok=video;
+    if (!video && bytes.size()>=8 && !png_sig_cmp(bytes.data(),0,8)) {
         png_image png{}; png.version=PNG_IMAGE_VERSION;
         if (png_image_begin_read_from_memory(&png,bytes.data(),bytes.size())) {
             if (valid(png.width,png.height) && proceed()) {
@@ -98,23 +127,37 @@ DecodedImage decode_image(const std::string& path, const std::function<bool()>& 
             }
         }
         png_image_free(&png);
-    } else if (bytes.size()>=2 && bytes[0]==0xff && bytes[1]==0xd8) {
-        ok=jpeg_pixels(bytes.data(),bytes.size(),out,proceed);
-    } else {
+    } else if (!video && bytes.size()>=2 && bytes[0]==0xff && bytes[1]==0xd8) {
+        ok=jpeg_pixels(bytes.data(),bytes.size(),out,proceed,max_side);
+    } else if (!video) {
         int w=0,h=0;
         if (WebPGetInfo(bytes.data(),bytes.size(),&w,&h) && valid(w,h) && proceed()) {
-            out.width=w; out.height=h; out.rgba.resize(size_t(w)*h*4);
-            ok=WebPDecodeRGBAInto(bytes.data(),bytes.size(),out.rgba.data(),out.rgba.size(),w*4)!=nullptr;
+            WebPDecoderConfig config;
+            if (!WebPInitDecoderConfig(&config)) return image_failure("image_decode");
+            const unsigned longest = std::max(w,h);
+            out.width = longest > max_side ? std::max(1u,unsigned(w)*max_side/longest) : unsigned(w);
+            out.height = longest > max_side ? std::max(1u,unsigned(h)*max_side/longest) : unsigned(h);
+            out.rgba.resize(size_t(out.width)*out.height*4);
+            config.output.colorspace = MODE_RGBA;
+            config.output.is_external_memory = 1;
+            config.output.u.RGBA.rgba = out.rgba.data();
+            config.output.u.RGBA.stride = out.width*4;
+            config.output.u.RGBA.size = out.rgba.size();
+            config.options.use_scaling = longest > max_side;
+            config.options.scaled_width = out.width;
+            config.options.scaled_height = out.height;
+            ok = WebPDecode(bytes.data(),bytes.size(),&config) == VP8_STATUS_OK;
+            WebPFreeDecBuffer(&config.output);
         }
     }
     if (!proceed()) return {};
     if (!ok) return image_failure("image_decode");
     // Bound both the completed CPU result and the next UI upload to 4 MiB.
-    if (out.width > 1024 || out.height > 1024) {
+    if (out.width > max_side || out.height > max_side) {
         const unsigned longest = std::max(out.width,out.height);
         DecodedImage scaled;
-        scaled.width = std::max(1u,out.width*1024/longest);
-        scaled.height = std::max(1u,out.height*1024/longest);
+        scaled.width = std::max(1u,out.width*max_side/longest);
+        scaled.height = std::max(1u,out.height*max_side/longest);
         scaled.rgba.resize(size_t(scaled.width)*scaled.height*4);
         for (unsigned y=0;y<scaled.height;++y) {
             if (!proceed()) return {};
@@ -145,25 +188,26 @@ ImageDecoder::ImageDecoder(Decode decode): decode_(std::move(decode)) {
     if (!started_) stopped_=true;
 }
 ImageDecoder::~ImageDecoder() { stop(); }
-void ImageDecoder::request(const std::vector<std::string>& visible, bool paused) {
+void ImageDecoder::request(const std::vector<ImageRequest>& visible, bool paused) {
     std::lock_guard<std::mutex> lock(mutex_);
     visible_.assign(visible.begin(),visible.begin()+std::min(size_t(64),visible.size())); paused_=paused;
-    if (!ready_path_.empty() && std::find(visible_.begin(),visible_.end(),ready_path_)==visible_.end()) { ready_path_.clear(); ready_={}; }
+    std::stable_partition(visible_.begin(),visible_.end(),[](const ImageRequest& item){ return !item.prefetch; });
+    if (!ready_request_.path.empty() && (std::find(visible_.begin(),visible_.end(),ready_request_)==visible_.end() || (ready_request_.prefetch && !visible_.empty() && !(visible_.front()==ready_request_) && !visible_.front().prefetch))) { ready_request_.path.clear(); ready_={}; }
     wake_.notify_one();
 }
-bool ImageDecoder::take(std::string& path, DecodedImage& image) {
+bool ImageDecoder::take(ImageRequest& request, DecodedImage& image) {
     std::lock_guard<std::mutex> lock(mutex_);
-    if (stopped_ || paused_ || ready_path_.empty()) return false;
-    path=std::move(ready_path_); ready_path_.clear(); image=std::move(ready_); ready_={};
-    visible_.erase(std::remove(visible_.begin(),visible_.end(),path),visible_.end());
+    if (stopped_ || paused_ || ready_request_.path.empty()) return false;
+    request=std::move(ready_request_); ready_request_={}; image=std::move(ready_); ready_={};
+    visible_.erase(std::remove(visible_.begin(),visible_.end(),request),visible_.end());
     wake_.notify_one(); return true;
 }
 void ImageDecoder::clear() {
     std::lock_guard<std::mutex> lock(mutex_);
-    ++generation_; visible_.clear(); ready_path_.clear(); ready_={}; wake_.notify_one();
+    ++generation_; visible_.clear(); ready_request_.path.clear(); ready_={}; wake_.notify_one();
 }
 void ImageDecoder::stop() {
-    { std::lock_guard<std::mutex> lock(mutex_); stopped_=true; ++generation_; visible_.clear(); ready_path_.clear(); ready_={}; wake_.notify_one(); }
+    { std::lock_guard<std::mutex> lock(mutex_); stopped_=true; ++generation_; visible_.clear(); ready_request_.path.clear(); ready_={}; wake_.notify_one(); }
     if (started_) { pthread_join(worker_, nullptr); started_=false; }
 }
 void ImageDecoder::run() {
@@ -172,18 +216,23 @@ void ImageDecoder::run() {
 #endif
     std::unique_lock<std::mutex> lock(mutex_);
     while (!stopped_) {
-        wake_.wait(lock,[&]{return stopped_ || (!paused_ && ready_path_.empty() && !visible_.empty());});
+        wake_.wait(lock,[&]{return stopped_ || (!paused_ && ready_request_.path.empty() && !visible_.empty());});
         if (stopped_) break;
-        active_=visible_.front(); const auto path=active_; const auto generation=generation_;
+        const auto request=visible_.front(); const auto generation=generation_;
         lock.unlock();
+        bool cancelled=false;
         auto proceed=[&,this] {
             std::unique_lock<std::mutex> guard(mutex_);
-            wake_.wait(guard,[&]{return stopped_ || generation!=generation_ || !paused_ || std::find(visible_.begin(),visible_.end(),path)==visible_.end();});
-            return !stopped_ && generation==generation_ && std::find(visible_.begin(),visible_.end(),path)!=visible_.end();
+            wake_.wait(guard,[&]{return stopped_ || generation!=generation_ || !paused_ || std::find(visible_.begin(),visible_.end(),request)==visible_.end();});
+            const bool current = !stopped_ && generation==generation_ &&
+                std::find(visible_.begin(),visible_.end(),request)!=visible_.end() &&
+                (!request.prefetch || visible_.front()==request || visible_.front().prefetch);
+            cancelled = cancelled || !current;
+            return !cancelled;
         };
         DecodedImage image;
-        { performance::Scope metric(performance::Metric::ImageDecode); try { image=decode_(path,proceed); } catch (const std::bad_alloc&) { image=image_failure("no_memory"); } }
-        lock.lock(); active_.clear();
-        if (!stopped_ && generation==generation_ && std::find(visible_.begin(),visible_.end(),path)!=visible_.end()) { ready_path_=path; ready_=std::move(image); }
+        { performance::Scope metric(performance::Metric::ImageDecode); try { image=decode_(request.path,proceed,request.max_side); } catch (const std::bad_alloc&) { image=image_failure("no_memory"); } }
+        lock.lock();
+        if (!cancelled && !stopped_ && generation==generation_ && std::find(visible_.begin(),visible_.end(),request)!=visible_.end() && (!request.prefetch || visible_.front()==request || visible_.front().prefetch)) { ready_request_=request; ready_=std::move(image); }
     }
 }

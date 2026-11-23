@@ -35,6 +35,7 @@ public:
     // Copies at most `newest` messages (highest IDs). References are taken under the mutex and the
     // deep copy (~1.7 ms/KB) runs without it; the UI thread asks only for one screen.
     json_t* history(int64_t id, size_t newest = SIZE_MAX);
+    json_t* message(int64_t chat, int64_t id); // RAM only; owned copy of the latest cached message.
     // Storage: chat histories live in one file per chat (ui-history/<id>.json) so that startup parses
     // only chats and names. Merges one pending file (`preferred` first); false when none is left.
     bool loadHistory(int64_t preferred = 0, bool (*proceed)(void*) = nullptr, void* context = nullptr);

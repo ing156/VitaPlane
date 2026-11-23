@@ -1,4 +1,5 @@
 #include "proxy_link.h"
+#include "web_proxy_protocol.h"
 #include "i18n.h"
 #include <algorithm>
 #include <cctype>
@@ -32,7 +33,7 @@ std::string link_path(const std::string& url) {
     std::string base = url.substr(0, url.find_first_of("?#"));
     std::transform(base.begin(), base.end(), base.begin(), [](unsigned char c) { return std::tolower(c); });
     if (!base.empty() && base.back() == '/') base.pop_back();
-    for (const char* path : {"proxy", "socks"}) {
+    for (const char* path : {"proxy", "socks", "webproxy"}) {
         if (base == std::string("tg://") + path || base == std::string("tg:") + path) return path;
         for (const char* host : {"t.me", "telegram.me", "telegram.dog"})
             for (const char* scheme : {"https://", "http://", ""})
@@ -54,7 +55,8 @@ ProxyLinkResult parse_proxy_link(const std::string& url, ProxyLink& out, i18n::T
         return invalid(i18n::text("proxy.err.no_params"));
     std::string args = url.substr(query + 1, fragment == std::string::npos ? fragment : fragment - query - 1);
     ProxyLink candidate;
-    const bool socks = link_path(url) == "socks";
+    const bool socks = link_path(url) == "socks", web = link_path(url) == "webproxy";
+    if (web) { candidate.kind = ProxyKind::Web; candidate.port = 443; }
     if (socks) candidate.kind = ProxyKind::Socks5;
     bool server_seen = false, port_seen = false, secret_seen = false, user_seen = false, pass_seen = false;
     for (size_t pos = 0; pos < args.size();) {
@@ -89,10 +91,22 @@ ProxyLinkResult parse_proxy_link(const std::string& url, ProxyLink& out, i18n::T
         }
         pos = end + 1;
     }
-    if (!server_seen || !port_seen || (!socks && !secret_seen) || candidate.server.empty() ||
+    if (!server_seen || (!web && !port_seen) || (!socks && !secret_seen) || candidate.server.empty() ||
         (!socks && candidate.secret.empty()))
         return invalid(i18n::text("proxy.err.missing_fields"));
     if (candidate.port < 1 || candidate.port > 65535) return invalid(i18n::text("proxy.err.port_range"));
+    if (web) {
+        web_proxy::Address address;
+        std::vector<uint8_t> bytes; bool marked = false;
+        if (port_seen || !web_proxy::address(candidate.server,address))
+            return invalid(i18n::text("proxy.web.invalid"));
+        if (!web_proxy::secret(candidate.secret,bytes,marked) || (marked && address.path.empty()))
+            return invalid(i18n::text("proxy.err.bad_secret"));
+        candidate.server = address.host + (address.path.empty() ? "" : "/" + address.path);
+        candidate.secret = web_proxy::mtproxy_secret(bytes);
+        out = std::move(candidate);
+        return ProxyLinkResult::Valid;
+    }
     if (candidate.server.size() > 253 || candidate.server.find_first_not_of(
             "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.-:[]") != std::string::npos)
         return invalid(i18n::text("proxy.err.bad_server"));

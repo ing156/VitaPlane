@@ -12,6 +12,7 @@ change those licenses or the attribution requirements.
 
 | Component / Компонент | License / Лицензия |
 | --- | --- |
+| Unicode 16.0 emoji and grapheme data / Данные эмодзи и границ графем Unicode 16.0 | [Unicode License V3](../assets/Unicode-LICENSE.txt) |
 | TDLib and the tdlib-vita port / TDLib и порт tdlib-vita | [Boost Software License 1.0](../external/tdlib-upstream/LICENSE_1_0.txt) |
 | SQLCipher bundled with TDLib / SQLCipher в TDLib | [BSD-3-Clause](../external/tdlib-upstream/sqlite/sqlite/LICENSE); SQLite core is [public domain](https://www.sqlite.org/copyright.html) / ядро SQLite — общественное достояние |
 | vita2d | [MIT](../assets/vita2d-LICENSE.txt) |

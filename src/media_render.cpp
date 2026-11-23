@@ -1,3 +1,4 @@
+#include "emoji.h"
 #include "performance.h"
 #include "startup_trace.h"
 #include "utf8_decode.h"
@@ -63,7 +64,7 @@ struct FontLoader {
     std::atomic<bool> text_done{false}; std::atomic<bool> done{false}; std::atomic<bool> stop{false};
     bool text_adopted=false; bool adopted=false; uint64_t started_at=0;
 } loader;
-std::vector<unsigned char> emoji_data; // Owns the memory face's bytes.
+std::vector<unsigned char> emoji_font_data; // Owns the memory face's bytes.
 unsigned font_revision = 0;
 TextWidthCache widths;
 TextWidthCache run_widths;
@@ -92,10 +93,6 @@ uint32_t next_code(const char*& p) {
     return code;
 }
 
-bool is_emoji(uint32_t c) {
-    return face && ((c >= 0x1f000 && c <= 0x1faff) || (c >= 0x2600 && c <= 0x27bf) ||
-        (c >= 0x2300 && c <= 0x23ff) || (c >= 0x2b00 && c <= 0x2bff)) && FT_Get_Char_Index(face, c);
-}
 vita2d_texture* glyph_texture(uint32_t code) {
     for (auto& item : cache) if (item.code == code) { item.used = ++clock_value; return item.texture; }
     if (requested.size() < 128 && std::find(requested.begin(), requested.end(), code) == requested.end())
@@ -119,10 +116,14 @@ int render(vita2d_pgf* font, int x, int baseline, unsigned int color, float scal
         }
         run.clear();
     };
+    const std::string_view source(p);
     while (*p) {
         const char* start = p;
+        const size_t cluster_bytes = emoji::next(source, p - source.data()) - (p - source.data());
+        const auto* sequence = face ? emoji::find(std::string_view(p, cluster_bytes)) : nullptr;
         uint32_t code = next_code(p);
-        // Basic Unicode glyphs only: complex ZWJ sequences are displayed as components.
+        if (sequence) p = start + cluster_bytes;
+        // Preserve explicit text presentation and default-ignorable sequence components.
         if (code == 0xfe0f || code == 0xfe0e || code == 0x200d) continue;
         // Private-use code points are reserved for Vita controller buttons.
         if (code >= 0xe000 && code < 0xe000 + controller_icons.size()) {
@@ -154,7 +155,7 @@ int render(vita2d_pgf* font, int x, int baseline, unsigned int color, float scal
             advance += width + 3 * scale;
             continue;
         }
-        if (!is_emoji(code)) {
+        if (!sequence) {
             TextFont* selected = font_for(code);
             if (selected != text_font) { flush(); text_font = selected; }
             run.append(start, p - start); continue;
@@ -162,7 +163,7 @@ int render(vita2d_pgf* font, int x, int baseline, unsigned int color, float scal
         flush();
         float size = text_size;
         if (draw) {
-            vita2d_texture* texture = glyph_texture(code);
+            vita2d_texture* texture = glyph_texture(sequence->glyph);
             if (texture) vita2d_draw_texture_scale(texture, x + advance, baseline - size + 3 * scale,
                 size / vita2d_texture_get_width(texture), size / vita2d_texture_get_height(texture));
             else vita2d_draw_rectangle(x + advance + 3, baseline - size + 5, size - 6, 2, color);
@@ -310,7 +311,7 @@ void rich_text_poll() {
         if (!FT_New_Memory_Face(library,loader.emoji.data(),static_cast<FT_Long>(loader.emoji.size()),0,&memory) &&
             memory->num_fixed_sizes && !FT_Select_Size(memory,0)) {
             if (face) FT_Done_Face(face);
-            face=memory; emoji_data=std::move(loader.emoji); // Cached emoji textures stay valid.
+            face=memory; emoji_font_data=std::move(loader.emoji); // Cached emoji textures stay valid.
         } else if (memory) FT_Done_Face(memory);
         std::vector<unsigned char>().swap(loader.emoji);
     }
@@ -394,13 +395,24 @@ bool rich_text_set_custom_font(const std::string& filename) {
     return set_font(path.c_str(), custom_slot, custom_font_path, spare_custom_face, spare_custom_path);
 }
 
+void emoji_prioritize(const char* text) {
+    if (!face || !text) return;
+    const auto* entry=emoji::find(text);
+    if (!entry) return;
+    for (const auto& glyph : cache) if (glyph.code==entry->glyph) return;
+    const auto pending=std::find(requested.begin(),requested.end(),entry->glyph);
+    if (pending!=requested.end()) requested.erase(pending);
+    else if (requested.size()>=128) requested.pop_back();
+    requested.insert(requested.begin(),entry->glyph);
+}
+
 void emoji_load_one() {
     if (!face || requested.empty()) return;
     performance::Scope measurement(performance::Metric::EmojiDecode);
     uint32_t code = requested.front(); requested.erase(requested.begin());
     vita2d_wait_rendering_done();
     vita2d_texture* texture = nullptr;
-    if (!FT_Load_Char(face, code, FT_LOAD_COLOR | FT_LOAD_RENDER)) {
+    if (!FT_Load_Glyph(face, code, FT_LOAD_COLOR | FT_LOAD_RENDER)) {
         const FT_Bitmap& bitmap = face->glyph->bitmap;
         if (bitmap.pixel_mode == FT_PIXEL_MODE_BGRA && bitmap.buffer && bitmap.width && bitmap.rows &&
             bitmap.width <= 256 && bitmap.rows <= 256) {
@@ -460,7 +472,7 @@ void rich_text_shutdown() {
     if (face) FT_Done_Face(face);
     if (library) FT_Done_FreeType(library);
     face = nullptr; library = nullptr;
-    std::vector<unsigned char>().swap(emoji_data);
+    std::vector<unsigned char>().swap(emoji_font_data);
 }
 static float ui_font_scale = 1.0f;
 void rich_text_set_scale(float scale) { if (scale!=ui_font_scale) { widths.clear();run_widths.clear(); ++font_revision; } ui_font_scale = scale; }

@@ -45,6 +45,7 @@ struct Client {
 struct Keyboard {
     bool on = false, save = false; std::string initial;
     bool active() { return on; }
+    bool pickingEmoji() { return false; }
     bool submitted() { return false; }
     bool cancelled() { return false; }
     void open(const std::string&, bool, const std::string& value, bool message, bool editing) {

@@ -42,14 +42,14 @@ void Keyboard::configure(bool custom, bool dark, const std::vector<std::string>&
     languages_ = keyboard_languages::normalize(languages);
 }
 
-void Keyboard::open(const std::string& title, bool secret, const std::string& initial, bool message, bool editing) {
-    if (active_) return;
+void Keyboard::open(const std::string& title, bool secret, const std::string& initial, bool message, bool editing, bool premium) {
+    if (active_ || picking_emoji_) return;
     caption_ = title; secret_ = secret;
     custom_active_ = prefer_custom_;
     if (custom_active_) {
         clear();
         custom_.setLanguages(languages_);
-        custom_.open(initial, secret, message, MaxTextLength, true, true, editing);
+        custom_.open(initial, secret, message, MaxTextLength, true, true, editing, premium);
         submitted_ = cancelled_ = false;
         suppress_opening_input_ = true;
         active_ = true;
@@ -106,7 +106,7 @@ void Keyboard::close() {
         sceGxmDisplayQueueFinish();
         sceImeDialogTerm();
     }
-    active_ = submitted_ = cancelled_ = custom_active_ = false;
+    active_ = submitted_ = cancelled_ = custom_active_ = picking_emoji_ = false;
     clear();
 }
 
@@ -118,6 +118,24 @@ void Keyboard::clear() {
     std::fill(std::begin(initial_), std::end(initial_), 0);
 }
 
+bool Keyboard::composeCustomEmoji(const std::string& title, const std::string& text, int64_t id) {
+    if (active_ || picking_emoji_ || !id || text.empty()) return false;
+    clear(); caption_ = title; secret_ = false;
+    custom_.setLanguages(languages_);
+    custom_.open("", false, true, MaxTextLength, false);
+    active_ = custom_active_ = suppress_opening_input_ = true;
+    submitted_ = cancelled_ = false;
+    return custom_.insertCustomEmoji(text, id);
+}
+
+bool Keyboard::resumeEmoji(const std::string& text, int64_t id) {
+    if (!picking_emoji_) return false;
+    if (id && !custom_.insertCustomEmoji(text, id)) return false;
+    custom_.ignoreTouchHistory(nullptr);
+    picking_emoji_ = false; active_ = custom_active_ = true; suppress_opening_input_ = true;
+    return true;
+}
+
 void Keyboard::handle(unsigned int pressed, unsigned int held, bool touching, int x, int y, uint64_t now, const SceTouchData* touches) {
     if (active_ && custom_active_) {
         // The button/tap that opened the dialog belongs to the underlying screen.
@@ -127,7 +145,11 @@ void Keyboard::handle(unsigned int pressed, unsigned int held, bool touching, in
             return;
         }
         const auto result = custom_.handle(pressed, held, touching, x, y, now, touches);
+        if (result == CustomKeyboard::Result::CustomEmoji) {
+            picking_emoji_ = true; active_ = false; return;
+        }
         if (result == CustomKeyboard::Result::System) {
+            if (!custom_.customEmojis().empty()) return;
             const std::string initial = custom_.text();
             active_ = custom_active_ = false;
             openSystem(caption_, secret_, initial, custom_.language());
@@ -149,6 +171,6 @@ void Keyboard::handle(unsigned int pressed, unsigned int held, bool touching, in
     sceImeDialogTerm(); active_ = false;
 }
 
-void Keyboard::draw(vita2d_pgf* font) const {
-    if (active_ && custom_active_) custom_.draw(font, dark_, caption_);
+void Keyboard::draw(vita2d_pgf* font, const CustomEmojiDraw& draw_emoji) const {
+    if (active_ && custom_active_) custom_.draw(font, dark_, caption_, false, draw_emoji);
 }

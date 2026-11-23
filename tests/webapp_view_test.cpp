@@ -86,6 +86,8 @@ int main() {
     proxy.server = "proxy.example"; proxy.secret = "secret";
     proxy_url = "http://previous-proxy:80";
     assert(webapp_proxy_url(true, proxy, proxy_url) && proxy_url.empty());
+    proxy.kind = ProxyKind::Web;
+    assert(webapp_proxy_url(true, proxy, proxy_url) && proxy_url.empty());
     proxy.kind = ProxyKind::Socks5; proxy.port = 1080;
     assert(webapp_proxy_url(true, proxy, proxy_url) && proxy_url == "socks5h://proxy.example:1080");
     proxy.username = "user@name"; proxy.password = "p:/%?#\\";

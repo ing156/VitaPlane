@@ -1,3 +1,4 @@
+#include "chat_notifications.h"
 #include "performance.h"
 #include "cache_writer.h"
 #include "ui_cache.h"
@@ -69,8 +70,9 @@ bool completed_file(json_t* file) {
 }
 json_t* compact_chat(json_t* chat) {
     json_t* result = json_object();
-    for (const char* key : {"@type", "id", "title", "type", "positions", "photo", "last_read_outbox_message_id", "last_read_inbox_message_id", "reply_markup_message_id", "accent_color_id", "upgraded_gift_colors"})
+    for (const char* key : {"@type", "id", "title", "type", "positions", "photo", "last_read_outbox_message_id", "last_read_inbox_message_id", "reply_markup_message_id", "accent_color_id", "upgraded_gift_colors", "notification_settings", "unread_count", "unread_mention_count", "is_marked_as_unread"})
         set_copy(result, key, json_object_get(chat, key));
+    chat_notifications::freeze(json_object_get(result, "notification_settings"));
     return result;
 }
 json_t* read_cache(const char* filename, size_t limit, bool (*proceed)(void*) = nullptr, void* context = nullptr, bool* cancelled = nullptr) {
@@ -176,7 +178,7 @@ json_t* startup_copy(json_t* source, size_t per_list = UiCache::kStartupRowsPerL
         }
         if (shown) json_decref(shown);
         for (const char* field : {"@type", "id", "title", "type", "positions", "permissions", "last_read_outbox_message_id",
-                                  "last_read_inbox_message_id", "unread_count", "is_marked_as_unread", "accent_color_id", "upgraded_gift_colors"})
+                                  "last_read_inbox_message_id", "unread_count", "unread_mention_count", "is_marked_as_unread", "accent_color_id", "upgraded_gift_colors", "notification_settings"})
             set_copy(chat, field, json_object_get(row.chat, field));
         if (const int64_t last = number(json_object_get(row.chat, "last_message"), "id"))
             json_object_set_new(chat, "last_message", json_pack("{s:I}", "id", (json_int_t)last));
@@ -188,6 +190,7 @@ json_t* startup_copy(json_t* source, size_t per_list = UiCache::kStartupRowsPerL
         for (const char* field : {"id", "first_name", "last_name", "type", "accent_color_id", "upgraded_gift_colors"}) set_copy(user, field, json_object_get(value, field));
         json_object_set_new(json_object_get(result, "users"), key, user);
     }
+    set_copy(result, "notification_scopes", json_object_get(source, "notification_scopes"));
     set_copy(result, "accent_colors", json_object_get(source, "accent_colors"));
     set_copy(result, "folders", json_object_get(source, "folders"));
     set_copy(result, "local_read", json_object_get(source, "local_read"));
@@ -298,7 +301,7 @@ void UiCache::load(bool (*proceed)(void*), void* context) {
             break;
         }
         for (auto id : touched) json_object_del(json_object_get(candidate, "history"), std::to_string(id).c_str());
-        for (const char* collection : {"chats", "users", "history", "sticker_items", "local_read"}) {
+        for (const char* collection : {"chats", "users", "history", "sticker_items", "local_read", "notification_scopes"}) {
             auto* value = json_object_get(current, collection);
             if (!value) continue;
             auto* target = json_object_get(candidate, collection);
@@ -423,6 +426,7 @@ json_t* UiCache::startupSnapshot() {
     // Leaves are immutable. Don't retain or copy the history containers at all.
     for (const char* key : {"chats", "users"})
         json_object_set_new(frozen, key, json_copy(json_object_get(data_, key)));
+    json_object_set(frozen, "notification_scopes", json_object_get(data_, "notification_scopes"));
     json_object_set(frozen, "accent_colors", json_object_get(data_, "accent_colors"));
     json_object_set(frozen, "folders", json_object_get(data_, "folders"));
     json_object_set_new(frozen, "local_read", json_copy(json_object_get(data_, "local_read")));
@@ -487,6 +491,7 @@ bool UiCache::saveStartupList(json_t* chats, uint64_t generation, bool (*proceed
     auto* source = json_object();
     json_object_set(source, "chats", chats);
     json_object_set_new(source, "users", json_copy(json_object_get(data_, "users")));
+    json_object_set(source, "notification_scopes", json_object_get(data_, "notification_scopes"));
     json_object_set(source, "accent_colors", json_object_get(data_, "accent_colors"));
     json_object_set(source, "folders", json_object_get(data_, "folders"));
     json_object_set_new(source, "local_read", json_copy(json_object_get(data_, "local_read")));
@@ -583,6 +588,15 @@ json_t* UiCache::folders() {
     lock_cache(&mutex_);
     json_t* result = measured_copy(json_object_get(data_, "folders"));
     unlock_cache(&mutex_); return result;
+}
+json_t* UiCache::message(int64_t chat, int64_t id) {
+    lock_cache(&mutex_);
+    auto* items=json_object_get(json_object_get(data_, "history"),std::to_string(chat).c_str());
+    auto* retained=json_incref(json_object_get(items,std::to_string(id).c_str()));
+    unlock_cache(&mutex_);
+    auto* result=measured_copy(retained,"message");
+    if (retained) json_decref(retained);
+    return result;
 }
 json_t* UiCache::history(int64_t id, size_t newest) {
     // Stored messages are immutable (every update replaces the object), so references are enough
@@ -697,10 +711,36 @@ void UiCache::remember(json_t* root, uint64_t wire_bytes) {
     json_t* cached = json_object_get(chats, chat_key.c_str());
     const bool chat_update = !std::strcmp(t, "updateChatAccentColors") || !std::strcmp(t, "updateChatTitle") || !std::strcmp(t, "updateChatPhoto") ||
         !std::strcmp(t, "updateChatLastMessage") || !std::strcmp(t, "updateChatDraftMessage") || !std::strcmp(t, "updateChatPosition") || !std::strcmp(t, "updateChatReplyMarkup");
-    if (cached && chat_update) {
+    const bool notification_update = !std::strcmp(t, "updateChatNotificationSettings");
+    const bool read_update = !std::strcmp(t, "updateChatReadInbox");
+    const bool marked_update = !std::strcmp(t, "updateChatIsMarkedAsUnread");
+    const bool mention_update = !std::strcmp(t, "updateChatUnreadMentionCount") || !std::strcmp(t, "updateMessageMentionRead");
+    if (cached && (chat_update || notification_update || read_update || marked_update || mention_update)) {
         cached = measured_copy(cached);
         json_object_set_new(chats, chat_key.c_str(), cached);
         main_changed = true;
+    }
+    if (cached && read_update) {
+        for (const char* key : {"unread_count", "last_read_inbox_message_id"}) set_copy(cached, key, json_object_get(root, key));
+        changed = true;
+    }
+    if (cached && marked_update) { set_copy(cached, "is_marked_as_unread", json_object_get(root, "is_marked_as_unread")); changed = true; }
+    if (cached && mention_update) { set_copy(cached, "unread_mention_count", json_object_get(root, "unread_mention_count")); changed = true; }
+    if (cached && notification_update) {
+        set_copy(cached, "notification_settings", json_object_get(root, "notification_settings"));
+        chat_notifications::freeze(json_object_get(cached, "notification_settings"));
+        changed = true;
+    }
+    if (!std::strcmp(t, "updateScopeNotificationSettings")) {
+        const int scope = chat_notifications::scope(json_object_get(root, "scope"));
+        if (scope >= 0) {
+            auto* previous = json_object_get(data_, "notification_scopes");
+            auto* scopes = json_is_object(previous) ? json_copy(previous) : json_object();
+            json_object_set_new(data_, "notification_scopes", scopes);
+            set_copy(scopes, chat_notifications::scopes[scope], json_object_get(root, "notification_settings"));
+            chat_notifications::freeze(json_object_get(scopes, chat_notifications::scopes[scope]));
+            changed = main_changed = true;
+        }
     }
     if (cached && !std::strcmp(t, "updateChatReplyMarkup")) {
         json_object_set_new(cached, "reply_markup_message_id", json_integer(number(json_object_get(root, "reply_markup_message"), "id")));

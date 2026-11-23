@@ -125,8 +125,6 @@ inline bool save_downloaded_file(const std::string& source, const std::string& d
         result = saved;
         return true;
     }
-    std::string target;
-    visit_download_names(dir, name, file_id, [](const std::string&, const SceIoStat&) { return false; }, &target);
     // The cached copy may be sealed; the saved file is the user's own export and is written plain.
     vault::Reader in;
     if (!in.open(source)) return false;
@@ -151,7 +149,12 @@ inline bool save_downloaded_file(const std::string& source, const std::string& d
         if (progress) progress(copied, in.size());
     }
     if (std::fclose(out) != 0) ok = false;
-    if (ok) ok = std::rename(temporary.c_str(), target.c_str()) == 0;
+    std::string target;
+    if (ok) {
+        // A completed direct download may have claimed this name between copy blocks.
+        visit_download_names(dir, name, file_id, [](const auto&, const auto&) { return false; }, &target);
+        ok = std::rename(temporary.c_str(), target.c_str()) == 0;
+    }
     if (!ok) { std::remove(temporary.c_str()); return false; }
     result = target;
     return true;

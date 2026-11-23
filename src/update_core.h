@@ -42,6 +42,8 @@ public:
     bool complete() const { return state_ == State::Done; }
     int status() const { return status_; }
     const std::string& location() const { return location_; }
+    const std::string& contentRange() const { return content_range_; }
+    const std::string& etag() const { return etag_; }
     int64_t contentLength() const { return content_length_; }
     uint64_t bodyBytes() const { return body_bytes_; }
     bool bodyIsUntilClose() const { return !chunked_ && content_length_ < 0; }
@@ -51,7 +53,7 @@ private:
     State state_ = State::Headers;
     std::string buffer_;
     int status_ = 0;
-    std::string location_;
+    std::string location_, content_range_, etag_;
     int64_t content_length_ = -1;
     bool chunked_ = false;
     uint64_t body_bytes_ = 0, chunk_left_ = 0;

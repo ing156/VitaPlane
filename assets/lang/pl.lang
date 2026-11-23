@@ -125,9 +125,12 @@ doc.download_failed = Pobieranie nie powiodło się: {0}
 doc.downloading = Pobieranie: {0}
 doc.exists = Już zapisano: {0}
 doc.invalid_path = Nieprawidłowa ścieżka pobierania
+doc.queue_full = Kolejka pobierania jest pełna (8 zadań)
 doc.save_failed = Nie udało się zapisać pliku
 doc.saved = Zapisano: {0}
 doc.saving = Zapisywanie: {0}
+doc.source_changed = Plik źródłowy został zmieniony
+doc.source_unavailable = Nie można bezpiecznie przywrócić pliku źródłowego
 folder.all = Wszystkie czaty
 folder.default = Folder
 folder.archive = Zarchiwizowane
@@ -845,7 +848,7 @@ about.description = Nieoficjalny klient Telegrama o otwartym kodzie, oparty na V
 about.development = Projekt jest aktywnie rozwijany. Nie wszystkie funkcje Telegrama są dostępne; niektóre mogą mieć ograniczenia lub błędy.
 about.privacy_title = Prywatność
 about.privacy_servers = VitaPlane nie wysyła wiadomości, plików ani dzienników diagnostycznych na serwery autora.
-about.privacy_logs = Dzienniki zawierają informacje techniczne i są domyślnie wyłączone. VitaPlane nie zapisuje w nich treści wiadomości, numerów telefonu ani haseł. Pozostają na konsoli i nigdy nie są wysyłane automatycznie. W razie problemów możesz dobrowolnie przesłać je ręcznie twórcy do diagnozy.
+about.privacy_logs = Dzienniki połączeń proxy są włączane automatycznie; pozostałe dzienniki diagnostyczne są domyślnie wyłączone. VitaPlane nie zapisuje w nich treści wiadomości, numerów telefonu ani haseł. Pozostają na konsoli i nigdy nie są wysyłane automatycznie. W razie problemów możesz dobrowolnie przesłać je ręcznie twórcy do diagnozy.
 about.privacy_connections = Klient łączy się z serwerami Telegrama. Sprawdzanie i pobieranie aktualizacji używa GitHub. TDLib może kontaktować się z zewnętrznymi usługami, aby rozwiązywać nazwy proxy i pobierać konfigurację połączenia. Z proxy połączenie przechodzi przez wybrany serwer.
 about.security_title = Bezpieczeństwo i ryzyka
 about.security_intro = VitaPlane jest nieoficjalnym klientem. Błędy i ograniczenia platformy mogą wpływać na bezpieczeństwo.
@@ -1072,6 +1075,10 @@ settings.section.chats = Czaty
 settings.section.controls = Sterowanie i wprowadzanie
 settings.section.data = Dane i pamięć
 settings.section.connection = Połączenie
+settings.call_audio = Dźwięk połączeń
+settings.call_audio_stable = Stabilny
+settings.call_audio_low = Niskie opóźnienie
+settings.call_audio_hint = Niskie opóźnienie może powodować przerwy. Obowiązuje od następnego połączenia.
 settings.section.security = Ochrona danych
 settings.section.updates = Aktualizacje i instalacja
 settings.section.about = Informacje i diagnostyka
@@ -1116,3 +1123,106 @@ message.edit_invalid = Wpisz niepusty tekst, do 1023 bajtów UTF-8.
 message.edit_changed = Wiadomość się zmieniła. Anuluj i otwórz ponownie.
 message.edit_timeout = Brak odpowiedzi. Sprawdź wiadomość przed ponowieniem.
 keyboard.save = Zapisz
+
+# --- Download panel ---
+downloads.title = Pobieranie
+downloads.queued = W kolejce
+downloads.paused = Wstrzymano
+downloads.pause = Wstrzymaj
+downloads.resume = Wznów
+downloads.saving = Zapisywanie
+downloads.restoring = Przywracanie
+downloads.error = Wymaga ponowienia
+downloads.hint = Dotknij / {cross}: pliki · L+R: wybierz panel
+downloads.priority = Priorytet
+downloads.list_hint = {cross}: wstrzymaj / wznów · ←/→ Priorytet · {square} Anuluj · {circle}: wstecz
+downloads.carousel_hint = Przesuń ↑/↓
+
+proxy.type.web = WEB (HTTPS)
+proxy.web.invalid = WEB needs a DNS hostname, optional path, secret and HTTPS port 443
+proxy.web.failed = WEB connection failed; save and apply to retry
+proxy.web.tls = WEB TLS connection failed; check the certificate and network
+proxy.web.unsupported = Unsupported WEB transport: only https is supported
+
+proxy.pool.auto = Auto-switch on failure
+proxy.pool.analyze = Check all proxies
+proxy.pool.add = Add proxy
+proxy.pool.unknown = Not checked
+proxy.pool.checking = Checking...
+proxy.pool.available = {0} ms
+proxy.pool.unavailable = Unavailable
+proxy.pool.limit = Up to 16 proxies can be saved
+proxy.pool.empty = Add a proxy manually or scan its QR code
+proxy.pool.saving = Saving proxy settings...
+proxy.pool.hint = Auto-switch chooses a reachable alternative after a sustained connection failure
+proxy.pool.delete_confirm = Delete this saved proxy?
+proxy.pool.use = {cross} Select
+proxy.pool.edit = {square} Edit
+proxy.pool.delete = {triangle} Delete
+proxy.pool.back = {circle} Back
+proxy.pool.confirm = {cross} Delete
+
+proxy.pool.invalid = Proxy fields are incomplete or too long
+
+proxy.check.dns = Cannot resolve the proxy address: DNS error
+proxy.check.error = Proxy unreachable: TDLib connection error ({0})
+
+proxy.pool.checked = Proxy checks complete
+
+logs.proxy = Proxy connections
+
+tg.init_failed = Telegram initialization failed; see proxy.log
+
+# Emoji picker and expanded draft
+emoji.faces = Twarze
+emoji.people = Ludzie
+emoji.nature = Natura
+emoji.food = Jedzenie
+emoji.travel = Podróże
+emoji.activities = Aktywności
+emoji.objects = Przedmioty
+emoji.symbols = Symbole
+emoji.flags = Flagi
+emoji.recent = Ostatnie
+emoji.back = ABC
+emoji.empty = Brak ostatnich emoji
+emoji.help = {cross} Wstaw / przytrzymaj: warianty · L/R: strony · {circle} ABC
+keyboard.expand_help = Przesuń / strzałki: przewijanie · Dotknij / {cross}: klawiatura · Przytrzymaj: lupa
+
+emoji.categories = Kategorie emoji
+emoji.category_help = ↑↓ / przesuń: przewijaj · {cross} Wybierz · {circle} Wstecz
+
+proxy.pool.interval = Przełącz po
+proxy.pool.seconds = {0} s
+
+presence.typing = {0} pisze…
+
+settings.unread_counter = Licznik nieprzeczytanych wiadomości
+
+settings.hide_muted_unread = Wyciszone czaty: zastąp licznik
+emoji.premium = Premium
+emoji.insert = Wstaw emoji
+
+call.start = Połączenie głosowe
+call.hang_up = Zakończ połączenie
+call.dialing = Dzwonienie…
+call.connected = Połączono
+call.ended = Połączenie zakończone
+call.failed = Połączenie nieudane
+call.place = Zadzwoń
+call.connecting = Łączenie…
+call.mute = Wycisz mikrofon
+call.unmute = Włącz mikrofon
+call.close = Zamknij
+call.confirm_hint = {cross} Potwierdź   {circle} Anuluj
+call.active_hint = {cross} Potwierdź   {circle} Rozłącz
+call.accept = Odbierz
+call.decline = Odrzuć
+call.history_incoming = Połączenie przychodzące
+call.history_outgoing = Połączenie wychodzące
+call.history_missed = Nieodebrane połączenie
+call.history_unanswered = Połączenie bez odpowiedzi
+call.history_declined = Odrzucone połączenie
+call.history_disconnected = Przerwane połączenie
+call.history_video = Połączenie wideo
+call.incoming_hint = {cross} Odbierz   {circle} Odrzuć

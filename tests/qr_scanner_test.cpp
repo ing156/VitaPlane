@@ -18,6 +18,7 @@ static unsigned char memory[1024 * 1024];
 static bool allocated = false, opened = false, streaming = false;
 static int fail_at = 0, textures = 0, stops = 0, closes = 0, frees = 0;
 static std::atomic<int> reads{0};
+static std::atomic<bool> blank_frame{false};
 static std::vector<unsigned char> frame(640 * 480, 255);
 struct vita2d_texture { std::vector<unsigned char> pixels = std::vector<unsigned char>(320 * 240 * 4); };
 namespace cpu_scheduler {
@@ -43,7 +44,9 @@ int sceCameraStop(int) { assert(streaming); streaming = false; ++stops; return 0
 int sceCameraClose(int) { assert(opened && !streaming); opened = false; ++closes; return 0; }
 int sceCameraRead(int, SceCameraRead* read) {
     assert(streaming && read->mode == 1);
-    std::memcpy(memory, frame.data(), frame.size()); read->frame = ++reads; return 0;
+    if (blank_frame) std::memset(memory, 255, frame.size());
+    else std::memcpy(memory, frame.data(), frame.size());
+    read->frame = ++reads; return 0;
 }
 int sceKernelDelayThread(unsigned) { std::this_thread::sleep_for(std::chrono::milliseconds(1)); return 0; }
 void vita2d_wait_rendering_done() {}
@@ -67,6 +70,7 @@ int main(int argc, char** argv) {
         for (int dy=0; dy<scale; ++dy) for (int dx=0; dx<scale; ++dx)
             frame[(y0+y*scale+dy)*640+x0+x*scale+dx] = matrix[y][x] == '1' ? 0 : 255;
     const bool styled = argc == 3 && std::string(argv[2]) == "styled";
+    const bool shaded = argc == 3 && std::string(argv[2]) == "shaded";
     if (styled) {
         // Telegram Android's rounded finder radii: outer 7/3, white 7/4,
         // inner 5/4 modules. Keep the underlying encoded payload independent.
@@ -100,13 +104,17 @@ int main(int argc, char** argv) {
                 frame[(y0+y*scale+dy)*640+x0+x*scale+dx] = (x==size/2 && y==size/2) ? 0 : 255;
     }
     QrScanner scanner;
-    if (argc == 3 && !styled) {
+    if (argc == 3 && !styled && !shaded) {
         assert(scanner.start());
         std::string initial = scanner.status();
         for (int i=0; i<500 && scanner.status() == initial; ++i)
             std::this_thread::sleep_for(std::chrono::milliseconds(2));
         assert(scanner.status() != initial && scanner.takeLink().empty());
-        scanner.stop(); clean();
+        blank_frame = true;
+        for (int i=0; i<500 && scanner.status() != initial; ++i)
+            std::this_thread::sleep_for(std::chrono::milliseconds(2));
+        assert(scanner.status() == initial); // Do not retain an unrelated QR error on later frames.
+        scanner.stop(); clean(); blank_frame = false;
         std::cout << "Non-proxy / invalid proxy QR rejected: PASS\n";
         return 0;
     }
@@ -123,7 +131,7 @@ int main(int argc, char** argv) {
     fail_at = 0;
     // Normal and mirrored fixtures exercise extraction, decoding and import parsing.
     const auto original = frame;
-    for (int pass=0; pass<(styled ? 6 : 2); ++pass) {
+    for (int pass=0; pass<(styled ? 7 : 2); ++pass) {
         frame = original;
         if (pass == 1) for (int y=0; y<480; ++y) for (int x=0; x<320; ++x)
             std::swap(frame[y*640+x], frame[y*640+639-x]);
@@ -139,6 +147,8 @@ int main(int argc, char** argv) {
             }
         }
         if (pass == 5) for (auto& pixel : frame) pixel = pixel ? 170 : 65;
+        if (shaded || pass == 6) for (int y=0; y<480; ++y) for (int x=0; x<640; ++x)
+            frame[y*640+x] = 20 + x*180/640 + (frame[y*640+x] ? 35 : 0);
         assert(scanner.start() && scanner.active());
         std::string link;
         for (int i=0; i<500 && link.empty(); ++i) {
@@ -152,7 +162,12 @@ int main(int argc, char** argv) {
     }
     // Cancel on a blank frame; restart is possible and no stale result survives.
     std::fill(frame.begin(), frame.end(), 255);
-    assert(scanner.start()); std::this_thread::sleep_for(std::chrono::milliseconds(25));
+    const int previous_reads = reads;
+    assert(scanner.start());
+    for (int i=0; i<100 && reads < previous_reads+12; ++i)
+        std::this_thread::sleep_for(std::chrono::milliseconds(2));
+    assert(reads >= previous_reads+12); // Preview capture continues between decode attempts.
+    scanner.upload();
     assert(scanner.takeLink().empty()); scanner.stop(); clean();
     assert(scanner.start()); scanner.stop(); clean();
     assert(reads > 0 && closes > 0 && frees > 0);

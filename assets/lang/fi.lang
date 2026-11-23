@@ -119,9 +119,12 @@ doc.download_failed = Lataus epäonnistui: {0}
 doc.downloading = Ladataan: {0}
 doc.exists = Tallennettu jo: {0}
 doc.invalid_path = Virheellinen latauspolku
+doc.queue_full = Latausjono on täynnä (8 tehtävää)
 doc.save_failed = Tiedostoa ei voitu tallentaa
 doc.saved = Tallennettu: {0}
 doc.saving = Tallennetaan: {0}
+doc.source_changed = Lähdetiedosto on muuttunut
+doc.source_unavailable = Lähdetiedostoa ei voi palauttaa turvallisesti
 folder.all = Kaikki keskustelut
 folder.default = Kansio
 folder.archive = Arkistoidut
@@ -839,7 +842,7 @@ about.description = Epävirallinen avoimen lähdekoodin Telegram-asiakas, joka p
 about.development = Projektia kehitetään aktiivisesti. Kaikkia Telegramin toimintoja ei vielä ole; joissakin voi olla rajoituksia tai virheitä.
 about.privacy_title = Yksityisyys
 about.privacy_servers = VitaPlane ei lähetä viestejäsi, tiedostojasi tai diagnostiikkalokeja tekijän palvelimille.
-about.privacy_logs = Lokit sisältävät teknisiä tietoja ja ovat oletuksena pois käytöstä. VitaPlane ei tallenna niihin viestitekstejä, puhelinnumeroita tai salasanoja. Lokit pysyvät konsolilla eikä niitä lähetetä automaattisesti. Ongelmatilanteessa voit halutessasi lähettää ne käsin kehittäjälle vian selvittämiseksi.
+about.privacy_logs = Välityspalvelimen yhteyslokit käynnistyvät automaattisesti; muut diagnostiikkalokit ovat oletuksena pois käytöstä. VitaPlane ei tallenna niihin viestitekstejä, puhelinnumeroita tai salasanoja. Lokit pysyvät konsolilla eikä niitä lähetetä automaattisesti. Ongelmatilanteessa voit halutessasi lähettää ne käsin kehittäjälle vian selvittämiseksi.
 about.privacy_connections = Asiakas yhdistää Telegramin palvelimiin. Päivitystarkistukset ja lataukset käyttävät GitHubia. TDLib voi ottaa yhteyttä ulkoisiin palveluihin välityspalvelinten nimien selvittämiseksi ja yhteysasetusten hakemiseksi. Välityspalvelinta käytettäessä yhteys kulkee valitun palvelimen kautta.
 about.security_title = Turvallisuus ja riskit
 about.security_intro = VitaPlane on epävirallinen asiakas. Sovellusvirheet ja alustan rajoitukset voivat vaikuttaa turvallisuuteen.
@@ -1066,6 +1069,10 @@ settings.section.chats = Keskustelut
 settings.section.controls = Ohjaus ja syöttö
 settings.section.data = Tiedot ja tallennustila
 settings.section.connection = Yhteys
+settings.call_audio = Puheluiden ääni
+settings.call_audio_stable = Vakaa
+settings.call_audio_low = Pieni viive
+settings.call_audio_hint = Pieni viive voi lisätä äänen katkoksia. Voimassa seuraavasta puhelusta.
 settings.section.security = Tietosuoja
 settings.section.updates = Päivitykset ja asennus
 settings.section.about = Tietoja ja diagnostiikka
@@ -1110,3 +1117,106 @@ message.edit_invalid = Kirjoita tekstiä, enintään 1023 UTF-8-tavua.
 message.edit_changed = Viesti muuttui. Peruuta ja avaa uudelleen.
 message.edit_timeout = Ei vastausta. Tarkista viesti ennen uutta yritystä.
 keyboard.save = Tallenna
+
+# --- Download panel ---
+downloads.title = Lataukset
+downloads.queued = Jonossa
+downloads.paused = Keskeytetty
+downloads.pause = Keskeytä
+downloads.resume = Jatka
+downloads.saving = Tallennetaan
+downloads.restoring = Palautetaan
+downloads.error = Yritä uudelleen
+downloads.hint = Napauta / {cross}: tiedostot · L+R: valitse paneeli
+downloads.priority = Prioriteetti
+downloads.list_hint = {cross}: keskeytä / jatka · ←/→ Prioriteetti · {square} Peruuta · {circle}: takaisin
+downloads.carousel_hint = Pyyhkäise ↑/↓
+
+proxy.type.web = WEB (HTTPS)
+proxy.web.invalid = WEB needs a DNS hostname, optional path, secret and HTTPS port 443
+proxy.web.failed = WEB connection failed; save and apply to retry
+proxy.web.tls = WEB TLS connection failed; check the certificate and network
+proxy.web.unsupported = Unsupported WEB transport: only https is supported
+
+proxy.pool.auto = Auto-switch on failure
+proxy.pool.analyze = Check all proxies
+proxy.pool.add = Add proxy
+proxy.pool.unknown = Not checked
+proxy.pool.checking = Checking...
+proxy.pool.available = {0} ms
+proxy.pool.unavailable = Unavailable
+proxy.pool.limit = Up to 16 proxies can be saved
+proxy.pool.empty = Add a proxy manually or scan its QR code
+proxy.pool.saving = Saving proxy settings...
+proxy.pool.hint = Auto-switch chooses a reachable alternative after a sustained connection failure
+proxy.pool.delete_confirm = Delete this saved proxy?
+proxy.pool.use = {cross} Select
+proxy.pool.edit = {square} Edit
+proxy.pool.delete = {triangle} Delete
+proxy.pool.back = {circle} Back
+proxy.pool.confirm = {cross} Delete
+
+proxy.pool.invalid = Proxy fields are incomplete or too long
+
+proxy.check.dns = Cannot resolve the proxy address: DNS error
+proxy.check.error = Proxy unreachable: TDLib connection error ({0})
+
+proxy.pool.checked = Proxy checks complete
+
+logs.proxy = Proxy connections
+
+tg.init_failed = Telegram initialization failed; see proxy.log
+
+# Emoji picker and expanded draft
+emoji.faces = Kasvot
+emoji.people = Ihmiset
+emoji.nature = Luonto
+emoji.food = Ruoka
+emoji.travel = Matkailu
+emoji.activities = Toiminta
+emoji.objects = Esineet
+emoji.symbols = Symbolit
+emoji.flags = Liput
+emoji.recent = Viimeisimmät
+emoji.back = ABC
+emoji.empty = Ei viimeisimpiä emojeja
+emoji.help = {cross} Lisää / pidä: muunnelmat · L/R: sivut · {circle} ABC
+keyboard.expand_help = Pyyhkäisy / nuolet: vieritä · Napautus / {cross}: näppäimistö · Pito: suurennus
+
+emoji.categories = Emojiluokat
+emoji.category_help = ↑↓ / pyyhkäisy: vieritä · {cross} Valitse · {circle} Takaisin
+
+proxy.pool.interval = Vaihda viiveellä
+proxy.pool.seconds = {0} s
+
+presence.typing = {0} kirjoittaa…
+
+settings.unread_counter = Lukemattomien viestien laskuri
+
+settings.hide_muted_unread = Mykistetyt: korvaa lukemattomien merkki
+emoji.premium = Premium
+emoji.insert = Lisää emoji
+
+call.start = Äänipuhelu
+call.hang_up = Lopeta puhelu
+call.dialing = Soitetaan…
+call.connected = Puhelu yhdistetty
+call.ended = Puhelu päättyi
+call.failed = Puhelu epäonnistui
+call.place = Soita
+call.connecting = Yhdistetään…
+call.mute = Mykistä mikrofoni
+call.unmute = Avaa mikrofoni
+call.close = Sulje
+call.confirm_hint = {cross} Vahvista   {circle} Peruuta
+call.active_hint = {cross} Vahvista   {circle} Lopeta puhelu
+call.accept = Vastaa
+call.decline = Hylkää
+call.history_incoming = Saapuva puhelu
+call.history_outgoing = Lähtevä puhelu
+call.history_missed = Vastaamaton puhelu
+call.history_unanswered = Puheluun ei vastattu
+call.history_declined = Hylätty puhelu
+call.history_disconnected = Puhelu katkesi
+call.history_video = Videopuhelu
+call.incoming_hint = {cross} Vastaa   {circle} Hylkää

@@ -7,6 +7,7 @@
 #include "cpu_scheduler.h"
 #include <vita2d.h>
 #include <psp2/camera.h>
+#include <psp2/motion.h>
 #include <psp2/audioin.h>
 #include <psp2/kernel/sysmem.h>
 #include <psp2/kernel/threadmgr.h>
@@ -41,7 +42,7 @@ bool VideoNoteRecorder::open(const std::string& path) {
     cancel_=begin_=finish_=switch_=false;
     audio_stop_=audio_done_=audio_error_=false;
     writer_error_=false;
-    preview_pixels_.assign(Side*Side,0); preview_ready_=false;
+    preview_pixels_.assign(Side*Side,0); preview_ready_=false; preview_turns_=texture_turns_=0;
     vita2d_wait_rendering_done();
     texture_=vita2d_create_empty_texture(Side,Side);
     if (!texture_) { fail(i18n::text("vnr.err.camera_memory")); return false; }
@@ -93,7 +94,10 @@ bool VideoNoteRecorder::openCamera(int device) {
     if (rc<0) { setStatus(camera_error(i18n::text("cam.open_failed"),rc)); closeCamera(); return false; }
     camera_open_=true; rc=sceCameraStart(device);
     if (rc<0) { setStatus(camera_error(i18n::text("cam.start_failed"),rc)); closeCamera(); return false; }
-    camera_started_=true; return true;
+    camera_started_=true;
+    camera_reverse_=SCE_CAMERA_REVERSE_OFF;
+    sceCameraGetReverse(device, &camera_reverse_);
+    return true;
 }
 void VideoNoteRecorder::closeCamera() {
     if (camera_started_) { sceCameraStop(device_); camera_started_=false; }
@@ -176,6 +180,20 @@ void VideoNoteRecorder::run() {
     uint32_t last_pts=0;
     unsigned frames=0;
     bool error=false;
+    bool motion_sampling=sceMotionStartSampling()>=0;
+    int up_x=0, up_y=1;
+    auto sample_orientation=[&] {
+        SceMotionState motion{};
+        if (!motion_sampling || sceMotionGetState(&motion)<0) return;
+        const auto& up=motion.basicOrientation;
+        // When the device faces up or down, keep its last known roll.
+        if (up.x>0.5f || up.x<-0.5f) { up_x=up.x>0 ? 1 : -1; up_y=0; }
+        else if (up.y>0.5f || up.y<-0.5f) { up_x=0; up_y=up.y>0 ? 1 : -1; }
+    };
+    auto stop_motion=[&] {
+        if (motion_sampling) sceMotionStopSampling();
+        motion_sampling=false;
+    };
     while (!cancel_) {
         if (switch_.exchange(false)) {
             int previous=device_; closeCamera();
@@ -186,6 +204,8 @@ void VideoNoteRecorder::run() {
             last_frame=UINT64_MAX;
         }
         if (begin_.exchange(false) && state()==State::Preview) {
+            sample_orientation();
+            stop_motion();
             try { capture_.reset(new CaptureBuffer()); }
             catch (const std::bad_alloc&) { setStatus(i18n::text("vnr.err.camera_memory")); error=true; break; }
             setStatus(i18n::text("rec.recording"));
@@ -205,10 +225,18 @@ void VideoNoteRecorder::run() {
             // Avoid thousands of individual reads from uncached DMA memory.
             performance::Scope crop_measurement(performance::Metric::VideoCaptureCrop);
             last_frame=read.frame; std::memcpy(camera_copy.data(),camera_,camera_copy.size());
-            crop(camera_copy.data(),frame.data()); crop_measurement.finish();
+            sample_orientation();
+            // The front lens looks the opposite way to the rear lens.
+            const bool reverse_x=(device_==SCE_CAMERA_DEVICE_FRONT) != bool(camera_reverse_ & SCE_CAMERA_REVERSE_MIRROR);
+            const int x=reverse_x ? -up_x : up_x;
+            const int y=(camera_reverse_ & SCE_CAMERA_REVERSE_FLIP) ? -up_y : up_y;
+            const int turns=x>0 ? 3 : x<0 ? 1 : y<0 ? 2 : 0;
+            crop(camera_copy.data(),frame.data(),turns); crop_measurement.finish();
             performance::Scope preview_measurement(performance::Metric::VideoCapturePreview);
             rgba(frame.data(),preview_frame.data());
             pthread_mutex_lock(&mutex_);
+            // The corrected image still needs to face up on the tilted live display.
+            preview_turns_=up_x>0 ? 1 : up_x<0 ? 3 : up_y<0 ? 2 : 0;
             preview_pixels_.swap(preview_frame); preview_ready_=true;
             pthread_mutex_unlock(&mutex_);
             preview_measurement.finish();
@@ -232,6 +260,7 @@ void VideoNoteRecorder::run() {
         }
         sceKernelDelayThread(2000);
     }
+    stop_motion();
     audio_stop_=true;
     if (audio_started_) { pthread_join(audio_thread_,nullptr); audio_started_=false; }
     closeCamera();
@@ -273,6 +302,7 @@ void VideoNoteRecorder::upload() {
         auto* data=static_cast<uint8_t*>(vita2d_texture_get_datap(texture_));
         unsigned stride=vita2d_texture_get_stride(texture_);
         for (int y=0;y<Side;++y) std::memcpy(data+y*stride,preview_pixels_.data()+y*Side,Side*4);
+        texture_turns_=preview_turns_;
         preview_ready_=false;
     }
     pthread_mutex_unlock(&mutex_);

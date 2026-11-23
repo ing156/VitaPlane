@@ -152,9 +152,12 @@ doc.download_failed = Ошибка загрузки: {0}
 doc.downloading = Загрузка: {0}
 doc.exists = Уже сохранено: {0}
 doc.invalid_path = Неверный путь загрузки
+doc.queue_full = Очередь загрузок заполнена (8 задач)
 doc.save_failed = Не удалось сохранить файл
 doc.saved = Сохранено: {0}
 doc.saving = Сохранение: {0}
+doc.source_changed = Исходный файл изменился
+doc.source_unavailable = Не удалось безопасно восстановить исходный файл
 
 # --- folder ---
 folder.all = Все чаты
@@ -940,7 +943,7 @@ about.description = Неофициальный клиент Telegram с откр
 about.development = Проект активно развивается. Пока не все функции Telegram доступны, а некоторые возможности могут работать с ограничениями или ошибками.
 about.privacy_title = Приватность
 about.privacy_servers = VitaPlane не отправляет переписку, файлы и диагностические логи на серверы автора проекта.
-about.privacy_logs = Диагностические логи содержат техническую информацию о работе приложения и по умолчанию отключены. VitaPlane не записывает в них текст переписки, номер телефона или пароли. Логи хранятся только на консоли и автоматически никуда не отправляются. При возникновении проблем пользователь может по желанию вручную передать их разработчику для диагностики.
+about.privacy_logs = Журнал подключения прокси включается автоматически, остальные диагностические логи по умолчанию отключены. VitaPlane не записывает в них текст переписки, номер телефона или пароли. Логи хранятся только на консоли и автоматически никуда не отправляются. При возникновении проблем пользователь может по желанию вручную передать их разработчику для диагностики.
 about.privacy_connections = Для работы клиент подключается к серверам Telegram. Проверка и загрузка обновлений выполняются через GitHub. TDLib также может обращаться к внешним сервисам для разрешения имён прокси и получения конфигурации подключения. При использовании прокси соединение проходит через выбранный вами сервер.
 about.security_title = Безопасность и риски
 about.security_intro = VitaPlane — неофициальный клиент. Ошибки приложения и ограничения платформы могут влиять на безопасность.
@@ -1177,6 +1180,10 @@ settings.section.chats = Чаты
 settings.section.controls = Управление и ввод
 settings.section.data = Данные и память
 settings.section.connection = Подключение
+settings.call_audio = Звук звонков
+settings.call_audio_stable = Стабильный
+settings.call_audio_low = Низкая задержка
+settings.call_audio_hint = При низкой задержке звук может чаще прерываться. Действует со следующего звонка.
 settings.section.security = Защита данных
 settings.section.updates = Обновления и установка
 settings.section.about = О приложении и диагностика
@@ -1212,3 +1219,106 @@ message.edit_invalid = Введите непустой текст до 1023 ба
 message.edit_changed = Сообщение изменено извне. Отмените и откройте заново.
 message.edit_timeout = Нет ответа. Проверьте сообщение перед повтором.
 keyboard.save = Сохранить
+
+# --- Download panel ---
+downloads.title = Загрузки
+downloads.queued = В очереди
+downloads.paused = Приостановлено
+downloads.pause = Пауза
+downloads.resume = Продолжить
+downloads.saving = Сохранение
+downloads.restoring = Восстановление
+downloads.error = Нужно повторить
+downloads.hint = Касание / {cross}: файлы · L+R: выбрать панель
+downloads.priority = Приоритет
+downloads.list_hint = {cross}: пауза / продолжить · ←/→ Приоритет · {square} Отмена · {circle}: назад
+downloads.carousel_hint = Смахните ↑/↓
+
+proxy.type.web = WEB (HTTPS)
+proxy.web.invalid = Для WEB нужны домен, необязательный путь, секрет и HTTPS-порт 443
+proxy.web.failed = Ошибка подключения WEB; сохраните и примените для повтора
+proxy.web.tls = Ошибка TLS для WEB; проверьте сертификат и сеть
+proxy.web.unsupported = Транспорт WEB не поддерживается: доступен только https
+
+proxy.pool.auto = Автопереключение при сбое
+proxy.pool.analyze = Проверить все прокси
+proxy.pool.add = Добавить прокси
+proxy.pool.unknown = Не проверен
+proxy.pool.checking = Проверка...
+proxy.pool.available = {0} мс
+proxy.pool.unavailable = Недоступен
+proxy.pool.limit = Можно сохранить до 16 прокси
+proxy.pool.empty = Добавьте прокси вручную или отсканируйте QR-код
+proxy.pool.saving = Сохранение настроек прокси...
+proxy.pool.hint = При длительном сбое автопереключение выберет доступный резерв
+proxy.pool.delete_confirm = Удалить выбранный прокси?
+proxy.pool.use = {cross} Выбрать
+proxy.pool.edit = {square} Изменить
+proxy.pool.delete = {triangle} Удалить
+proxy.pool.back = {circle} Назад
+proxy.pool.confirm = {cross} Удалить
+
+proxy.pool.invalid = Поля прокси не заполнены или слишком длинные
+
+proxy.check.dns = Не удалось определить адрес прокси: ошибка DNS
+proxy.check.error = Прокси недоступен: ошибка соединения TDLib ({0})
+
+proxy.pool.checked = Проверка прокси завершена
+
+logs.proxy = Подключение прокси
+
+tg.init_failed = Ошибка запуска Telegram; подробности в proxy.log
+
+# Emoji picker and expanded draft
+emoji.faces = Смайлы
+emoji.people = Люди
+emoji.nature = Природа
+emoji.food = Еда
+emoji.travel = Путешествия
+emoji.activities = Занятия
+emoji.objects = Предметы
+emoji.symbols = Символы
+emoji.flags = Флаги
+emoji.recent = Недавние
+emoji.back = АБВ
+emoji.empty = Нет недавних эмодзи
+emoji.help = {cross} Вставить / удерживать: варианты · L/R: страницы · {circle} АБВ
+keyboard.expand_help = Свайп / стрелки: прокрутка · Касание / {cross}: клавиатура · Удержание: лупа
+
+emoji.categories = Категории эмодзи
+emoji.category_help = ↑↓ / свайп: прокрутка · {cross} Выбрать · {circle} Назад
+
+proxy.pool.interval = Ожидание переключения
+proxy.pool.seconds = {0} с
+
+presence.typing = {0} печатает…
+
+settings.unread_counter = Счётчик непрочитанных
+
+settings.hide_muted_unread = Тихие чаты: значок вместо счётчика
+emoji.premium = Премиум
+emoji.insert = Вставить эмодзи
+
+call.start = Аудиозвонок
+call.hang_up = Завершить звонок
+call.dialing = Вызов…
+call.connected = Звонок соединён
+call.ended = Звонок завершён
+call.failed = Не удалось выполнить звонок
+call.place = Позвонить
+call.connecting = Соединение…
+call.mute = Выключить микрофон
+call.unmute = Включить микрофон
+call.close = Закрыть
+call.confirm_hint = {cross} Подтвердить   {circle} Отмена
+call.active_hint = {cross} Подтвердить   {circle} Отбой
+call.accept = Принять
+call.decline = Отклонить
+call.history_incoming = Входящий звонок
+call.history_outgoing = Исходящий звонок
+call.history_missed = Пропущенный звонок
+call.history_unanswered = Звонок без ответа
+call.history_declined = Отклонённый звонок
+call.history_disconnected = Звонок прерван
+call.history_video = Видеозвонок
+call.incoming_hint = {cross} Принять   {circle} Отклонить

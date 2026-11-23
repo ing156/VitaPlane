@@ -2,7 +2,7 @@
 
 **Unofficial Telegram client for PS Vita · Неофициальный Telegram-клиент для PS Vita**
 
-Current version / Текущая версия: **0.39.05** · Vita package / Версия пакета: **39.05**
+Current version / Текущая версия: **0.40.05** · Vita package / Версия пакета: **40.05**
 
 Read chats, send messages and files, use stickers, play media and record voice messages and video notes with buttons or touch.
 Читайте чаты, отправляйте сообщения и файлы, используйте стикеры, смотрите медиа, записывайте голосовые сообщения и видеокружки с помощью кнопок или сенсорного экрана.

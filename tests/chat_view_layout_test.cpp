@@ -20,10 +20,13 @@ int main() {
                     assert(view.attachHit(x,y,count) == (hit ? row/40 : -1));
                 }
         }
-        assert(view.bubbleWidth() == (combined ? 672 : 712));
+        assert(view.bubbleWidth() == (combined ? 656 : 712));
         assert(view.bodyWidth() + 32 == view.bubbleWidth());
         assert(view.bubbleLeft() + view.bubbleWidth() <= ui_layout::bubble_right);
         assert(view.top == 71);
+        assert(view.messageTop() == 79);
+        assert(view.bubbleLeft() - 28 - 12 == view.left() + 8);
+        assert(view.bubbleLeft() - 6 - (view.left() + 8 + 28) == 6);
         assert(view.listLeft()+view.listWidth() == (combined ? 214 : 950));
         assert(view.listInset() == (combined && folders ? 12 : 0));
         // The rail changes only the chat rows, never the message pane or its right edge.
@@ -85,6 +88,8 @@ int main() {
             assert(!view.historyHit(view.left()-1, view.top, bottom));
             assert(!view.historyHit(960, view.top, bottom));
             assert(!view.historyHit(view.center(), view.top-1, bottom));
+            for (int y = view.top; y < view.messageTop(); ++y)
+                assert(view.historyHit(view.center(), y, bottom));
             assert(!view.historyHit(view.center(), bottom, bottom));
             // Pointer routing has no dependency on the controller's focused pane.
             for (int y = 0; y <= 544; ++y) for (int x : {-1, 0, 9, 10, 213, 214, 223, 224, 225, 959, 960}) {
@@ -98,7 +103,7 @@ int main() {
             }
             if (combined) {
                 assert(view.scrollPane(20, view.searchTop(), bottom) == chat_view::Pane::None);
-                assert(view.scrollPane(300, view.searchTop(), bottom) == chat_view::Pane::History);
+                assert(view.scrollPane(300, view.messageTop(), bottom) == chat_view::Pane::History);
                 assert(view.scrollPane(20, view.listTop()-1, bottom) == chat_view::Pane::None);
             }
         }

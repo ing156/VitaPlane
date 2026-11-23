@@ -8,6 +8,8 @@
 #include <psp2/camera.h>
 #include <psp2/kernel/sysmem.h>
 #include <psp2/kernel/threadmgr.h>
+#include <algorithm>
+#include <chrono>
 #include <cstdio>
 #include <cstring>
 
@@ -97,6 +99,9 @@ void QrScanner::run() {
     // Keep both identification attempts on one captured frame even if camera
     // DMA updates its buffer while the decoder is working.
     std::vector<uint8_t> frame(Width * Height);
+    std::vector<uint32_t> sums((Width + 1) * (Height + 1));
+    auto next_decode = std::chrono::steady_clock::time_point::min();
+    unsigned decode_frame = 0;
     while (!stopping_) {
         SceCameraRead read{};
         read.size = sizeof(read); read.mode = 1; // Nonblocking latest-frame read.
@@ -104,41 +109,62 @@ void QrScanner::run() {
         if (rc >= 0 && read.frame != last_frame) {
             last_frame = read.frame;
             std::memcpy(frame.data(), camera_buffer_, frame.size());
-            uint8_t* gray = quirc_begin(decoder_, nullptr, nullptr);
-            std::memcpy(gray, frame.data(), frame.size());
             pthread_mutex_lock(&mutex_);
             for (int y = 0; y < PreviewHeight; ++y)
                 for (int x = 0; x < PreviewWidth; ++x) {
-                    uint32_t v = gray[(y * 2) * Width + x * 2];
+                    uint32_t v = frame[(y * 2) * Width + x * 2];
                     preview_pixels_[y * PreviewWidth + x] = 0xff000000u | v | (v << 8) | (v << 16);
                 }
             preview_ready_ = true;
             pthread_mutex_unlock(&mutex_);
-            // Retry the same frame with straight-side finder fitting for the
-            // rounded rings used by Telegram's shared QR codes.
-            for (int attempt = 0; attempt < 2 && !stopping_; ++attempt) {
-                if (attempt) {
-                    gray = quirc_begin(decoder_, nullptr, nullptr);
-                    std::memcpy(gray, frame.data(), frame.size());
+            const auto now = std::chrono::steady_clock::now();
+            if (now < next_decode) { sceKernelDelayThread(10000); continue; }
+            next_decode = now + std::chrono::milliseconds(200);
+            // Alternate raw and locally thresholded frames: screen glare and
+            // shadows can defeat quirc's single global threshold.
+            if (decode_frame++ % 2) {
+                for (int y = 0; y < Height; ++y) {
+                    uint32_t row = 0;
+                    for (int x = 0; x < Width; ++x) {
+                        row += frame[y * Width + x];
+                        sums[(y + 1) * (Width + 1) + x + 1] = sums[y * (Width + 1) + x + 1] + row;
+                    }
                 }
+                for (int y = 0; y < Height; ++y) {
+                    const int top = std::max(0, y - 24), bottom = std::min(Height, y + 25);
+                    for (int x = 0; x < Width; ++x) {
+                        const int left = std::max(0, x - 24), right = std::min(Width, x + 25);
+                        const uint32_t sum = sums[bottom * (Width + 1) + right] - sums[top * (Width + 1) + right]
+                            - sums[bottom * (Width + 1) + left] + sums[top * (Width + 1) + left];
+                        const int mean = sum / ((bottom - top) * (right - left));
+                        frame[y * Width + x] = frame[y * Width + x] + 7 < mean ? 0 : 255;
+                    }
+                }
+            }
+            i18n::Text scan_status = i18n::text("qr.hint");
+            // Retry straight-side finder fitting for Telegram's rounded rings.
+            for (int attempt = 0; attempt < 2 && !stopping_; ++attempt) {
+                uint8_t* gray = quirc_begin(decoder_, nullptr, nullptr);
+                std::memcpy(gray, frame.data(), frame.size());
                 quirc_set_rounded_finders(decoder_, attempt);
                 quirc_end(decoder_);
                 for (int i = 0; i < quirc_count(decoder_); ++i) {
                     quirc_code code{}; quirc_data data{};
                     quirc_extract(decoder_, i, &code);
                     auto error = quirc_decode(&code, &data);
-                    if (error == QUIRC_ERROR_DATA_ECC) { quirc_flip(&code); error = quirc_decode(&code, &data); }
-                    if (error != QUIRC_SUCCESS) continue;
+                    if (error != QUIRC_SUCCESS) { quirc_flip(&code); error = quirc_decode(&code, &data); }
+                    if (error != QUIRC_SUCCESS || data.payload_len == 0) continue;
                     std::string payload(reinterpret_cast<char*>(data.payload), data.payload_len);
                     ProxyLink proxy; i18n::Text message;
                     auto parsed = parse_proxy_link(payload, proxy, message);
                     pthread_mutex_lock(&mutex_);
                     if (parsed == ProxyLinkResult::Valid) link_ = payload;
-                    else status_ = parsed == ProxyLinkResult::Invalid ? message : i18n::text("qr.no_link");
+                    else scan_status = parsed == ProxyLinkResult::Invalid ? message : i18n::text("qr.no_link");
                     pthread_mutex_unlock(&mutex_);
                     if (parsed == ProxyLinkResult::Valid) return;
                 }
             }
+            pthread_mutex_lock(&mutex_); status_ = scan_status; pthread_mutex_unlock(&mutex_);
         } else if (rc < 0 && rc != (int)SCE_CAMERA_ERROR_ALREADY_READ && rc != (int)SCE_CAMERA_ERROR_NOT_ACTIVE &&
                    rc != (int)SCE_CAMERA_ERROR_TIMEOUT) {
             char message[120];
@@ -146,8 +172,8 @@ void QrScanner::run() {
             i18n::Text text = i18n::text("qr.err.camera_read", {message});
             pthread_mutex_lock(&mutex_); status_ = text; pthread_mutex_unlock(&mutex_);
         }
-        // Decode at most five VGA frames per second, leaving UI/TDLib responsive.
-        for (int i = 0; i < 20 && !stopping_; ++i) sceKernelDelayThread(10000);
+        // Poll fresh preview frames independently of the five-Hz decode budget.
+        sceKernelDelayThread(10000);
     }
 }
 

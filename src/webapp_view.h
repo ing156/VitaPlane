@@ -76,7 +76,7 @@ struct WebAppGesture {
 inline bool webapp_proxy_url(bool enabled, const ProxyConfig& proxy, std::string& url) {
     url.clear();
     // MTProxy carries Telegram traffic only; Mini Apps use a direct connection.
-    if (!enabled || proxy.kind == ProxyKind::MTProto) return true;
+    if (!enabled || proxy.kind == ProxyKind::MTProto || proxy.kind == ProxyKind::Web) return true;
     if (!proxy.complete() || (proxy.kind != ProxyKind::Socks5 && proxy.kind != ProxyKind::Https) ||
         proxy.username.size() > 255 || proxy.password.size() > 255 ||
         proxy.username.find('\0') != std::string::npos || proxy.password.find('\0') != std::string::npos ||

@@ -1,3 +1,5 @@
+#include "emoji.h"
+#include <map>
 #include "custom_keyboard.h"
 #include "keyboard_layout.h"
 #include "keyboard_hold.h"
@@ -146,8 +148,8 @@ void shortcut_badge(vita2d_pgf* font, int button, int right, int top, unsigned c
     }
 }
 
-enum class Act { Char, Shift, Symbols, Language, Space, Delete, Clear, Cancel, Newline, Ok };
-struct Key { int x, y, w, h; Act act; std::string label; std::vector<std::string> alternatives{}; };
+enum class Act { Char, Shift, Symbols, Language, Space, Delete, Clear, Cancel, Newline, Ok, Emoji, EmojiChar, EmojiBack, EmojiPrev, EmojiNext, EmojiGroup, Premium, Collapse };
+struct Key { int x, y, w, h; Act act; std::string label; std::vector<std::string> alternatives{}; int emoji_index = -1; };
 size_t count_chars(const std::string& text) {
     size_t n = 0;
     for (unsigned char b : text) if ((b & 0xc0) != 0x80) ++n;
@@ -231,7 +233,7 @@ struct CustomKeyboard::Impl {
     const keyboard_layout::Layout& layout() const { return keyboard_layout::get(code); }
     bool choose_language(const std::string& requested, bool keep_focus = false) {
         const auto& chosen = keyboard_layout::get(requested);
-        if (chosen.code != requested || !keyboard_languages::contains(enabled, requested) || (chosen.system() && !allow_system)) return false;
+        if (chosen.code != requested || !keyboard_languages::contains(enabled, requested) || (chosen.system() && (!allow_system || !custom_emojis.empty()))) return false;
         cursor_drag = CursorDrag{};
         code = requested; language_chosen = true;
         symbols = false;
@@ -241,7 +243,7 @@ struct CustomKeyboard::Impl {
         geometry();
         return true;
     }
-    bool secret = false, message = false, editing = false, was_touching = false;
+    bool secret = false, message = false, editing = false, premium = true, was_touching = false;
     int row = 0, col = 0;
     bool touch_mode = false, feedback_down = false;
     Key feedback{}, pending_touch{};
@@ -288,21 +290,20 @@ struct CustomKeyboard::Impl {
         size_t first = 0;
         uint64_t since = 0, scroll_at = 0;
         static constexpr uint64_t delay = 350000, scroll_interval = 150000;
+        int start_y = 0;
+        size_t start_first = 0;
+        bool scrolled = false;
     } cursor_drag;
     size_t max_bytes = 1023;
     std::string text;
+    std::vector<CustomEmojiSpan> custom_emojis;
+    bool premium_requested = false;
     size_t cursor = 0; // UTF-8 byte boundary; edits never split a code point.
     std::string context() const { return text.substr(0, cursor); }
-    size_t previous() const {
-        size_t at = cursor;
-        if (at) --at;
-        while (at && (static_cast<unsigned char>(text[at]) & 0xc0) == 0x80) --at;
-        return at;
-    }
+    size_t previous() const { return emoji::previous(text, cursor); }
     void move_cursor(bool right) {
         if (right && cursor < text.size()) {
-            ++cursor;
-            while (cursor < text.size() && (static_cast<unsigned char>(text[cursor]) & 0xc0) == 0x80) ++cursor;
+            cursor = emoji::next(text, cursor);
         } else if (!right) cursor = previous();
         casing.edited();
         feedback_down = false; feedback_until = 0; cursor_until = clock + 140000;
@@ -319,10 +320,11 @@ struct CustomKeyboard::Impl {
     };
     int popup_count() const {
         const int count = static_cast<int>(hold.key.alternatives.size());
-        return hold.key.act == Act::Language ? std::min(count, 7) : count;
+        return (hold.key.act == Act::Language || hold.key.act == Act::EmojiChar) ? std::min(count, 7) : count;
     }
     int popup_option(int cell, const Popup& popup) const {
         const int count = static_cast<int>(hold.key.alternatives.size());
+        if (hold.key.act == Act::EmojiChar) return (hold.window + cell - popup.anchor + count) % count;
         return hold.key.act == Act::Language ? hold.window + cell : (cell - popup.anchor + count) % count;
     }
     Popup popup_geometry() const {
@@ -344,6 +346,17 @@ struct CustomKeyboard::Impl {
             hold = Hold{}; feedback_down = false; feedback_until = 0;
             return;
         }
+        if (hold.key.act == Act::EmojiGroup) {
+            if (!mature && down && (x < hold.key.x || x >= hold.key.x + hold.key.w || y < hold.key.y || y >= hold.key.y + hold.key.h) && hold.touch) {
+                hold=Hold{}; feedback_down=false;
+            } else if (mature) {
+                category_picker={}; category_picker.open=true; category_picker.waiting=down;
+                category_picker.focus=emoji_group;
+                category_picker.first=std::clamp(emoji_group-2,0,10-CategoryPicker::rows);
+                hold=Hold{}; feedback_down=false; feedback_until=0;
+            } else if (!down) { press(hold.key); hold=Hold{}; feedback_down=false; }
+            return;
+        }
         const int count = static_cast<int>(hold.key.alternatives.size());
         if (hold.touch && down) {
             if (!mature && (x < hold.key.x || x >= hold.key.x + hold.key.w ||
@@ -359,14 +372,16 @@ struct CustomKeyboard::Impl {
                 } else {
                     const int visible = popup_count();
                     const int cell = std::max(0, std::min(visible - 1, (x - popup.x - Popup::padding) / Popup::cell));
-                    // For larger language sets, dwell at an edge to scroll the carousel.
-                    const int direction = hold.key.act != Act::Language ? 0 :
-                        cell == visible - 1 && hold.window + visible < count ? 1 :
-                        cell == 0 && hold.window > 0 ? -1 : 0;
+                    // Dwell at an edge to reveal more language or emoji choices.
+                    const bool emoji = hold.key.act == Act::EmojiChar;
+                    const bool over_key = x >= hold.key.x && x < hold.key.x + hold.key.w && y >= hold.key.y && y < hold.key.y + hold.key.h;
+                    const int direction = count <= visible || (emoji && over_key) || (hold.key.act != Act::Language && !emoji) ? 0 :
+                        cell == visible - 1 && (emoji || hold.window + visible < count) ? 1 :
+                        cell == 0 && (emoji || hold.window > 0) ? -1 : 0;
                     if (!direction) hold.scroll_at = 0;
                     else if (!hold.scroll_at) hold.scroll_at = now + 350000;
                     else if (now >= hold.scroll_at) {
-                        hold.window += direction; hold.scroll_at = now + 180000;
+                        hold.window = (hold.window + direction + count) % count; hold.scroll_at = now + 180000;
                     }
                     hold.selected = popup_option(cell, popup);
                 }
@@ -374,7 +389,10 @@ struct CustomKeyboard::Impl {
         } else if (!hold.touch && mature) {
             if (pressed & SCE_CTRL_LEFT) hold.selected = (hold.selected + count - 1) % count;
             if (pressed & SCE_CTRL_RIGHT) hold.selected = (hold.selected + 1) % count;
-            if (hold.key.act == Act::Language) {
+            if (hold.key.act == Act::EmojiChar) {
+                const auto popup = popup_geometry();
+                if ((hold.selected - hold.window + popup.anchor + count) % count >= popup_count()) hold.window = hold.selected;
+            } else if (hold.key.act == Act::Language) {
                 hold.window = std::min(hold.window, hold.selected);
                 if (hold.selected >= hold.window + popup_count()) hold.window = hold.selected - popup_count() + 1;
             }
@@ -386,13 +404,153 @@ struct CustomKeyboard::Impl {
             else if (hold.selected >= 0) {
                 const std::string chosen = hold.key.alternatives[hold.selected];
                 if (hold.key.act == Act::Language) choose_language(chosen, true);
-                else press({0, 0, 0, 0, Act::Char, chosen});
+                else press({0, 0, 0, 0, hold.key.act == Act::EmojiChar ? Act::EmojiChar : Act::Char, chosen});
             }
             hold = Hold{}; feedback_down = false; feedback_until = 0;
         }
     }
+    bool collapsed = false, header_touch = false;
+    size_t expanded_first = 0;
+    int visible_lines() const { return collapsed ? 16 : 5; }
+    int draft_bottom() const { return collapsed ? 510 : 218; }
+    static bool header_hit(int x, int y) { return x>=724 && x<776 && y>=0 && y<36; }
+    void collapse(bool value) {
+        collapsed=value;
+        expanded_first=draft_first;
+        hold=Hold{}; deletion=DeleteRepeat{}; cursor_drag=CursorDrag{};
+        pending_touch_active=false; feedback_down=false; feedback_until=0;
+    }
+    bool emoji_mode = false;
+    int emoji_group = 0, emoji_page = 0;
+    std::vector<int> emoji_items, recent_emojis;
+    std::map<int,int> emoji_choices;
+    static constexpr int emoji_columns = 10, emoji_page_size = 30;
+    static const char* group_key(int group) {
+        const char* keys[] = {"emoji.faces", "emoji.people", "emoji.nature", "emoji.food", "emoji.travel",
+            "emoji.activities", "emoji.objects", "emoji.symbols", "emoji.flags", "emoji.recent"};
+        return keys[group];
+    }
+    void emoji_category() {
+        emoji_items.clear();
+        if (emoji_group == 9) emoji_items = recent_emojis;
+        else for (size_t i=0; i<std::size(emoji_data::entries); ++i) {
+            const auto& entry = emoji_data::entries[i];
+            if (entry.picker && entry.base == i && entry.group == emoji_group) emoji_items.push_back(i);
+        }
+        emoji_page = 0;
+    }
+    void emoji_geometry() {
+        grid.clear();
+        for (int r=0; r<3; ++r) {
+            std::vector<Key> line;
+            for (int k=0; k<emoji_columns; ++k) {
+                const int item = emoji_page*emoji_page_size+r*emoji_columns+k;
+                if (item >= static_cast<int>(emoji_items.size())) break;
+                int index = emoji_items[item];
+                if (emoji_group != 9) {
+                    const auto choice = emoji_choices.find(index);
+                    if (choice != emoji_choices.end()) index = choice->second;
+                }
+                line.push_back({24+k*92, 262+r*72, 84, 64, Act::EmojiChar, emoji_data::entries[index].text, {}, index});
+            }
+            // Empty rows must not become controller targets.
+            if (!line.empty()) grid.push_back(std::move(line));
+        }
+        std::vector<Key> actions;
+        int x = 16;
+        auto add = [&](int w, Act act, const std::string& label) {
+            actions.push_back({x,478,w,64,act,label}); x+=w+8;
+        };
+        add(64, Act::Collapse, "");
+        add(96, Act::EmojiBack, tr("emoji.back"));
+        add(64, Act::EmojiPrev, "<");
+        add(message && !editing && premium ? 168 : 272, Act::EmojiGroup, tr(group_key(emoji_group)));
+        if (message && !editing && premium) add(96, Act::Premium, tr("emoji.premium"));
+        add(64, Act::EmojiNext, ">");
+        add(96, Act::Delete, "");
+        add(224, Act::Ok, tr(message ? (editing ? "keyboard.save" : "keyboard.send") : "vault.kb.ok"));
+        grid.push_back(std::move(actions));
+        row=std::clamp(row,0,static_cast<int>(grid.size())-1);
+        col=std::clamp(col,0,static_cast<int>(grid[row].size())-1);
+    }
+    struct CategoryPicker {
+        static constexpr int left=208, top=286, width=528, height=40, step=44, rows=5;
+        bool open=false, waiting=false, tracking=false, dragged=false;
+        int first=0, focus=0, origin_y=0, origin_first=0, x=0, y=0, target=-1;
+        static bool back(int x,int y) { return x>=716 && x<752 && y>=250 && y<282; }
+        static int hit(int x,int y,int first) {
+            x-=left; y-=top;
+            if (x<0 || x>=width || y<0 || y>=rows*step || y%step>=height) return -1;
+            return first+y/step;
+        }
+    } category_picker;
+    void handle_category_picker(unsigned pressed,unsigned held,bool touching,bool tapped,int x,int y) {
+        auto& picker=category_picker;
+        if (pressed & (SCE_CTRL_CIRCLE | SCE_CTRL_SELECT)) { picker={}; return; }
+        if (picker.waiting) {
+            if (!touching && !(held&SCE_CTRL_CROSS)) picker.waiting=false;
+            return;
+        }
+        auto choose=[&](int group) {
+            emoji_group=group; emoji_category(); picker={}; row=3; col=3; geometry();
+        };
+        if (pressed) picker.tracking=false;
+        if (pressed & (SCE_CTRL_UP | SCE_CTRL_DOWN)) {
+            touch_mode=false;
+            picker.focus=std::clamp(picker.focus+((pressed&SCE_CTRL_DOWN) ? 1 : -1),0,9);
+            picker.first=std::clamp(picker.first,picker.focus-CategoryPicker::rows+1,picker.focus);
+        }
+        if (pressed & SCE_CTRL_CROSS) { choose(picker.focus); return; }
+        if (tapped && !pressed) {
+            const bool body=x>=CategoryPicker::left && x<CategoryPicker::left+CategoryPicker::width &&
+                y>=CategoryPicker::top && y<CategoryPicker::top+CategoryPicker::rows*CategoryPicker::step;
+            picker.tracking=body || CategoryPicker::back(x,y);
+            picker.dragged=false; picker.origin_y=y; picker.origin_first=picker.first;
+            picker.target=CategoryPicker::back(x,y) ? -2 : CategoryPicker::hit(x,y,picker.first);
+            touch_mode=true;
+        }
+        if (!picker.tracking) return;
+        if (touching) {
+            picker.x=x; picker.y=y;
+            if (std::abs(y-picker.origin_y)>12 || (picker.target>=0 && CategoryPicker::hit(x,y,picker.first)!=picker.target)) picker.dragged=true;
+            if (picker.dragged && picker.target!=-2)
+                picker.first=std::clamp(picker.origin_first+(picker.origin_y-y)/CategoryPicker::step,0,10-CategoryPicker::rows);
+            return;
+        }
+        picker.tracking=false;
+        if (!picker.dragged) {
+            if (picker.target==-2 && CategoryPicker::back(picker.x,picker.y)) picker={};
+            else if (picker.target>=0 && CategoryPicker::hit(picker.x,picker.y,picker.first)==picker.target) choose(picker.target);
+        }
+    }
+    void draw_category_picker(vita2d_pgf* font,const Colors& c) const {
+        const auto& picker=category_picker;
+        vita2d_draw_rectangle(0,250,960,294,c.panel);
+        rounded_key_base(200,250,560,294,12,c.utility);
+        auto label=[&](const std::string& text,int x,int baseline,int width,float scale,unsigned ink) {
+            const int measured=rich_text_width(font,scale,text.c_str());
+            if (measured>width) scale*=float(width)/measured;
+            rich_text_draw(font,x,baseline,ink,scale,text.c_str());
+        };
+        label(tr("emoji.categories"),218,275,480,0.62f,c.utility_ink);
+        shortcut_badge(font,3,746,259,c.utility_ink,c.utility);
+        for (int row=0;row<CategoryPicker::rows;++row) {
+            const int index=picker.first+row,y=CategoryPicker::top+row*CategoryPicker::step;
+            const bool focus=(!touch_mode && index==picker.focus) ||
+                (picker.tracking && !picker.dragged && picker.target==index);
+            rounded_key_base(CategoryPicker::left-2,y-2,CategoryPicker::width+4,CategoryPicker::height+4,10,focus ? c.focus : c.separator);
+            rounded_key_base(CategoryPicker::left,y,CategoryPicker::width,CategoryPicker::height,8,c.key);
+            label(tr(group_key(index)),CategoryPicker::left+12,y+27,CategoryPicker::width-24,0.62f,c.key_ink);
+        }
+        constexpr float track=CategoryPicker::rows*CategoryPicker::step-4;
+        const float thumb=track*CategoryPicker::rows/10;
+        vita2d_draw_rectangle(748,CategoryPicker::top,3,track,c.separator);
+        vita2d_draw_rectangle(748,CategoryPicker::top+picker.first*(track-thumb)/(10-CategoryPicker::rows),3,thumb,c.accent);
+        label(tr("emoji.category_help"),218,532,524,0.4f,c.utility_muted);
+    }
     std::vector<std::vector<Key>> grid;
     void geometry() {
+        if (emoji_mode) { emoji_geometry(); return; }
         const bool shifted = casing.upper(context());
         constexpr int keys_top = 262, key_h = 64, gap = 8;
         // Geometry is shared by rendering, controller focus and touch hit testing.
@@ -444,12 +602,13 @@ struct CustomKeyboard::Impl {
             add(112, Act::Ok, tr("vault.kb.ok"));
         } else {
             // Frequent punctuation beside a flexible spacebar; actions stay on the right.
-            add(64, Act::Cancel);
+            add(64, Act::Collapse);
             add(88, Act::Symbols, symbols ? "abc" : "?123");
             add(72, Act::Language, layout().badge);
             add(52, Act::Char, ",");
             line.back().alternatives = keyboard_layout::alternatives(layout(), ",", 3, 0, false);
-            add(message ? 352 : 440, Act::Space);
+            add(64, Act::Emoji, "");
+            add(message ? 280 : 368, Act::Space);
             add(52, Act::Char, ".");
             line.back().alternatives = keyboard_layout::alternatives(layout(), ".", 3, 0, false);
             if (message) add(80, Act::Newline);
@@ -477,17 +636,41 @@ struct CustomKeyboard::Impl {
 
     bool press(const Key& key) {
         switch (key.act) {
+            case Act::EmojiChar:
+                if (text.size() + key.label.size() <= max_bytes) {
+                    const auto* entry = emoji::find(key.label);
+                    if (entry) {
+                        const int index = entry-emoji_data::entries;
+                        emoji_choices[entry->base] = index;
+                        recent_emojis.erase(std::remove(recent_emojis.begin(),recent_emojis.end(),index),recent_emojis.end());
+                        recent_emojis.insert(recent_emojis.begin(),index);
+                        if (recent_emojis.size()>30) recent_emojis.pop_back();
+                    }
+                }
+                [[fallthrough]];
             case Act::Char:
                 if (text.size() + key.label.size() <= max_bytes) {
+                    shift_custom_emojis(custom_emojis, cursor, cursor, key.label.size());
                     text.insert(cursor, key.label);
                     cursor += key.label.size();
                     casing.inserted();
                 }
                 break;
-            case Act::Newline:
-                if (message && text.size() < max_bytes) { text.insert(cursor++, 1, '\n'); casing.edited(); }
+            case Act::Emoji:
+                emoji_mode = true; emoji_group = recent_emojis.empty() ? 0 : 9;
+                emoji_category(); row=col=0; break;
+            case Act::Premium: premium_requested = true; break;
+            case Act::EmojiBack: emoji_mode=false; row=3; col=3; break;
+            case Act::EmojiPrev: emoji_page=std::max(0,emoji_page-1); break;
+            case Act::EmojiNext:
+                if ((emoji_page+1)*emoji_page_size < static_cast<int>(emoji_items.size())) ++emoji_page;
                 break;
-            case Act::Space: if (text.size() < max_bytes) text.insert(cursor++, 1, ' '); casing.otherAction(); break;
+            case Act::EmojiGroup:
+                emoji_group=(emoji_group+1)%10; emoji_category(); break;
+            case Act::Newline:
+                if (message && text.size() < max_bytes) { shift_custom_emojis(custom_emojis, cursor, cursor, 1); text.insert(cursor++, 1, '\n'); casing.edited(); }
+                break;
+            case Act::Space: if (text.size() < max_bytes) { shift_custom_emojis(custom_emojis, cursor, cursor, 1); text.insert(cursor++, 1, ' '); } casing.otherAction(); break;
             case Act::Shift: casing.shift(clock, context()); symbols = false; break;
             case Act::Symbols: symbols = !symbols; casing.otherAction(); break;
             case Act::Language: {
@@ -500,6 +683,7 @@ struct CustomKeyboard::Impl {
                 }
                 break;
             }
+            case Act::Collapse: collapse(true); break;
             case Act::Cancel: cancel = true; break;
             case Act::Clear:
                 if (secret) { std::fill(text.begin(), text.end(), '\0'); text.clear(); cursor = 0; casing.edited(); }
@@ -507,6 +691,7 @@ struct CustomKeyboard::Impl {
             case Act::Delete:
                 if (cursor) {
                     const size_t at = previous();
+                    shift_custom_emojis(custom_emojis, at, cursor, 0);
                     text.erase(at, cursor - at); cursor = at;
                 }
                 casing.edited();
@@ -527,7 +712,7 @@ struct CustomKeyboard::Impl {
         if (!touches) return handle_keys(pressed, held, touch_down, tx, ty, now, false);
         if (cursor_drag.active) return handle_contacts(pressed, held, *touches, now);
         const bool finished = gesture.finished;
-        if (split_gesture(*touches,now)) {
+        if (!collapsed && !emoji_mode && split_gesture(*touches,now)) {
             if (pressed & (SCE_CTRL_SELECT | SCE_CTRL_CIRCLE)) return Result::Cancelled;
             if (!finished && !gesture.finished) {
                 // Only a completed split gesture may discard typing; replay failed candidates.
@@ -609,16 +794,39 @@ struct CustomKeyboard::Impl {
         const bool tapped = touch_down && !was_touching;
         was_touching = touch_down;
         if (layout().system()) { cursor_drag = CursorDrag{}; deletion = DeleteRepeat{}; return Result::System; }
+        if (!secret && draft_visible && tapped && !pressed && header_hit(tx,ty)) header_touch=true;
+        if (header_touch) {
+            if (pressed || (touch_down && !header_hit(tx,ty))) header_touch=false;
+            else if (!touch_down) { header_touch=false; return Result::Cancelled; }
+            return Result::None;
+        }
         if (cursor_drag.active) {
+            if (!touch_down && !pressed && draft_visible && now >= cursor_drag.since) {
+                if (collapsed) {
+                    expanded_first=cursor_drag.first;
+                    if (!cursor_drag.moving && !cursor_drag.scrolled && now-cursor_drag.since<CursorDrag::delay) {
+                        place_cursor(cursor_drag.x,cursor_drag.y,cursor_drag.first);
+                        collapsed=false;
+                    }
+                }
+                cursor_drag=CursorDrag{};
+                return Result::None;
+            }
             if (!touch_down || pressed || !draft_visible || now < cursor_drag.since) cursor_drag = CursorDrag{};
             else {
                 cursor_drag.x = tx; cursor_drag.y = ty;
-                if (now - cursor_drag.since >= CursorDrag::delay) {
+                if (collapsed && !cursor_drag.moving && (cursor_drag.scrolled || (now-cursor_drag.since<CursorDrag::delay && std::abs(ty-cursor_drag.start_y)>12))) {
+                    cursor_drag.scrolled=true;
+                    const auto& layout=draft_layout(draft.font);
+                    const int last=std::max(0,static_cast<int>(layout.lines.size())-visible_lines());
+                    cursor_drag.first=static_cast<size_t>(std::clamp(static_cast<int>(cursor_drag.start_first)+(cursor_drag.start_y-ty)/26,0,last));
+                    expanded_first=cursor_drag.first;
+                } else if (now - cursor_drag.since >= CursorDrag::delay) {
                     cursor_drag.moving = true;
                     const auto& layout = draft_layout(draft.font);
                     if (now >= cursor_drag.scroll_at) {
                         if (ty < 87 && cursor_drag.first) --cursor_drag.first;
-                        if (ty >= 208 && cursor_drag.first + 5 < layout.lines.size()) ++cursor_drag.first;
+                        if (ty >= draft_bottom()-10 && cursor_drag.first + visible_lines() < layout.lines.size()) ++cursor_drag.first;
                         cursor_drag.scroll_at = now + CursorDrag::scroll_interval;
                     }
                     place_cursor(tx, ty, cursor_drag.first);
@@ -626,14 +834,36 @@ struct CustomKeyboard::Impl {
                 return Result::None; // This contact owns its release, even over the keys.
             }
         }
+        if (collapsed) {
+            if (pressed & (SCE_CTRL_SELECT | SCE_CTRL_CIRCLE)) return Result::Cancelled;
+            if (pressed & (SCE_CTRL_CROSS | SCE_CTRL_START)) { collapse(false); return Result::None; }
+            const auto& layout=draft_layout(draft.font);
+            const int last=std::max(0,static_cast<int>(layout.lines.size())-visible_lines());
+            const int delta=(pressed&SCE_CTRL_DOWN ? 1 : 0)-(pressed&SCE_CTRL_UP ? 1 : 0)+
+                (pressed&SCE_CTRL_RIGHT ? visible_lines() : 0)-(pressed&SCE_CTRL_LEFT ? visible_lines() : 0);
+            expanded_first=std::clamp(static_cast<int>(expanded_first)+delta,0,last);
+            if (tapped && !pressed && draft_visible && tx>=36 && tx<904 && ty>=80 && ty<draft_bottom()) {
+                cursor_drag={true,false,tx,ty,expanded_first,now,now+CursorDrag::delay};
+                cursor_drag.start_y=ty; cursor_drag.start_first=expanded_first;
+            }
+            return Result::None;
+        }
+        if (category_picker.open) {
+            handle_category_picker(pressed,held,touch_down,tapped,tx,ty);
+            return Result::None;
+        }
         update_delete(pressed, held, touch_down, tapped, tx, ty);
         if (hold.active) {
             handle_hold(pressed, held, touch_down, tx, ty, now);
             geometry();
             return layout().system() ? Result::System : Result::None;
         }
+        if (emoji_mode && (pressed & (SCE_CTRL_SELECT | SCE_CTRL_CIRCLE))) {
+            emoji_mode=false; hold=Hold{}; deletion=DeleteRepeat{}; row=3; col=3; geometry();
+            return Result::None;
+        }
         if (pressed & (SCE_CTRL_SELECT | SCE_CTRL_CIRCLE)) return Result::Cancelled;
-        bool submit = (pressed & SCE_CTRL_START) && can_submit();
+        bool submit = !emoji_mode && (pressed & SCE_CTRL_START) && can_submit();
         const int focus_x = grid[row][col].x + grid[row][col].w / 2;
         if (pressed & SCE_CTRL_UP) row = (row + (int)grid.size() - 1) % (int)grid.size();
         if (pressed & SCE_CTRL_DOWN) row = (row + 1) % (int)grid.size();
@@ -653,16 +883,31 @@ struct CustomKeyboard::Impl {
             deleted = true;
             start_delete(source, key);
         };
-        auto activate = [&](const Key& key, bool by_touch) {
+        auto activate = [&](Key key, bool by_touch) {
+            if (key.act == Act::EmojiChar && emoji_data::entries[key.emoji_index].variants) {
+                const auto base = emoji_data::entries[key.emoji_index].base;
+                for (const auto& entry : emoji_data::entries)
+                    if (entry.picker && entry.base == base) key.alternatives.emplace_back(entry.text);
+            }
             hold.active = false;
             if (key.act != Act::Delete) deletion = DeleteRepeat{};
             touch_mode = by_touch;
             show_press(key);
             if (key.act != Act::Shift) casing.otherAction();
             if (key.act == Act::Delete) erase(by_touch ? DeleteSource::Touch : DeleteSource::Cross, key);
-            else if ((key.act == Act::Char || key.act == Act::Language) && !key.alternatives.empty()) {
+            else if (key.act == Act::EmojiGroup || ((key.act == Act::Char || key.act == Act::EmojiChar || key.act == Act::Language) && !key.alternatives.empty())) {
                 hold.start(now); hold.touch = by_touch; hold.key = key;
                 hold.selected = 0;
+                if (key.act == Act::EmojiChar) {
+                    const auto chosen = std::find(key.alternatives.begin(),key.alternatives.end(),key.label);
+                    hold.selected = chosen-key.alternatives.begin();
+                    hold.window = hold.selected;
+                    // Prepare visible choices before the hold threshold, without decoding on input.
+                    for (auto it=key.alternatives.rbegin();it!=key.alternatives.rend();++it) emoji_prioritize(it->c_str());
+                    const auto popup=popup_geometry();
+                    for (int cell=popup_count()-1;cell>=0;--cell) emoji_prioritize(key.alternatives[popup_option(cell,popup)].c_str());
+                    emoji_prioritize(key.label.c_str());
+                }
             } else submit = press(key) || submit;
         };
         if (pressed & SCE_CTRL_CROSS) activate(grid[row][col], false);
@@ -673,9 +918,14 @@ struct CustomKeyboard::Impl {
                 feedback_down = false;
             }
         }
-        if (pressed & SCE_CTRL_TRIANGLE) press({0, 0, 0, 0, Act::Space, ""});
-        if (pressed & SCE_CTRL_LTRIGGER) move_cursor(false);
-        if (pressed & SCE_CTRL_RTRIGGER) move_cursor(true);
+        if (!emoji_mode && (pressed & SCE_CTRL_TRIANGLE)) press({0, 0, 0, 0, Act::Space, ""});
+        if (emoji_mode) {
+            if (pressed & SCE_CTRL_LTRIGGER) press({0,0,0,0,Act::EmojiPrev,""});
+            if (pressed & SCE_CTRL_RTRIGGER) press({0,0,0,0,Act::EmojiNext,""});
+        } else {
+            if (pressed & SCE_CTRL_LTRIGGER) move_cursor(false);
+            if (pressed & SCE_CTRL_RTRIGGER) move_cursor(true);
+        }
         if (tapped && !pressed && draft_visible && tx >= 36 && tx < 904 && ty >= 80 && ty < 218) {
             cursor_drag = {true, false, tx, ty, draft_first, now, now + CursorDrag::delay};
             place_cursor(tx, ty, cursor_drag.first);
@@ -688,7 +938,7 @@ struct CustomKeyboard::Impl {
                     if (tx >= key.x && tx < key.x + key.w && ty >= key.y && ty < key.y + key.h) {
                         row = r; col = k;
                         // Immediate touch actions commit on release, so a second finger can claim the gesture.
-                        if (defer_touch && !((key.act==Act::Char || key.act==Act::Language) && !key.alternatives.empty())) {
+                        if (defer_touch && key.act!=Act::EmojiChar && key.act!=Act::EmojiGroup && !((key.act==Act::Char || key.act==Act::Language) && !key.alternatives.empty())) {
                             pending_touch=key; pending_touch_active=true; pending_touch_since=now;
                             touch_mode=true; show_press(key);
                         } else activate(key, true);
@@ -718,9 +968,17 @@ struct CustomKeyboard::Impl {
             draft.font==font && draft.revision==revision) return draft;
         draft={text,cursor,0,0,font,revision,{""},{0}};
         for (size_t i=0;i<text.size();) {
-            size_t n=1;
-            while (i+n<text.size() && (static_cast<unsigned char>(text[i+n])&0xc0)==0x80) ++n;
+            const size_t n=emoji::next(text,i)-i;
             const auto glyph=text.substr(i,n);
+            if (glyph!=" " && glyph!="\t" && glyph!="\n" &&
+                (i==0 || text[i-1]==' ' || text[i-1]=='\t' || text[i-1]=='\n')) {
+                const auto end=text.find_first_of(" \t\n",i);
+                const auto word=text.substr(i,end==std::string::npos ? end : end-i);
+                if (!draft.lines.back().empty() && rich_text_width(font,0.65f,word.c_str())<=868 &&
+                    rich_text_width(font,0.65f,(draft.lines.back()+word).c_str())>868) {
+                    draft.lines.emplace_back(); draft.starts.push_back(i);
+                }
+            }
             if (glyph!="\n" && rich_text_width(font,0.65f,(draft.lines.back()+glyph).c_str())>868) {
                 draft.lines.emplace_back(); draft.starts.push_back(i);
             }
@@ -740,13 +998,12 @@ struct CustomKeyboard::Impl {
     }
     void place_cursor(int x, int y, size_t first) {
         const auto& layout = draft_layout(draft.font);
-        const size_t line = std::min(layout.lines.size()-1, first + size_t(std::clamp((y-87)/26, 0, 4)));
+        const size_t line = std::min(layout.lines.size()-1, first + size_t(std::clamp((y-87)/26, 0, visible_lines()-1)));
         const auto& value = layout.lines[line];
         size_t offset = 0;
         int width = 0;
         while (offset < value.size()) {
-            size_t next = offset + 1;
-            while (next < value.size() && (static_cast<unsigned char>(value[next]) & 0xc0) == 0x80) ++next;
+            const size_t next = emoji::next(value,offset);
             const int next_width = rich_text_width(draft.font, 0.65f, value.substr(0, next).c_str());
             if (x-36 < (width+next_width)/2) break;
             offset = next; width = next_width;
@@ -764,21 +1021,19 @@ struct CustomKeyboard::Impl {
         constexpr float scale = 1.05f;
         constexpr int width = 240, height = 64;
         while (begin) {
-            size_t previous = begin-1;
-            while (previous && (static_cast<unsigned char>(line[previous]) & 0xc0) == 0x80) --previous;
+            const size_t previous = emoji::previous(line,begin);
             if (rich_text_width(font, scale, line.substr(previous, at-previous).c_str()) > 104) break;
             begin = previous;
         }
         while (end < line.size()) {
-            size_t next = end+1;
-            while (next < line.size() && (static_cast<unsigned char>(line[next]) & 0xc0) == 0x80) ++next;
+            const size_t next = emoji::next(line,end);
             if (rich_text_width(font, scale, line.substr(at, next-at).c_str()) > 104) break;
             end = next;
         }
         const int x = std::clamp(cursor_drag.x-width/2, 12, 948-width);
-        const int finger_y = std::clamp(cursor_drag.y, 80, 217);
+        const int finger_y = std::clamp(cursor_drag.y, 80, draft_bottom()-1);
         int y = std::max(8, finger_y-height-28);
-        if (y+height+12 > finger_y) y = std::min(172, finger_y+34);
+        if (y+height+12 > finger_y) y = std::min(draft_bottom()-height, finger_y+34);
         // Opaque faces reuse the keyboard's single-coverage rounded geometry.
         rounded_key_base(x, y, width, height, 16, c.separator | 0xff000000u);
         rounded_key_base(x+2, y+2, width-4, height-4, 14, c.key | 0xff000000u);
@@ -788,7 +1043,7 @@ struct CustomKeyboard::Impl {
         rich_text_draw(font, center+3, y+42, c.key_ink, scale, after.c_str());
         vita2d_draw_rectangle(center-1, y+14, 2, 36, c.accent);
     }
-    void draw(vita2d_pgf* font, bool dark, const std::string& title, bool keyboard_only) const {
+    void draw(vita2d_pgf* font, bool dark, const std::string& title, bool keyboard_only, const CustomEmojiDraw& draw_emoji) const {
         performance::SlowScope text_draw(performance::SlowPhase::Ui,"keyboard_text");
         draft_visible = !keyboard_only && !secret;
         const Colors c = colors(dark);
@@ -798,33 +1053,58 @@ struct CustomKeyboard::Impl {
             ui_skin::background();
             const bool header = ui_skin::header();
             const int title_width = rich_text_width(font, 0.74f, title.c_str());
-            const float title_scale = title_width > 728 ? 0.74f * 728 / title_width : 0.74f;
+            const float title_scale = title_width > 672 ? 0.74f * 672 / title_width : 0.74f;
             rich_text_draw(font, 28, 28, header ? c.header_ink : c.ink, title_scale, title.c_str());
             // A quiet layout badge keeps the active language visible while typing.
             const std::string layout_label = layout().badge + (symbols ? " / ?123" : casing.caps() ? " / CAPS" : shifted ? " / ABC" : " / abc");
             rounded_key_base(784, 4, 148, 28, 10, c.utility);
             rich_text_draw(font, 858 - rich_text_width(font, 0.48f, layout_label.c_str()) / 2, 25, c.utility_ink, 0.48f, layout_label.c_str());
             if (!secret) {
-                const std::string help = tr("keyboard.help");
+                rounded_key_base(728,4,44,28,8,c.utility);
+                shortcut_badge(font,3,758,11,c.utility_ink,c.utility);
+                const std::string help = tr(collapsed ? "keyboard.expand_help" : category_picker.open ? "emoji.category_help" : emoji_mode ? "emoji.help" : "keyboard.help");
                 const int help_width = rich_text_width(font, 0.44f, help.c_str());
                 const float help_scale = help_width > 904 ? 0.44f * 904 / help_width : 0.44f;
                 rich_text_draw(font, 28, 63, c.muted, help_scale, help.c_str());
-                rounded_key_base(20, 78, 920, 164, 12, c.separator);
-                rounded_key_base(22, 80, 916, 160, 10, c.key);
+                rounded_key_base(20, 78, 920, collapsed ? 456 : 164, 12, c.separator);
+                rounded_key_base(22, 80, 916, collapsed ? 452 : 160, 10, c.key);
                 const auto& layout=draft_layout(font);
                 const auto& lines=layout.lines;
                 const auto cursor_line=layout.cursor_line;
                 const auto cursor_width=layout.cursor_width;
                 // Keep the insertion point visible when navigating a long draft.
-                const size_t first = cursor_drag.active ? cursor_drag.first : cursor_line > 4 ? cursor_line - 4 : 0;
+                const size_t first = cursor_drag.active ? cursor_drag.first : collapsed ?
+                    std::min(expanded_first,lines.size()>16 ? lines.size()-16 : 0) : cursor_line > 4 ? cursor_line - 4 : 0;
                 draft_first = first;
-                const size_t last = std::min(lines.size(), first + 5);
-                for (size_t i = first; i < last; ++i)
-                    rich_text_draw(font, 36, 106 + (i-first)*26, c.key_ink, 0.65f, lines[i].c_str());
-                if ((clock / 500000) % 2 == 0 || clock < feedback_until || clock < cursor_until)
+                const size_t last = std::min(lines.size(), first + visible_lines());
+                for (size_t i = first; i < last; ++i) {
+                    int x = 36, at = 0;
+                    const int baseline = 106 + (i-first)*26;
+                    const auto& line = lines[i];
+                    std::vector<CustomEmojiSpan> spans;
+                    for (const auto& span : custom_emojis)
+                        if (span.begin >= (int)layout.starts[i] && span.end <= (int)(layout.starts[i]+line.size())) spans.push_back(span);
+                    std::sort(spans.begin(), spans.end(), [](const CustomEmojiSpan& a, const CustomEmojiSpan& b) { return a.begin < b.begin; });
+                    for (const auto& span : spans) {
+                        const int begin = span.begin-layout.starts[i], end = span.end-layout.starts[i];
+                        const auto before = line.substr(at, begin-at), symbol = line.substr(begin, end-begin);
+                        rich_text_draw(font, x, baseline, c.key_ink, 0.65f, before.c_str());
+                        x += rich_text_width(font, 0.65f, before.c_str());
+                        const int width = rich_text_width(font, 0.65f, symbol.c_str());
+                        if (!draw_emoji || !draw_emoji(span.id, x+(width-22)/2, baseline-18, 22, c.key_ink))
+                            rich_text_draw(font, x, baseline, c.key_ink, 0.65f, symbol.c_str());
+                        x += width; at = end;
+                    }
+                    rich_text_draw(font, x, baseline, c.key_ink, 0.65f, line.substr(at).c_str());
+                }
+                if (cursor_line>=first && cursor_line<last && ((clock / 500000) % 2 == 0 || clock < feedback_until || clock < cursor_until))
                     vita2d_draw_rectangle(38 + cursor_width, 87 + (cursor_line-first)*26, 2, 22, c.accent);
                 const std::string counter = std::to_string(count_chars(text));
-                rich_text_draw(font, 912 - rich_text_width(font, 0.42f, counter.c_str()), 234, c.key_muted, 0.42f, counter.c_str());
+                rich_text_draw(font, 912 - rich_text_width(font, 0.42f, counter.c_str()), collapsed ? 526 : 234, c.key_muted, 0.42f, counter.c_str());
+                if (collapsed && lines.size()>16) {
+                    const float height=412.f*16/lines.size();
+                    vita2d_draw_rectangle(926,88+first*(412-height)/(lines.size()-16),3,height,c.accent);
+                }
                 // Indicate hidden earlier lines without confusing them with message content.
                 if (first) for (int i = 0; i < 3; ++i) vita2d_draw_fill_circle(465 + i*10, 86, 2, c.muted);
             }
@@ -841,12 +1121,23 @@ struct CustomKeyboard::Impl {
         }
         draw_cursor_loupe(font, c);
         text_draw.finish();
+        if (collapsed) return;
+        if (category_picker.open) { draw_category_picker(font,c); return; }
         performance::SlowScope keys_draw(performance::SlowPhase::Ui,"keyboard_keys");
         const bool trace_keys=performance::enabled && diag_log::enabled(diag_log::Kind::Performance);
         auto stamp=[&] { return trace_keys ? performance::now() : int64_t(0); };
         int64_t faces_us=0,theme_us=0,labels_us=0,hints_us=0;
         vita2d_draw_rectangle(0, 250, 960, 294, c.panel);
         vita2d_draw_rectangle(0, 250, 960, 1, c.separator);
+        if (emoji_mode) {
+            const std::string pages = std::to_string(emoji_page+1)+" / "+
+                std::to_string(std::max(1,(static_cast<int>(emoji_items.size())+emoji_page_size-1)/emoji_page_size));
+            rich_text_draw(font,480-rich_text_width(font,0.32f,pages.c_str())/2,260,c.muted,0.32f,pages.c_str());
+            if (emoji_items.empty()) {
+                const auto empty=tr("emoji.empty");
+                rich_text_draw(font,480-rich_text_width(font,0.65f,empty.c_str())/2,350,c.ink,0.65f,empty.c_str());
+            }
+        }
         for (int r = 0; r < (int)grid.size(); ++r)
             for (int k = 0; k < (int)grid[r].size(); ++k) {
                 const Key& key = grid[r][k];
@@ -854,7 +1145,8 @@ struct CustomKeyboard::Impl {
                 const bool pressed = key.x == feedback.x && key.y == feedback.y &&
                     (feedback_down || clock < feedback_until);
                 const bool ok = key.act == Act::Ok;
-                const bool disabled = ok && !can_submit();
+                const bool disabled = (ok && !can_submit()) || (key.act==Act::EmojiPrev && !emoji_page) ||
+                    (key.act==Act::EmojiNext && (emoji_page+1)*emoji_page_size>=static_cast<int>(emoji_items.size()));
                 const bool toggled = (key.act == Act::Shift && shifted && !symbols) ||
                                      (key.act == Act::Symbols && symbols);
                 const bool utility = key.act != Act::Char;
@@ -881,6 +1173,13 @@ struct CustomKeyboard::Impl {
                     triangle(cx, cy - 4, 7, 0, color);
                     vita2d_draw_rectangle(cx - 4, cy + 2, 8, 10, color);
                     if (casing.caps()) vita2d_draw_rectangle(cx - 10, cy + 17, 20, 3, color);
+                } else if (key.act == Act::Emoji) {
+                    vita2d_draw_fill_circle(cx,cy,13,color);
+                    vita2d_draw_fill_circle(cx,cy,11,fill);
+                    vita2d_draw_fill_circle(cx-4,cy-3,1.5f,color);
+                    vita2d_draw_fill_circle(cx+4,cy-3,1.5f,color);
+                    vita2d_draw_line(cx-5,cy+3,cx,cy+6,color);
+                    vita2d_draw_line(cx,cy+6,cx+5,cy+3,color);
                 } else if (key.act == Act::Delete) {
                     // Backspace outline and cross, independent of font coverage.
                     vita2d_draw_line(cx - 18, cy, cx - 8, cy - 10, color);
@@ -898,8 +1197,8 @@ struct CustomKeyboard::Impl {
                     vita2d_draw_line(cx - 6, cy + 12, cx + 6, cy + 12, color);
                     vita2d_draw_line(cx - 3, cy - 3, cx - 3, cy + 8, color);
                     vita2d_draw_line(cx + 3, cy - 3, cx + 3, cy + 8, color);
-                } else if (key.act == Act::Cancel) {
-                    // Downward chevron: dismiss the keyboard.
+                } else if (key.act == Act::Cancel || key.act == Act::Collapse) {
+                    // Downward chevron: collapse ordinary keyboards; cancel secret entry.
                     vita2d_draw_line(cx - 10, cy - 4, cx, cy + 6, color);
                     vita2d_draw_line(cx, cy + 6, cx + 10, cy - 4, color);
                 } else if (key.act == Act::Newline) {
@@ -910,13 +1209,17 @@ struct CustomKeyboard::Impl {
                     vita2d_draw_line(cx - 12, cy + 3, cx - 5, cy + 10, color);
                 } else {
                     std::string label = key.act == Act::Space ? layout().name : key.label;
-                    float scale = key.act == Act::Char ? 0.82f : key.act == Act::Space ? 0.56f : 0.62f;
+                    float scale = key.act == Act::EmojiChar ? 1.05f : key.act == Act::Char ? 0.82f : key.act == Act::Space ? 0.56f : 0.62f;
                     int w = rich_text_width(font, scale, label.c_str());
                     if (w > key.w - 16) { scale *= (key.w - 16.0f) / w; w = rich_text_width(font, scale, label.c_str()); }
                     rich_text_draw(font, key.x + (key.w - w) / 2, cy + 9, color, scale, label.c_str());
                     if (key.act == Act::Space) {
                         vita2d_draw_line(cx - 16, cy + 20, cx + 16, cy + 20, hint_ink);
                     }
+                }
+                if (key.act==Act::EmojiChar) {
+                    if (emoji_data::entries[key.emoji_index].variants)
+                        for (int dot=0;dot<3;++dot) vita2d_draw_fill_circle(key.x+key.w-16+dot*4,key.y+key.h-7,1,c.muted);
                 }
                 end=stamp(); labels_us+=end-part; part=end;
                 if (secret) {
@@ -966,18 +1269,22 @@ struct CustomKeyboard::Impl {
                 const int option = popup_option(cell, popup);
                 const int x = popup.x + Popup::padding + cell*Popup::cell;
                 const bool selected = option == hold.selected;
-                if (selected) rounded_key_base(x, popup.y + 6, Popup::cell, 54, 12, c.accent);
+                const bool emoji_variant = hold.key.act == Act::EmojiChar;
+                if (emoji_variant) {
+                    rounded_key_base(x,popup.y+6,Popup::cell,54,12,selected ? c.focus : c.separator);
+                    rounded_key_base(x+2,popup.y+8,Popup::cell-4,50,10,c.utility);
+                } else if (selected) rounded_key_base(x, popup.y + 6, Popup::cell, 54, 12, c.accent);
                 const bool language = hold.key.act == Act::Language;
                 const std::string label = language ? keyboard_layout::get(hold.key.alternatives[option]).badge : hold.key.alternatives[option];
                 const float scale = language ? 0.68f : secret ? 0.8f : 1.05f;
                 rich_text_draw(font, x + (Popup::cell - rich_text_width(font, scale, label.c_str())) / 2,
-                    popup.y + 43, selected ? c.on_accent : c.utility_ink, scale, label.c_str());
+                    popup.y + 43, emoji_variant ? c.utility_ink : selected ? c.on_accent : c.utility_ink, scale, label.c_str());
             }
-            if (hold.key.act == Act::Language && hold.key.alternatives.size() > static_cast<size_t>(count)) {
-                if (hold.window > 0) triangle(popup.x + 4, popup.y + 33, 3, 2, c.accent);
-                if (hold.window + count < (int)hold.key.alternatives.size()) triangle(popup.x + popup.width - 4, popup.y + 33, 3, 3, c.accent);
+            if ((hold.key.act == Act::Language || hold.key.act == Act::EmojiChar) && hold.key.alternatives.size() > static_cast<size_t>(count)) {
+                if (hold.key.act == Act::EmojiChar || hold.window > 0) triangle(popup.x + 4, popup.y + 33, 3, 2, c.accent);
+                if (hold.key.act == Act::EmojiChar || hold.window + count < (int)hold.key.alternatives.size()) triangle(popup.x + popup.width - 4, popup.y + 33, 3, 3, c.accent);
             }
-        } else if (!secret && feedback.act == Act::Char && (feedback_down || clock < feedback_until)) {
+        } else if (!secret && (feedback.act == Act::Char || feedback.act == Act::EmojiChar) && (feedback_down || clock < feedback_until)) {
             const std::string& label = feedback.label;
             const int width = std::max(72, feedback.w);
             const int x = std::max(8, std::min(952 - width, feedback.x + (feedback.w - width) / 2));
@@ -1004,33 +1311,40 @@ void CustomKeyboard::clear() {
     impl_->touch_history.ignore(nullptr); impl_->input_clock=0; impl_->previous_held=0;
     impl_->draft=Impl::DraftLayout{}; impl_->draft_first=0; impl_->draft_visible=false;
     impl_->cursor_drag=Impl::CursorDrag{};
+    impl_->recent_emojis.clear(); impl_->emoji_choices.clear();
+    impl_->custom_emojis.clear(); impl_->premium_requested=false;
+    impl_->emoji_mode=false; impl_->collapsed=false; impl_->header_touch=false;
+    impl_->category_picker=Impl::CategoryPicker{};
     std::fill(impl_->text.begin(), impl_->text.end(), '\0'); impl_->text.clear(); impl_->cursor = 0;
     impl_->hold = Impl::Hold{};
     impl_->deletion = Impl::DeleteRepeat{};
     impl_->feedback_down = false; impl_->feedback_until = 0;
 }
-void CustomKeyboard::open(const std::string& initial, bool secret, bool message, size_t max_bytes, bool allow_system, bool auto_capitalize, bool editing) {
+void CustomKeyboard::open(const std::string& initial, bool secret, bool message, size_t max_bytes, bool allow_system, bool auto_capitalize, bool editing, bool premium) {
     const std::string language = impl_->language_chosen ? impl_->code : keyboard_languages::canonical(i18n::systemLanguage());
     const bool chosen = impl_->language_chosen;
     const bool split = impl_->split_layout;
     const int split_level = impl_->split_level;
     const auto preferences = impl_->preferences;
+    const auto recent = impl_->recent_emojis;
+    const auto choices = impl_->emoji_choices;
     clear();
     *impl_ = Impl{};
     impl_->split_layout = split;
     impl_->split_level = split_level;
     impl_->allow_system = allow_system;
     impl_->preferences = preferences;
+    impl_->recent_emojis = recent;
+    impl_->emoji_choices = choices;
     impl_->apply_languages();
     impl_->auto_capitalize = auto_capitalize;
     impl_->code = keyboard_languages::contains(impl_->enabled, language) ? language : impl_->enabled.front();
     impl_->language_chosen = chosen;
-    impl_->secret = secret; impl_->message = message; impl_->editing = editing; impl_->max_bytes = max_bytes;
+    impl_->secret = secret; impl_->message = message; impl_->editing = editing; impl_->premium = premium; impl_->max_bytes = max_bytes;
     // A secret never reallocates while typed: a grown string would leave the old prefix in freed memory.
     if (secret) impl_->text.reserve(max_bytes);
     for (size_t i = 0; i < initial.size();) {
-        size_t n = 1;
-        while (i+n < initial.size() && (static_cast<unsigned char>(initial[i+n]) & 0xc0) == 0x80) ++n;
+        const size_t n = emoji::next(initial,i)-i;
         if (impl_->text.size() + n > max_bytes) break;
         impl_->text.append(initial, i, n); i += n;
     }
@@ -1047,7 +1361,9 @@ CustomKeyboard::Result CustomKeyboard::handle(unsigned pressed, unsigned held, b
     impl_->previous_held=held;
     if (!count) {
         impl_->input_clock=std::max(impl_->input_clock,now);
-        return impl_->handle(pressed,held,touch_down,x,y,impl_->input_clock,touches);
+        const auto result = impl_->handle(pressed,held,touch_down,x,y,impl_->input_clock,touches);
+        if (impl_->premium_requested) { impl_->premium_requested=false; return Result::CustomEmoji; }
+        return result;
     }
     const uint64_t latest=impl_->touch_history.samples[count-1].timeStamp;
     for (unsigned i=0;i<count;++i) {
@@ -1057,13 +1373,28 @@ CustomKeyboard::Result CustomKeyboard::handle(unsigned pressed, unsigned held, b
         const bool last=i+1==count;
         const auto result=impl_->handle(last ? pressed : 0,last ? held : previous_held,
             sample.reportNum!=0,sample.report[0].x/2,sample.report[0].y/2,impl_->input_clock,&sample);
+        if (impl_->premium_requested) { impl_->premium_requested=false; return Result::CustomEmoji; }
         if (result!=Result::None) return result;
     }
     return Result::None;
 }
-void CustomKeyboard::ignoreTouchHistory(const SceTouchData* touches) { impl_->touch_history.ignore(touches); }
-void CustomKeyboard::draw(vita2d_pgf* font, bool dark, const std::string& title, bool keyboard_only) const { impl_->draw(font, dark, title, keyboard_only); }
+void CustomKeyboard::ignoreTouchHistory(const SceTouchData* touches) {
+    impl_->touch_history.ignore(touches);
+    impl_->was_touching = false; impl_->pending_touch_active = false;
+    impl_->hold = Impl::Hold{}; impl_->deletion = Impl::DeleteRepeat{};
+    impl_->feedback_down = false;
+}
+void CustomKeyboard::draw(vita2d_pgf* font, bool dark, const std::string& title, bool keyboard_only, const CustomEmojiDraw& draw_emoji) const { impl_->draw(font, dark, title, keyboard_only, draw_emoji); }
 const std::string& CustomKeyboard::text() const { return impl_->text; }
+bool CustomKeyboard::insertCustomEmoji(const std::string& text, int64_t id) {
+    auto& k = *impl_;
+    if (!id || text.empty() || k.secret || !k.message || k.editing || !k.premium || k.text.size()+text.size() > k.max_bytes || k.custom_emojis.size() >= 100) return false;
+    shift_custom_emojis(k.custom_emojis, k.cursor, k.cursor, text.size());
+    k.custom_emojis.push_back({(int)k.cursor, (int)(k.cursor+text.size()), id});
+    k.text.insert(k.cursor, text); k.cursor += text.size(); k.casing.inserted();
+    return true;
+}
+const std::vector<CustomEmojiSpan>& CustomKeyboard::customEmojis() const { return impl_->custom_emojis; }
 bool CustomKeyboard::split() const { return impl_->split_layout; }
 size_t CustomKeyboard::cursor() const { return impl_->cursor; }
 

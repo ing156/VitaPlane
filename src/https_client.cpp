@@ -84,23 +84,67 @@ bool connect_tls(Connection& c, const Url& url, const std::string& ca_file, std:
 
 HttpsResult https_get(const std::string& start_url, const std::string& ca_file, const std::string& accept,
                       const std::function<bool(const char*, size_t)>& sink, const std::atomic<bool>* cancel,
-                      const std::function<void(int64_t)>& on_length) {
+                      const std::function<void(int64_t)>& on_length, const HttpsResume* resume) {
     HttpsResult result;
+    auto restart = [&]() {
+        HttpsResume fresh = *resume;
+        fresh.offset = 0; fresh.etag.clear();
+        return https_get(start_url, ca_file, accept, sink, cancel, on_length, &fresh);
+    };
     std::string current = start_url;
     for (int hop = 0; hop <= 5; ++hop) {
+        if (cancel && cancel->load()) { result.error = "cancelled"; return result; }
         Url url;
         if (!split_https_url(current, url)) { result.error = "refusing a non-https address"; return result; }
         Connection conn;
         if (!connect_tls(conn, url, ca_file, result.error)) return result;
         std::string request = "GET " + url.path + " HTTP/1.1\r\nHost: " + url.host +
             "\r\nUser-Agent: VitaPlane/" VITAGRAM_VERSION "\r\nAccept: " + accept +
-            "\r\nAccept-Encoding: identity\r\nConnection: close\r\n\r\n";
+            "\r\nAccept-Encoding: identity\r\nConnection: close\r\n";
+        if (resume && resume->offset) {
+            request += "Range: bytes=" + std::to_string(resume->offset) + "-\r\n";
+            if (!resume->etag.empty() && resume->etag.find_first_of("\r\n") == std::string::npos)
+                request += "If-Range: " + resume->etag + "\r\n";
+        }
+        request += "\r\n";
         if (SSL_write(conn.ssl, request.data(), (int)request.size()) != (int)request.size()) { result.error = ssl_error_text("request failed"); return result; }
 
         HttpResponse response;
         bool length_reported = false, sink_failed = false;
+        bool response_checked = false, range_failed = false;
+        auto check_response = [&]() {
+            if (response_checked) return true;
+            response_checked = true;
+            if (!resume || response.status() < 200 || response.status() >= 300) return true;
+            range_failed = true;
+            if (response.status() != 200 && response.status() != 206) return false;
+            if (response.status() == 206) {
+                uint64_t first = 0, last = 0, total = 0;
+                const std::string& range = response.contentRange();
+                size_t at = 6;
+                auto number = [&](uint64_t& value) {
+                    size_t begin = at;
+                    while (at < range.size() && range[at] >= '0' && range[at] <= '9') {
+                        unsigned digit = range[at++] - '0';
+                        if (value > (UINT64_MAX - digit) / 10) return false;
+                        value = value * 10 + digit;
+                    }
+                    return at != begin;
+                };
+                auto separator = [&](char c) { return at < range.size() && range[at++] == c; };
+                if (range.compare(0, 6, "bytes ") != 0 || !number(first) || !separator('-') || !number(last) ||
+                    !separator('/') || !number(total) || at != range.size() ||
+                    !resume->offset || first != resume->offset || last < first || last >= total ||
+                    (resume->total && total != resume->total) || last != total - 1 ||
+                    response.contentLength() < 0 || (uint64_t)response.contentLength() != last - first + 1 ||
+                    (!resume->etag.empty() && response.etag() != resume->etag)) return false;
+            }
+            range_failed = false;
+            return !resume->response || resume->response(response.status(), response.contentLength(), response.etag());
+        };
         auto body = [&](const char* data, size_t size) {
             if (response.status() < 200 || response.status() >= 300) return true; // error pages are dropped
+            if (!check_response()) return false;
             if (!sink(data, size)) { sink_failed = true; return false; }
             return true;
         };
@@ -115,10 +159,16 @@ HttpsResult https_get(const std::string& start_url, const std::string& ca_file, 
                 return result;
             }
             if (!response.feed(buffer, (size_t)n, body)) {
+                if (range_failed && resume && resume->offset) return restart();
                 result.error = sink_failed ? "cancelled" : "malformed server response";
                 return result;
             }
             if (response.headersDone() && !length_reported) {
+                if (!check_response()) {
+                    if (range_failed && resume && resume->offset) return restart();
+                    result.error = "invalid range response";
+                    return result;
+                }
                 length_reported = true;
                 if (on_length && response.status() >= 200 && response.status() < 300) on_length(response.contentLength());
             }
@@ -133,6 +183,7 @@ HttpsResult https_get(const std::string& start_url, const std::string& ca_file, 
             current = next;
             continue;
         }
+        if (s == 416 && resume && resume->offset) return restart();
         if (s < 200 || s >= 300) { result.error = "server answered HTTP " + std::to_string(s); return result; }
         // Truncation: a length-framed or chunked body must have arrived completely.
         if (!response.complete() && !response.bodyIsUntilClose()) { result.error = "download was cut off"; return result; }

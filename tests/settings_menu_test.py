@@ -24,9 +24,10 @@ fixture = r'''
 #include <cassert>
 #include <string>
 #include <iostream>
-constexpr int SCE_CTRL_CROSS = 1, SCE_CTRL_CIRCLE = 2;
+constexpr int SCE_CTRL_CROSS = 1, SCE_CTRL_CIRCLE = 2, SCE_CTRL_LEFT = 4, SCE_CTRL_RIGHT = 8;
 int main() {
-    int seen[35]{};
+    constexpr int settings_count = settings_menu::call_audio + settings_menu::calls_enabled;
+    int seen[settings_count]{};
     for (int section = 0; section < 9; ++section) {
         assert(settings_menu::counts[section] > 0 && settings_menu::counts[section] <= 9);
         for (int i = 0; i < settings_menu::counts[section]; ++i) {
@@ -34,12 +35,13 @@ int main() {
             if (source < 0) {
                 assert(section == 0 && -source == i + 1 && -source < 9);
                 assert(settings_menu::submenu(source));
-            } else { assert(source < 35); ++seen[source]; }
+            } else { assert(source < settings_count); ++seen[source]; }
         }
     }
     for (int n : seen) assert(n == 1); // No lost or duplicated setting/action.
+    assert(settings_menu::counts[5] == 2 + settings_menu::calls_enabled);
     assert(settings_menu::rows[0][8] == 31); // Logout stays outside sections.
-    for (int id = 0; id < 35; ++id)
+    for (int id = 0; id < 37; ++id)
         assert(settings_menu::vaultDependent(id) == (id >= 12 && id <= 15));
     const int kSettingsTop = ui_layout::settings_top;
     const int kSettingsRowHeight = ui_layout::settings_row;
@@ -65,11 +67,12 @@ fixture += r'''
     bool proxy_open = true, proxy_imported = true, proxy_return_to_screen = false;
     int keyboard_settings = 1;
     auto keyboard_rows = [&] { return keyboard_settings == 2 ? 20 : 3; };
-    struct Client { void cancelProxyCheck() {} } tg;
 '''
 for name in ('logs_open', 'about_open', 'proxy_open', 'keyboard_settings'):
-    after = main.index('        } else if (settings_open && ' + name + ') {', main.index('bool auth_proxy ='))
-    fixture += 'auto return_' + name + ' = [&] {\n' + block('if (pressed & SCE_CTRL_CIRCLE)', after) + '\n};\n'
+    condition = 'proxy_open && !proxy_edit' if name == 'proxy_open' else name
+    after = main.index('        } else if (settings_open && ' + condition + ') {', main.index('bool auth_proxy ='))
+    branch = block('else if (pressed&SCE_CTRL_CIRCLE)', after).replace('else if', 'if', 1) if name == 'proxy_open' else block('if (pressed & SCE_CTRL_CIRCLE)', after)
+    fixture += 'auto return_' + name + ' = [&] {\n' + branch + '\n};\n'
 fixture += r'''
     settings_section = 3; settings_row = 1;
     settings_scroll.configure(4, kSettingsRowHeight, kSettingsViewport);
@@ -131,6 +134,62 @@ fixture += r'''
     std::cout << "Settings menu: coverage, return navigation and touch bounds PASS\n";
 }
 '''
+route_start = main.index('            if (pressed & (SCE_CTRL_LEFT | SCE_CTRL_RIGHT | SCE_CTRL_CROSS)) {', main.index('        } else if (settings_open) {\n            if (pressed & SCE_CTRL_CIRCLE)'))
+route_end = main.index('                if (source_row < 0)', route_start)
+selectors = ['source_row == 35', 'source_row == 36', 'source_row == settings_menu::call_audio']
+fixture = fixture.replace('    std::cout << "Settings menu:', r'''
+    {
+        struct Settings {
+            bool unread_counter = false, hide_muted_unread = false, stored = true; int saves = 0;
+            bool call_low_latency = false;
+            bool save() { ++saves; return stored; }
+        } settings;
+        struct Telegram {
+            bool low_latency = false;
+            void setCallLowLatency(bool enabled) { low_latency = enabled; }
+        } tg;
+        auto toggle = [&] {
+''' + main[route_start:route_end] + '(void)direction; (void)row;\n' + ' else '.join(block('else if (' + selector + ')').replace('else if', 'if', 1) for selector in selectors).replace('i18n::text("settings.save_failed")', '"save failed"') + r'''
+            }
+        };
+        for (int target : {35,36}) {
+        bool& value = target==35 ? settings.unread_counter : settings.hide_muted_unread;
+        bool& other = target==35 ? settings.hide_muted_unread : settings.unread_counter;
+        settings.stored=true;other=false;
+        settings_section = 2; settings_row = 0;
+        while (settings_row < settings_menu::counts[2] && settings_menu::rows[2][settings_row] != target) ++settings_row;
+        assert(settings_row < settings_menu::counts[2]);
+        for (int key : {SCE_CTRL_CROSS, SCE_CTRL_LEFT, SCE_CTRL_RIGHT}) {
+            value = false; settings.saves = 0; settings_error.clear();
+            confirm_logout = true; pressed = key; toggle();
+            assert(value && !other && !confirm_logout && settings_error.empty() && settings.saves == 1);
+            toggle(); assert(!value && settings.saves == 2);
+        }
+        pressed = 0; toggle(); assert(settings.saves == 2);
+        pressed = SCE_CTRL_CIRCLE; toggle(); assert(settings.saves == 2);
+        pressed = SCE_CTRL_CROSS; settings.stored = false; toggle(); assert(settings_error == "save failed");
+        settings.stored = true; value = false;
+        settings_scroll.configure(settings_menu::counts[2], kSettingsRowHeight, kSettingsViewport);
+        settings_scroll.reveal(settings_row);
+        const int tap_y = kSettingsTop+settings_row*kSettingsRowHeight-settings_scroll.offset()+20;
+        const int hit = settings_scroll.hit(tap_y-kSettingsTop);
+        assert(hit == settings_row && settings_menu::rowHit(900, tap_y, tap_y-20, kSettingsRowHeight));
+        settings_row = hit; pressed = SCE_CTRL_CROSS; toggle(); assert(value && !other);
+        settings_section = 0; settings_row = 0; const int saved = settings.saves;
+        toggle(); assert(settings.saves == saved);
+        }
+        if (settings_menu::calls_enabled) {
+            settings_section = 5; settings_row = 2; pressed = SCE_CTRL_CROSS;
+            assert(settings_menu::rows[settings_section][settings_row] == settings_menu::call_audio);
+            settings.stored = true; toggle();
+            assert(settings.call_low_latency && tg.low_latency && settings_error.empty());
+            settings.stored = false; toggle();
+            assert(settings.call_low_latency && tg.low_latency && settings_error == "save failed");
+            settings.stored = true; toggle();
+            assert(!settings.call_low_latency && !tg.low_latency && settings_error.empty());
+        }
+    }
+    std::cout << "Settings menu:''')
 # Compile the actual language opener and confirmation handler with a tiny catalog.
 fixture = fixture.replace('    std::cout << "Settings menu:', r'''
     {
@@ -227,6 +286,8 @@ fixture = fixture.replace('    std::cout << "Settings menu:', r'''
 with tempfile.TemporaryDirectory(prefix='vitagram-settings-') as directory:
     path = Path(directory)
     (path / 'test.cpp').write_text(fixture)
-    subprocess.run([os.environ.get('CXX', 'c++'), '-std=c++17', '-O2', '-Wall', '-Wextra', '-Werror',
-                    '-I', str(root / 'src'), str(path / 'test.cpp'), '-o', str(path / 'test')], check=True)
-    subprocess.run([str(path / 'test')], check=True)
+    for calls in (0, 1):
+        subprocess.run([os.environ.get('CXX', 'c++'), '-std=c++17', '-O2', '-Wall', '-Wextra', '-Werror',
+                        f'-DVITAGRAM_CALLS={calls}', '-I', str(root / 'src'), str(path / 'test.cpp'),
+                        '-o', str(path / 'test')], check=True)
+        subprocess.run([str(path / 'test')], check=True)

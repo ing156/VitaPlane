@@ -17,8 +17,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(VITA_APP_NAME "VitaPlane")
 set(VITA_TITLEID  "VITAGRM01")
 # VitaSDK requires ##.##; the package version matches the final two source components.
-set(VITA_VERSION  "39.05")
-set(VITAGRAM_VERSION "0.39.05")
+set(VITA_VERSION  "40.05")
+set(VITAGRAM_VERSION "0.40.05")
+set(VITAGRAM_CALL_ENGINE_ROOT "" CACHE PATH "Prepared Vita tgcalls/WebRTC build; empty disables experimental audio calls")
 option(VITAGRAM_PERFORMANCE "Collect bounded performance diagnostics" ON)
 option(VITAGRAM_TGS_DIAGNOSTIC "Save one rendered TGS frame for diagnosis" OFF)
 option(VITAGRAM_PICKER_LOG "Write browsed folders and file names to ux0:data/vitagram/picker.log (plain text)" OFF)
@@ -63,6 +64,15 @@ if(NOT EXISTS "${CMAKE_SOURCE_DIR}/${EMOJI_FONT}")
   message(WARNING "Packaging the full-size emoji font (+~5 MB). Run bash scripts/shrink-fonts.sh and reconfigure.")
   set(EMOJI_FONT "assets/NotoColorEmoji_b.ttf")
 endif()
+# Pre-shape against the exact packaged font; no shaping library is loaded on Vita.
+find_package(Python3 REQUIRED COMPONENTS Interpreter)
+set(EMOJI_CATALOG "${CMAKE_BINARY_DIR}/generated/emoji_data.h")
+add_custom_command(OUTPUT "${EMOJI_CATALOG}"
+  COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/scripts/build-emoji-catalog.py"
+    "${CMAKE_SOURCE_DIR}/${EMOJI_FONT}" "${EMOJI_CATALOG}"
+  DEPENDS "${EMOJI_FONT}" scripts/build-emoji-catalog.py
+    scripts/unicode/16.0/emoji-test.txt scripts/unicode/16.0/GraphemeBreakProperty.txt scripts/unicode/16.0/emoji-data.txt
+  VERBATIM)
 set(JAPANESE_FONT "assets/NotoSansJP-JIS.otf")
 if(NOT EXISTS "${CMAKE_SOURCE_DIR}/${JAPANESE_FONT}")
   message(WARNING "Packaging the full Japanese font (+~1.6 MB). Run bash scripts/shrink-fonts.sh and reconfigure.")
@@ -222,6 +232,7 @@ if(VITAGRAM_UI_ALT_BACKGROUND)
 endif()
 
 add_executable(${PROJECT_NAME}
+  "${EMOJI_CATALOG}"
   src/main.cpp
   src/gxm_guard.cpp
   src/vita2d_texture_guard.cpp
@@ -249,6 +260,9 @@ add_executable(${PROJECT_NAME}
   src/keyboard_layout.cpp
   src/keyboard_case.cpp
   src/proxy_link.cpp
+  src/web_proxy_protocol.cpp
+  src/web_proxy_http.cpp
+  src/web_proxy.cpp
   src/secure_store.cpp
   src/vault_crypto.cpp
   src/vault.cpp
@@ -283,6 +297,7 @@ set_source_files_properties(src/portrait_video.cpp src/video_note_encoder.cpp sr
 
 target_include_directories(${PROJECT_NAME} PRIVATE
   src
+  "${CMAKE_BINARY_DIR}/generated"
   ${ANIMATION_FFMPEG_ROOT}/include
   ${WEBP_INCLUDE_DIR}
   ${VITASDK}/arm-vita-eabi/include/freetype2
@@ -328,6 +343,39 @@ target_link_options(${PROJECT_NAME} PRIVATE "-Wl,--wrap=free")
 # The prepared VitaSDK linker script reserves this gap for vita-elf-create's
 # SCE metadata, whose size can exceed the incidental padding after code.
 target_link_options(${PROJECT_NAME} PRIVATE "-Wl,--defsym=__sce_headroom=0x10000")
+
+if(VITAGRAM_CALL_ENGINE_ROOT)
+  set(CALL_ROOT "${VITAGRAM_CALL_ENGINE_ROOT}")
+  if(NOT EXISTS "${CALL_ROOT}/build-webrtc/libtgcalls_vita_probe.a" OR NOT EXISTS "${CALL_ROOT}/build-webrtc/libtg_owt.a")
+    message(FATAL_ERROR "VITAGRAM_CALL_ENGINE_ROOT must point to the prepared Vita call engine")
+  endif()
+  if(NOT VITAGRAM_OPENSSL_ROOT STREQUAL "${CALL_ROOT}/openssl-dtls")
+    message(FATAL_ERROR "The call build needs VITAGRAM_OPENSSL_ROOT=${CALL_ROOT}/openssl-dtls")
+  endif()
+  target_compile_definitions(${PROJECT_NAME} PRIVATE VITAGRAM_CALLS=1)
+  target_sources(${PROJECT_NAME} PRIVATE src/telegram_calls.cpp src/telegram_call_setup.cpp src/vita_call_audio.cpp src/call_sound.cpp)
+  set_source_files_properties(src/telegram_calls.cpp src/vita_call_audio.cpp PROPERTIES COMPILE_OPTIONS "-std=gnu++20")
+  set_source_files_properties(src/telegram_calls.cpp src/vita_call_audio.cpp PROPERTIES COMPILE_DEFINITIONS
+    "WEBRTC_POSIX;WEBRTC_APP_TDESKTOP;TGCALLS_USE_STD_OPTIONAL")
+  target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE
+    "${CALL_ROOT}/tgcalls/tgcalls" "${CALL_ROOT}/tg_owt/src" "${CALL_ROOT}/build-webrtc/gen"
+    "${CALL_ROOT}/tg_owt/src/third_party/abseil-cpp")
+  target_link_libraries(${PROJECT_NAME}
+    "${CALL_ROOT}/build-webrtc/libtgcalls_vita_probe.a" "${CALL_ROOT}/build-webrtc/libtg_owt.a"
+    "${CALL_ROOT}/install/lib/libopenh264.a" "${CALL_ROOT}/install/lib/libvpx.a" opus)
+  set(CALL_LICENSES
+    FILE "${CALL_ROOT}/tgcalls/LICENSE" assets/tgcalls-LICENSE.txt
+    FILE "${CALL_ROOT}/tg_owt/LICENSE" assets/webrtc-LICENSE.txt
+    FILE "${CALL_ROOT}/openh264/LICENSE" assets/openh264-LICENSE.txt
+    FILE "${CALL_ROOT}/libvpx/LICENSE" assets/libvpx-LICENSE.txt
+    FILE "${CALL_ROOT}/libvpx/PATENTS" assets/libvpx-PATENTS.txt
+    FILE "${CALL_ROOT}/tg_owt/src/third_party/abseil-cpp/LICENSE" assets/abseil-LICENSE.txt
+    FILE "${CALL_ROOT}/tg_owt/src/third_party/crc32c/src/LICENSE" assets/crc32c-LICENSE.txt
+    FILE "${CALL_ROOT}/tg_owt/src/third_party/libyuv/LICENSE" assets/libyuv-LICENSE.txt
+    FILE "${CALL_ROOT}/tg_owt/src/third_party/libsrtp/LICENSE" assets/libsrtp-LICENSE.txt
+    FILE "${CALL_ROOT}/tg_owt/src/third_party/pffft/LICENSE" assets/pffft-LICENSE.txt
+    FILE "${CALL_ROOT}/tg_owt/src/third_party/rnnoise/COPYING" assets/rnnoise-LICENSE.txt)
+endif()
 
 target_link_libraries(${PROJECT_NAME}
   Td::TdJsonStatic
@@ -407,6 +455,7 @@ vita_create_vpk(${PROJECT_NAME}.vpk ${VITA_TITLEID} eboot.bin
   FILE assets/icon0.png sce_sys/icon0.png
   FILE ${CMAKE_BINARY_DIR}/src/updater_app/vitagram-updater.vpk updater/vitagram-updater.vpk
   ${UPDATER_HEAD_FILES}
+  ${CALL_LICENSES}
   FILE assets/cacert.pem certs/cacert.pem
   FILE assets/webapp-bridge.js assets/webapp-bridge.js
   FILE src/webview/LICENSE assets/webview-LICENSE.txt
@@ -419,6 +468,7 @@ vita_create_vpk(${PROJECT_NAME}.vpk ${VITA_TITLEID} eboot.bin
   FILE assets/controller-icons/select.png assets/controller-icons/select.png
   FILE ${EMOJI_FONT} assets/NotoColorEmoji.ttf
   FILE assets/Emoji-LICENSE.txt assets/Emoji-LICENSE.txt
+  FILE assets/Unicode-LICENSE.txt assets/Unicode-LICENSE.txt
   FILE assets/NotoSans-Regular.ttf assets/NotoSans-Regular.ttf
   FILE assets/NotoSans-LICENSE.txt assets/NotoSans-LICENSE.txt
   FILE assets/NotoSansCoptic-Regular.ttf assets/NotoSansCoptic-Regular.ttf

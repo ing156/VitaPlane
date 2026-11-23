@@ -28,7 +28,9 @@ conversion finishes, some files may remain unencrypted. Auto-lock after inactivi
 or sleep hides the screen and pauses playback; background work continues, and
 decryption keys remain in RAM.
 
-Downloaded files can briefly exist in plain form before sealing. Recordings,
+Completed downloads can briefly exist in plain form before sealing. Incomplete
+TDLib downloads in `files/temp/` and `db/temp/` stay unencrypted, including while
+paused or after closing the app, so TDLib can resume their saved parts. Recordings,
 conversion scratch files, explicit exports and diagnostic logs are outside this
 protection. Encryption does not hide filenames or sizes and cannot protect data
 from software controlling the running console.
@@ -48,10 +50,10 @@ Telegram message traffic remains MTProto-encrypted.
 
 </details>
 
-Diagnostic logs are **off by default**. Enable individual logs in
+Proxy connection diagnostics start automatically before sign-in. Other diagnostic logs are **off by default**. Enable individual logs in
 **Settings → About and diagnostics → Diagnostic logs**. Review logs before sharing; report the app version,
 steps to reproduce, media type and any on-screen error without including credentials
-or account files. **Settings → About and diagnostics → About** contains project links and privacy notes.
+or account files. The automatic proxy connection log contains only fixed stages, numeric attempt/list indices and error codes; it excludes addresses, secrets, tokens and payloads. It retains at most two 256 KiB files and is deleted on logout. **Settings → About and diagnostics → About** contains project links and privacy notes.
 
 ## Русский
 
@@ -78,8 +80,10 @@ or account files. **Settings → About and diagnostics → About** contains proj
 Автоблокировка после бездействия или сна закрывает экран и ставит воспроизведение
 на паузу; фоновые операции продолжаются, ключи остаются в оперативной памяти.
 
-Загружаемые файлы кратковременно существуют открытыми до шифрования. Записи,
-временные файлы конвертации, явный экспорт и диагностические журналы не защищены
+Завершённые загрузки кратковременно существуют открытыми до шифрования.
+Незавершённые загрузки TDLib в `files/temp/` и `db/temp/` остаются незашифрованными,
+в том числе на паузе и после закрытия приложения: это необходимо для докачки
+сохранённых частей через TDLib. Записи, временные файлы конвертации, явный экспорт и диагностические журналы не защищены
 этим режимом. Шифрование не скрывает имена и размеры файлов и не защищает от
 программ, контролирующих работающую консоль.
 
@@ -99,8 +103,33 @@ or account files. **Settings → About and diagnostics → About** contains proj
 
 </details>
 
-Диагностические журналы **выключены по умолчанию**. Отдельные журналы включаются
+Журнал подключения прокси включается автоматически до входа в аккаунт. Остальные диагностические журналы **выключены по умолчанию**. Отдельные журналы включаются
 в **Настройки → О приложении и диагностика → Диагностические логи**. Перед отправкой просмотрите содержимое; в отчёте
 укажите версию, шаги воспроизведения, тип медиа и ошибку на экране, исключив
-реквизиты и файлы аккаунта. **Настройки → О приложении и диагностика → О проекте** содержит ссылки и сведения
+реквизиты и файлы аккаунта. Журнал подключения прокси содержит только фиксированные этапы, числовые номера попыток/элементов списка и коды ошибок без адресов, secret, токенов и содержимого запросов. Хранятся не более двух файлов по 256 КиБ; при выходе из аккаунта они удаляются. **Настройки → О приложении и диагностика → О проекте** содержит ссылки и сведения
 о приватности.
+
+WEB proxy support carries Telegram MTProto connections only. VitaPlane uses native
+HTTPS with certificate and hostname verification; it does not copy a browser TLS
+fingerprint. If system DNS cannot resolve a WEB proxy host, the client queries Google DNS over verified HTTPS; only the hostname is sent, with IPv4 answers cached for at most 60 seconds. Bridge capabilities and session tokens are kept in memory and are
+not written to diagnostic logs. Mini Apps, ordinary web pages and update checks
+continue using their existing network paths; WEB is not a device-wide VPN.
+
+WEB-прокси передаёт только MTProto-соединения Telegram. VitaPlane использует
+нативный HTTPS с проверкой сертификата и имени сервера, не воспроизводя
+TLS-отпечаток браузера. Если системный DNS не находит WEB-сервер, клиент обращается к Google DNS по проверенному HTTPS: отправляется только имя сервера, IPv4-ответ хранится не более 60 секунд. Производные ключи доступа и токены сессии остаются в
+памяти и не записываются в диагностические журналы. Мини-приложения, обычные
+веб-страницы и проверка обновлений продолжают использовать прежние сетевые
+маршруты; WEB не является VPN для всей консоли.
+
+The proxy list uses the same console-bound secret protection and optional vault
+as the previous single-proxy settings. Availability checks contact each saved
+proxy and Telegram; they do not submit credentials to an external scoring service.
+Latency results are not saved to disk. Disabling automatic switching also disables
+automatic list probes; an explicit check still tests the saved entries.
+
+Список прокси использует прежнюю защиту секретов с привязкой к консоли и
+необязательное хранилище. Проверки обращаются к сохранённым прокси и Telegram,
+без отправки реквизитов стороннему сервису оценки. Задержки не сохраняются на
+диск. Отключение автопереключения также отключает автоматические проверки списка;
+ручная проверка по-прежнему доступна.

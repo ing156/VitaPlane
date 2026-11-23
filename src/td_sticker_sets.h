@@ -92,7 +92,7 @@ inline json_t* compact_raw_sticker_sets(const std::string& text) {
     using namespace td_sets_detail;
     if (text.compare(0, 1, "{") || text.size() < 4096 ||
         std::string_view(text.data(), 128).find("stickerSets") == std::string_view::npos ||
-        text.find("sticker_packs") == std::string::npos) return nullptr;
+        (text.find("sticker_packs") == std::string::npos && text.find("emoji_packs") == std::string::npos)) return nullptr;
     td_unused_detail::Reader r{text.data(), text.data() + text.size()};
     ++r.p;
     json_t* root = json_object(); bool ok = false;
@@ -131,7 +131,8 @@ inline json_t* compact_raw_sticker_sets(const std::string& text) {
     }
     r.ws();
     if (!ok || r.p != r.end || std::strcmp(json_string_value(json_object_get(root, "@type")) ?: "", "stickerSets") ||
-        std::strcmp(json_string_value(json_object_get(json_object_get(root, "@extra"), "kind")) ?: "", "sticker_packs") ||
+        (std::strcmp(json_string_value(json_object_get(json_object_get(root, "@extra"), "kind")) ?: "", "sticker_packs") &&
+         std::strcmp(json_string_value(json_object_get(json_object_get(root, "@extra"), "kind")) ?: "", "emoji_packs")) ||
         !json_is_array(json_object_get(root, "sets"))) { json_decref(root); return nullptr; }
     return root;
 }

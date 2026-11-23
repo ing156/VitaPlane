@@ -1,0 +1,46 @@
+diff --git a/build/platform-gnu-chain.mk b/build/platform-gnu-chain.mk
+index 13db328..042e981 100644
+--- a/build/platform-gnu-chain.mk
++++ b/build/platform-gnu-chain.mk
+@@ -3,7 +3,7 @@ SHAREDLIBSUFFIX = so
+ SHAREDLIBSUFFIXFULLVER=$(SHAREDLIBSUFFIX).$(FULL_VERSION)
+ SHAREDLIBSUFFIXMAJORVER=$(SHAREDLIBSUFFIX).$(SHAREDLIB_MAJORVERSION)
+ SHLDFLAGS = -Wl,-soname,$(LIBPREFIX)$(PROJECT_NAME).$(SHAREDLIBSUFFIXMAJORVER)
+-CFLAGS += -Wall -fno-strict-aliasing -fPIC -MMD -MP
++CFLAGS += -Wall -fno-strict-aliasing -MMD -MP
+ ifeq ($(USE_STACK_PROTECTOR), Yes)
+ CFLAGS += -fstack-protector-all
+ endif
+diff --git a/codec/common/src/WelsThreadLib.cpp b/codec/common/src/WelsThreadLib.cpp
+index 4e44f24..9480908 100644
+--- a/codec/common/src/WelsThreadLib.cpp
++++ b/codec/common/src/WelsThreadLib.cpp
+@@ -50,7 +50,7 @@
+ #include <unistd.h>
+ #ifdef __EMSCRIPTEN__
+ #include <emscripten/threading.h>
+-#elif !defined(__Fuchsia__)
++#elif !defined(__Fuchsia__) && !defined(__vita__)
+ #include <sys/sysctl.h>
+ #endif
+ #ifdef __APPLE__
+@@ -236,7 +236,7 @@ WELS_THREAD_ERROR_CODE    WelsThreadCreate (WELS_THREAD_HANDLE* thread,  LPWELS_
+   err = pthread_attr_init (&at);
+   if (err)
+     return err;
+-#if !defined(__ANDROID__) && !defined(__Fuchsia__)
++#if !defined(__ANDROID__) && !defined(__Fuchsia__) && !defined(__vita__)
+   err = pthread_attr_setscope (&at, PTHREAD_SCOPE_SYSTEM);
+   if (err)
+     return err;
+@@ -515,6 +515,10 @@ WELS_THREAD_ERROR_CODE    WelsQueryLogicalProcessInfo (WelsLogicalProcessInfo* p
+   pInfo->ProcessorCount = emscripten_num_logical_cores();
+   return WELS_THREAD_ERROR_OK;
+ 
++#elif defined(__vita__)
++  pInfo->ProcessorCount = 1;
++  return WELS_THREAD_ERROR_OK;
++
+ #elif defined(__Fuchsia__)
+ 
+   pInfo->ProcessorCount = sysconf(_SC_NPROCESSORS_ONLN);

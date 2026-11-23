@@ -1,3 +1,4 @@
+#include "emoji.h"
 #include "custom_keyboard.h"
 #include "keyboard.h"
 #include "keyboard_hold.h"
@@ -96,6 +97,8 @@ void vita2d_draw_rectangle(float x, float y, float w, float h, unsigned color) {
 void vita2d_draw_fill_circle(float, float, float, unsigned) {}
 void vita2d_draw_line(float, float, float, float, unsigned) {}
 void vita2d_draw_texture_tint_part_scale(const vita2d_texture*, float, float, float, float, float, float, float, float, unsigned) {}
+static std::vector<std::string> priority_emojis;
+void emoji_prioritize(const char* text) { priority_emojis.emplace_back(text); }
 static size_t width_calls=0;
 static unsigned font_revision=0;
 static int test_font_percent=100;
@@ -135,6 +138,54 @@ int main(int argc, char** argv) {
     };
     auto button = [&](unsigned b) { auto r = event(b, b); event(); return r; };
     auto tap = [&](int x, int y) { auto r = event(0, 0, true, x, y); event(); return r; };
+    open("😀", false, true, 1023);
+    assert(kb.insertCustomEmoji("😀", 900000000000LL));
+    assert(kb.customEmojis().size()==1 && kb.customEmojis()[0].begin==4 && kb.customEmojis()[0].end==8);
+    button(SCE_CTRL_CROSS); // Insert a regular letter after the custom emoji.
+    assert(kb.customEmojis()[0].begin==4 && kb.customEmojis()[0].end==8);
+    button(SCE_CTRL_SQUARE); button(SCE_CTRL_SQUARE);
+    assert(kb.text()=="😀" && kb.customEmojis().empty());
+    assert(kb.insertCustomEmoji("❤", 99));
+    button(SCE_CTRL_LTRIGGER); button(SCE_CTRL_CROSS); // Insert before it.
+    assert(kb.customEmojis()[0].begin==5 && kb.customEmojis()[0].end==8);
+    int icons = 0;
+    kb.draw(nullptr,true,"premium",false,[&](int64_t id,float,float,float,unsigned){ assert(id==99); ++icons; return true; });
+    assert(icons==1);
+    assert(custom_emoji_utf16("я😀❤", 6)==3 && custom_emoji_utf16("я😀❤", 9)==4);
+    assert(custom_emoji_utf16("😀", 1)==-1 && custom_emoji_utf16("😀", 5)==-1);
+    open("", false, false, 1023); assert(!kb.insertCustomEmoji("😀", 99));
+    open("", true, true, 1023); assert(!kb.insertCustomEmoji("😀", 99));
+    open("", false, true, 3); assert(!kb.insertCustomEmoji("😀", 99));
+    open("",false,true,1023); tap(350,505);
+    const auto premium_down = event(0,0,true,480,505);
+    const auto premium_up = event();
+    assert(premium_down==Result::CustomEmoji || premium_up==Result::CustomEmoji);
+    kb.open("caption",false,true,1023,false,false,false,false);
+    tap(350,505); drawn.clear(); kb.draw(nullptr,true,"Caption");
+    assert(std::find(drawn.begin(),drawn.end(),tr("emoji.premium"))==drawn.end());
+    Keyboard premium_dialog;
+    premium_dialog.configure(false,true,{"en"}); // Force custom composition even with a native preference.
+    assert(premium_dialog.composeCustomEmoji("Premium", "😀", 999));
+    assert(premium_dialog.ownsScreen() && premium_dialog.customEmojis().size()==1);
+    premium_dialog.handle(0,0,false,0,0,now+=1000);
+    premium_dialog.handle(SCE_CTRL_START,SCE_CTRL_START,false,0,0,now+=1000);
+    assert(premium_dialog.submitted() && premium_dialog.text()=="😀" && premium_dialog.customEmojis()[0].id==999);
+    premium_dialog.close(); assert(premium_dialog.customEmojis().empty());
+    Keyboard resumed_dialog; resumed_dialog.configure(true,true,{"en"});
+    resumed_dialog.open("Message",false,"draft",true);
+    auto resume_event = [&](unsigned pressed, unsigned held, bool touch, int x, int y) {
+        resumed_dialog.handle(pressed,held,touch,x,y,now+=1000);
+    };
+    resume_event(0,0,false,0,0);
+    resume_event(0,0,true,350,505); resume_event(0,0,false,350,505);
+    resume_event(0,0,true,480,505); resume_event(0,0,false,480,505);
+    assert(resumed_dialog.pickingEmoji() && !resumed_dialog.active());
+    assert(resumed_dialog.resumeEmoji("😀",777) && !resumed_dialog.pickingEmoji());
+    resume_event(0,0,false,0,0);
+    resume_event(0,0,true,850,505); resume_event(0,0,false,850,505);
+    assert(resumed_dialog.submitted() && resumed_dialog.text()=="draft😀");
+    assert(resumed_dialog.customEmojis().size()==1 && resumed_dialog.customEmojis()[0].begin==5 && resumed_dialog.customEmojis()[0].id==777);
+    resumed_dialog.close();
     kb.open("Existing",false,true,1023,false,false,true);
     drawn.clear();kb.draw(nullptr,true,"Edit message");
     assert(std::find(drawn.begin(),drawn.end(),tr("keyboard.save"))!=drawn.end() && kb.text()=="Existing");
@@ -539,6 +590,28 @@ int main(int argc, char** argv) {
         assert(carets.size() == 1);
         return carets.front();
     };
+    // Whole words share the same layout for drawing, caret navigation and touch.
+    const std::string prefix=std::string(81,'a')+" ";
+    for (const auto& word : {std::string("hello"),std::string("привет"),std::string("👩‍💻hi")}) {
+        open(prefix+word,false,true,1023);
+        assert(draw_caret()==std::make_pair(38+(int)word.size()*10,113));
+        assert(std::find(drawn.begin(),drawn.end(),prefix)!=drawn.end());
+        assert(std::find(drawn.begin(),drawn.end(),word)!=drawn.end());
+        tap(36,121); assert(kb.cursor()==prefix.size());
+        button(SCE_CTRL_RTRIGGER);
+        assert(draw_caret().second==113);
+        tap(900,95); assert(kb.cursor()==prefix.size());
+    }
+    open(prefix+"four",false,true,1023);
+    assert(draw_caret()==std::make_pair(898,87));
+    tap(48,285); // Growing the word past the edge reflows it as a whole.
+    assert(draw_caret()==std::make_pair(88,113));
+    assert(kb.text()==prefix+"fourq");
+    button(SCE_CTRL_SQUARE);
+    assert(draw_caret()==std::make_pair(898,87));
+    open(prefix+"hello\nnext",false,true,1023);
+    assert(draw_caret()==std::make_pair(78,139));
+    assert(std::find(drawn.begin(),drawn.end(),"hello")!=drawn.end());
     open(std::string(90, 'a'), false, true, 1023);
     for (int i = 0; i < 4; ++i) button(SCE_CTRL_LTRIGGER);
     assert(draw_caret() == std::make_pair(38, 113)); // Soft wrap at 86 characters.
@@ -1023,6 +1096,233 @@ int main(int argc, char** argv) {
         return count;
     })==65);
     assert(history.samples[64].timeStamp==full_latest.timeStamp);
+    // Emoji mode owns input, keeps the draft/caret, and rejects grid gaps.
+    kb.clear(); open("ab",false,true,1023); button(SCE_CTRL_LTRIGGER);
+    tap(350,505); kb.draw(nullptr,true,"emoji");
+    assert(kb.text()=="ab" && kb.cursor()==1);
+    tap(112,290); assert(kb.text()=="ab");
+    int first=-1;
+    for (size_t i=0;i<std::size(emoji_data::entries);++i)
+        if (emoji_data::entries[i].picker && emoji_data::entries[i].base==i && emoji_data::entries[i].group==0) { first=i; break; }
+    assert(first>=0);
+    const std::string face=emoji_data::entries[first].text;
+    tap(60,290); assert(kb.text()=="a"+face+"b");
+    assert(button(SCE_CTRL_START)==Result::None); // Start remains reserved while browsing; the explicit Send key submits.
+    assert(button(SCE_CTRL_CIRCLE)==Result::None);
+    button(SCE_CTRL_SQUARE); assert(kb.text()=="ab" && kb.cursor()==1);
+    for (const char* cluster : {u8"👍🏽",u8"👩🏽‍💻",u8"🇷🇺",u8"1️⃣",u8"👨‍👩‍👧‍👦"}) {
+        open(std::string("a")+cluster+"b",false,true,1023);
+        button(SCE_CTRL_LTRIGGER); button(SCE_CTRL_LTRIGGER); assert(kb.cursor()==1);
+        button(SCE_CTRL_RTRIGGER); assert(kb.cursor()==1+std::strlen(cluster));
+        button(SCE_CTRL_SQUARE); assert(kb.text()=="ab" && kb.cursor()==1);
+        open(cluster,false,true,std::strlen(cluster)-1); assert(kb.text().empty());
+    }
+    // The byte limit rejects the whole selected sequence.
+    kb.clear(); open("a",false,true,1); tap(350,505); tap(60,290); assert(kb.text()=="a");
+    // Controller long press selects a font-supported skin-tone variation.
+    kb.clear(); open("",false,true,1023); tap(350,505); tap(350,505);
+    int slot=0, root=-1;
+    for (size_t i=0;i<std::size(emoji_data::entries);++i) {
+        const auto& entry=emoji_data::entries[i];
+        if (!entry.picker || entry.base!=i || entry.group!=1) continue;
+        if (entry.variants) { root=i; break; }
+        ++slot;
+    }
+    assert(root>=0);
+    for (int page=0;page<slot/30;++page) button(SCE_CTRL_RTRIGGER);
+    const int cell=slot%30, ex=24+(cell%10)*92+42, ey=262+(cell/10)*72+32;
+    event(0,0,true,ex,ey); now+=350000; event(0,0,true,ex,ey);
+    const std::string before_variant=kb.text();
+    event(); // Keeping the finger over the base tile retains its default variant.
+    assert(!kb.text().empty() && before_variant.empty());
+    const auto base_text=kb.text();
+    event(SCE_CTRL_CROSS,SCE_CTRL_CROSS); now+=350000; event(0,SCE_CTRL_CROSS);
+    event(SCE_CTRL_RIGHT,SCE_CTRL_CROSS); event();
+    assert(kb.text().size()>base_text.size());
+    const auto selected_variant=kb.text().substr(base_text.size());
+    assert(emoji::find(selected_variant) && selected_variant!=base_text);
+    button(SCE_CTRL_CIRCLE); tap(350,505); // Recent includes the chosen full sequence.
+    drawn.clear();kb.draw(nullptr,true,"recent");
+    assert(std::find(drawn.begin(),drawn.end(),selected_variant)!=drawn.end());
+    // Reach the last partial page, where blank cells cannot insert an emoji.
+    tap(350,505); // Faces after Recent.
+    for (int page=0;page<100;++page) button(SCE_CTRL_RTRIGGER);
+    const auto before_gap=kb.text(); tap(930,460); assert(kb.text()==before_gap);
+    button(SCE_CTRL_CIRCLE);
+    // Emoji variants use the same hold/slide/release gesture at both screen edges.
+    std::vector<std::pair<int,int>> people_variants;
+    int people_slot=0;
+    for (size_t i=0;i<std::size(emoji_data::entries);++i) {
+        const auto& entry=emoji_data::entries[i];
+        if (!entry.picker || entry.base!=i || entry.group!=1) continue;
+        if (entry.variants) people_variants.emplace_back(people_slot,i);
+        ++people_slot;
+    }
+    std::vector<std::pair<int,int>> gesture_cases;
+    for (int column : {0,5,9}) {
+        const auto found=std::find_if(people_variants.begin(),people_variants.end(),[&](const auto& item){return item.first%10==column;});
+        assert(found!=people_variants.end());gesture_cases.push_back(*found);
+    }
+    const auto large=std::find_if(people_variants.begin(),people_variants.end(),[](const auto& item) {
+        return std::count_if(std::begin(emoji_data::entries),std::end(emoji_data::entries),[&](const auto& entry){return entry.picker && entry.base==item.second;})>7;
+    });
+    assert(large!=people_variants.end());gesture_cases.push_back(*large);
+    for (const auto& item : gesture_cases) {
+        kb.clear();open("",false,true,1023);tap(350,505);tap(350,505);
+        for (int page=0;page<item.first/30;++page) button(SCE_CTRL_RTRIGGER);
+        const int cell=item.first%30,x=66+(cell%10)*92,y=294+(cell/10)*72;
+        const int popup_baseline=262+(cell/10)*72-31;
+        const size_t visible=std::min<size_t>(7,std::count_if(std::begin(emoji_data::entries),std::end(emoji_data::entries),[&](const auto& entry){return entry.picker && entry.base==item.second;}));
+        auto choices=[&] {
+            rendered_text.clear();kb.draw(nullptr,true,"emoji swipe");
+            std::vector<RenderedText> options;
+            for (const auto& line : rendered_text) if (line.baseline==popup_baseline && emoji::find(line.label)) options.push_back(line);
+            assert(options.size()>=visible); // Popup draws after any grid row sharing its baseline.
+            options.erase(options.begin(),options.end()-visible);
+            return options;
+        };
+        priority_emojis.clear();event(0,0,true,x,y);
+        assert(priority_emojis.size()>=visible);
+        assert(priority_emojis.back()==emoji_data::entries[item.second].text);
+        now+=KeyboardHold::delay;event(0,0,true,x,y);
+        const auto options=choices();assert(options.size()>=2 && kb.text().empty());
+        const auto chosen=std::find_if(options.begin(),options.end(),[&](const auto& line){return line.label!=emoji_data::entries[item.second].text;});
+        assert(chosen!=options.end());
+        const int target=chosen->x+rich_text_width(nullptr,1.05f,chosen->label.c_str())/2;
+        event(0,0,true,(x+target)/2,y);event(0,0,true,target,y);
+        assert(kb.text().empty());event();assert(kb.text()==chosen->label);event();assert(kb.text()==chosen->label);
+        // A subsequent hold without sliding keeps the last variant under the finger.
+        button(SCE_CTRL_SQUARE);assert(kb.text().empty());
+        event(0,0,true,x,y);now+=KeyboardHold::delay;event(0,0,true,x,y);
+        now+=1000000;event(0,0,true,x,y);event();
+        assert(kb.text()==chosen->label);
+        button(SCE_CTRL_SQUARE);
+        event(0,0,true,x,y);now+=KeyboardHold::delay;event(0,0,true,x,y);
+        if (item==*large) {
+            const auto before=choices();const auto& edge=before.back();
+            const int edge_x=edge.x+rich_text_width(nullptr,1.05f,edge.label.c_str())/2;
+            event(0,0,true,edge_x,popup_baseline-10);now+=400000;event(0,0,true,edge_x,popup_baseline-10);
+            const auto after=choices();assert(before.front().label!=after.front().label && kb.text().empty());
+            // The same gesture may move up into the popup after scrolling.
+            const auto& middle=after[after.size()/2];
+            event(0,0,true,middle.x+rich_text_width(nullptr,1.05f,middle.label.c_str())/2,popup_baseline-10);
+            event();assert(kb.text()==middle.label);button(SCE_CTRL_SQUARE);
+            event(0,0,true,x,y);now+=KeyboardHold::delay;event(0,0,true,x,y);
+        }
+        event(0,0,true,0,0);event();assert(kb.text().empty());
+    }
+    std::puts("Emoji variants: anchored hold, horizontal/upward swipe, edge carousel, release-only insertion and cancellation: PASS");
+    // Empty Recent has no selectable tile, and its return control remains available.
+    kb.clear();open("",false,true,1023);tap(350,505);
+    for (int group=0;group<9;++group) tap(350,505);
+    drawn.clear();kb.draw(nullptr,true,"empty emoji");
+    assert(std::find(drawn.begin(),drawn.end(),tr("emoji.empty"))!=drawn.end());
+    tap(60,290);assert(kb.text().empty());button(SCE_CTRL_CIRCLE);
+    // Used tiles keep the same fill as unused tiles; only navigation focus differs.
+    const auto previous_palette=palette;const auto previous_size=test_font_percent;
+    for (int theme=0;theme<3;++theme) for (int size=70;size<=130;size+=10) {
+        palette.clear();
+        if (theme==2) palette={{"surface",RGBA8(45,20,60,255)},{"text",RGBA8(250,240,255,255)},
+            {"accent",RGBA8(180,120,240,255)}};
+        test_font_percent=size;++font_revision;
+        kb.clear();open("",false,true,1023);tap(350,505);tap(60,290);
+        now+=200000;event();
+        shapes.clear();record_shapes=true;kb.draw(nullptr,theme!=0,"emoji");record_shapes=false;
+        auto fill_at=[&](int x) {
+            const auto face=std::find_if(shapes.begin(),shapes.end(),[&](const Shape& shape) {
+                return std::fabs(shape.x-x)<0.1f && std::fabs(shape.y-262)<0.1f && std::fabs(shape.w-84)<0.1f;
+            });
+            assert(face!=shapes.end());return face->color;
+        };
+        assert(fill_at(24)==fill_at(116)); // No persistent used-item fill.
+        button(SCE_CTRL_RIGHT);kb.draw(nullptr,theme!=0,"emoji"); // Focused, unused.
+        button(SCE_CTRL_LEFT);kb.draw(nullptr,theme!=0,"emoji"); // Focused, used.
+        button(SCE_CTRL_CIRCLE);
+    }
+    palette=previous_palette;test_font_percent=previous_size;++font_revision;
+    // Collapsing expands the draft; swipes and controller scrolling never edit text.
+    std::string long_draft;
+    for (int i=0;i<40;++i) long_draft+="line"+std::to_string(i)+"\n";
+    open(long_draft,false,true,1023);kb.draw(nullptr,true,"draft");
+    const auto unchanged=kb.text(); const size_t original_caret=kb.cursor();
+    tap(40,505); letter_keys.clear();drawn.clear();kb.draw(nullptr,true,"draft");
+    assert(letter_keys.empty());
+    assert(std::count_if(rendered_text.begin(),rendered_text.end(),[](const RenderedText& t) {
+        return t.baseline>=106 && t.baseline<=496 && t.label.rfind("line",0)==0;
+    })>=16);
+    event(0,0,true,500,180); event(0,0,true,500,450); event();
+    assert(kb.text()==unchanged && kb.cursor()==original_caret);
+    letter_keys.clear();kb.draw(nullptr,true,"draft");assert(letter_keys.empty());
+    button(SCE_CTRL_UP);kb.draw(nullptr,true,"draft");
+    event(0,0,true,70,150); now+=350000; event(0,0,true,80,150);
+    loupe_carets.clear();kb.draw(nullptr,true,"draft");assert(!loupe_carets.empty());
+    event(); letter_keys.clear();kb.draw(nullptr,true,"draft");assert(letter_keys.empty());
+    // A quick tap restores keys at the tapped line, without inserting a character.
+    tap(70,150); letter_keys.clear();kb.draw(nullptr,true,"draft");
+    assert(!letter_keys.empty() && kb.text()==unchanged && kb.cursor()<original_caret);
+    tap(40,505);kb.draw(nullptr,true,"draft");
+    button(SCE_CTRL_CROSS);letter_keys.clear();kb.draw(nullptr,true,"draft");assert(!letter_keys.empty());
+    // The header closes in both views; the lower-left key only collapses.
+    open("keep",false,true,1023);kb.draw(nullptr,true,"close");
+    event(0,0,true,750,18);assert(event()==Result::Cancelled);
+    open("keep",false,true,1023);kb.draw(nullptr,true,"close");tap(40,505);kb.draw(nullptr,true,"close");
+    event(0,0,true,750,18);assert(event()==Result::Cancelled);
+    kb.clear();open("",false,true,1023);tap(350,505);
+    assert(tap(832,505)==Result::None); // Empty emoji draft cannot be sent.
+    tap(60,290);assert(!kb.text().empty());assert(tap(832,505)==Result::Submitted);
+    open("draft",false,true,1023);tap(350,505);kb.draw(nullptr,true,"emoji collapse");
+    tap(40,505);letter_keys.clear();kb.draw(nullptr,true,"emoji collapse");assert(letter_keys.empty());
+    button(SCE_CTRL_CROSS);kb.draw(nullptr,true,"emoji collapse");
+    event(0,0,true,750,18);assert(event()==Result::Cancelled);
+    // Long category presses open a persistent scrollable list, never inserting text.
+    auto category_visible=[&](const char* key) {
+        rendered_text.clear();kb.draw(nullptr,true,"categories");
+        return std::any_of(rendered_text.begin(),rendered_text.end(),[&](const RenderedText& item) {
+            return item.label==tr(key) && item.baseline==519 && item.x>=264 && item.x<536;
+        });
+    };
+    auto category_list_visible=[&] {
+        drawn.clear();kb.draw(nullptr,true,"categories");
+        return std::find(drawn.begin(),drawn.end(),tr("emoji.categories"))!=drawn.end();
+    };
+    auto open_categories=[&] {
+        event(0,0,true,400,505);now+=KeyboardHold::delay;event(0,0,true,400,505);
+        assert(category_list_visible());event();assert(category_list_visible());
+    };
+    kb.clear();open("draft",false,true,1023);tap(350,505);
+    assert(category_visible("emoji.faces"));tap(400,505);assert(category_visible("emoji.people"));
+    const auto category_caret=kb.cursor();open_categories();
+    tap(300,327);assert(category_list_visible()); // Row gaps do not choose anything.
+    tap(190,310);tap(740,310);assert(category_list_visible()); // Outside the row geometry.
+    assert(tap(832,505)==Result::None && category_list_visible()); // Underlying Send is disabled.
+    event(0,0,true,300,480);event(0,0,true,300,300);event();assert(category_list_visible());
+    event(0,0,true,300,480);event(0,0,true,300,300);event();assert(category_list_visible());
+    tap(300,482);assert(category_visible("emoji.recent"));
+    assert(kb.text()=="draft" && kb.cursor()==category_caret);
+    open_categories();tap(738,266);assert(category_visible("emoji.recent")); // Own return control.
+    open_categories();button(SCE_CTRL_CIRCLE);assert(category_visible("emoji.recent"));
+    // Controller long press waits for release, then allows all ten categories.
+    event(SCE_CTRL_CROSS,SCE_CTRL_CROSS);now+=KeyboardHold::delay;event(0,SCE_CTRL_CROSS);
+    assert(category_list_visible());event();assert(category_list_visible());
+    for (int i=0;i<12;++i) button(SCE_CTRL_UP);
+    button(SCE_CTRL_CROSS);assert(category_visible("emoji.faces"));
+    open_categories();
+    for (int i=0;i<12;++i) button(SCE_CTRL_DOWN);
+    button(SCE_CTRL_CROSS);assert(category_visible("emoji.recent"));
+    assert(kb.text()=="draft");
+    // Opening/cancelling and the final page work with every palette/font metric.
+    for (int theme=0;theme<3;++theme) for (int size=70;size<=130;size+=10) {
+        test_font_percent=size;++font_revision;
+        palette.clear();if (theme==2) palette={{"surface",RGBA8(45,20,60,255)},{"text",RGBA8(250,240,255,255)}};
+        open_categories();kb.draw(nullptr,theme!=0,"categories");
+        button(SCE_CTRL_CIRCLE);assert(category_visible("emoji.recent"));
+    }
+    palette=previous_palette;test_font_percent=previous_size;++font_revision;
+    std::puts("Emoji category list: short/long press, opening release, vertical scroll, last page, gaps, controller selection and return: PASS");
+    // The button cannot collapse secret or vault-only fields.
+    open("private",true,false,128);kb.draw(nullptr,true,"secret");tap(750,18);
+    letter_keys.clear();kb.draw(nullptr,true,"secret");assert(!letter_keys.empty());
+    std::puts("Emoji picker, sequence edits, byte limits, recent choices and collapsed draft gestures: PASS");
     char pattern[] = "/tmp/vitagram-custom-keyboard-XXXXXX";
     const std::string custom = mkdtemp(pattern);
     std::ifstream source(std::string(argv[1]) + "/en.lang");

@@ -67,7 +67,7 @@ public:
         int id = (int)number(file, "id");
         if (!id) return;
         auto path = string(json_object_get(file, "local"), "path");
-        for (auto& i : items_) if (!i.terminal && (i.file == id || (!path.empty() && i.path == path))) {
+        for (auto& i : items_) if (!i.terminal && (i.file == id || (!i.file && !path.empty() && i.path == path))) {
             if (now < i.file_time) continue;
             i.file_time = now;
             i.file = id;
@@ -157,11 +157,10 @@ public:
     std::vector<std::string> lines(int64_t now, bool diagnostic = false) const {
         std::vector<std::string> result;
         // Current work first; recently completed operations yield immediately.
-        for (bool terminal : {false, true}) for (auto it = items_.rbegin(); it != items_.rend(); ++it) {
-            const auto& i = *it;
+        for (bool terminal : {false, true}) for (const auto& i : items_) {
             if (i.terminal == terminal && (!i.terminal ||
                 (now - i.ended < (diagnostic ? 15000000 : 3000000) && (diagnostic || !i.dismissed)))) {
-                result.push_back(describe(i, now));
+                result.push_back((diagnostic ? "upload=" + std::to_string(i.token) + " " : "") + describe(i, now));
                 if (i.reused) continue;
                 result.push_back(tr("up.data_line", {std::to_string(i.done), std::to_string(i.size),
                     std::to_string(std::max<int64_t>(0, i.size-i.done))}));

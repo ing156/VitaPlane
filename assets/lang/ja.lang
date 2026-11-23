@@ -115,9 +115,12 @@ doc.download_failed = ダウンロードに失敗しました: {0}
 doc.downloading = ダウンロード中: {0}
 doc.exists = 保存済み: {0}
 doc.invalid_path = ダウンロード先のパスが正しくありません
+doc.queue_full = ダウンロード待ちが上限に達しました（8件）
 doc.save_failed = ファイルを保存できませんでした
 doc.saved = 保存しました: {0}
 doc.saving = 保存中: {0}
+doc.source_changed = 元のファイルが変更されました
+doc.source_unavailable = 元のファイルを安全に復元できません
 folder.all = すべてのチャット
 folder.default = フォルダー
 folder.archive = アーカイブ
@@ -835,7 +838,7 @@ about.description = VitaSDK、vita2d、TDLibを使った非公式のオープン
 about.development = 開発は進行中です。Telegramの全機能には対応しておらず、一部には制限や不具合があります。
 about.privacy_title = プライバシー
 about.privacy_servers = VitaPlaneはメッセージ、ファイル、診断ログを作者のサーバーに送信しません。
-about.privacy_logs = 診断ログは技術情報を含み、初期設定では無効です。メッセージ本文、電話番号、パスワードは記録しません。ログはコンソール内に保存され、自動送信されません。問題が起きた場合、任意で開発者に手動送信して診断を依頼できます。
+about.privacy_logs = プロキシ接続ログは自動で有効になり、他の診断ログは初期設定で無効です。メッセージ本文、電話番号、パスワードは記録しません。ログはコンソール内に保存され、自動送信されません。問題が起きた場合、任意で開発者に手動送信して診断を依頼できます。
 about.privacy_connections = クライアントはTelegramのサーバーに接続します。更新の確認とダウンロードにはGitHubを使います。TDLibはプロキシの名前解決や接続設定の取得のため外部サービスに接続する場合があります。プロキシ使用時は選択したサーバーを経由します。
 about.security_title = 安全性とリスク
 about.security_intro = VitaPlaneは非公式クライアントです。アプリの不具合やプラットフォームの制約が安全性に影響する場合があります。
@@ -1062,6 +1065,10 @@ settings.section.chats = チャット
 settings.section.controls = 操作と入力
 settings.section.data = データとストレージ
 settings.section.connection = 接続
+settings.call_audio = 通話音声
+settings.call_audio_stable = 安定
+settings.call_audio_low = 低遅延
+settings.call_audio_hint = 低遅延では音声が途切れやすくなります。次の通話から適用されます。
 settings.section.security = データ保護
 settings.section.updates = 更新とインストール
 settings.section.about = アプリ情報と診断
@@ -1106,3 +1113,106 @@ message.edit_invalid = 空でないテキストを入力してください。UTF
 message.edit_changed = メッセージが変更されました。キャンセルして開き直してください。
 message.edit_timeout = 応答がありません。再試行前にメッセージを確認してください。
 keyboard.save = 保存
+
+# --- Download panel ---
+downloads.title = ダウンロード
+downloads.queued = 待機中
+downloads.paused = 一時停止中
+downloads.pause = 一時停止
+downloads.resume = 再開
+downloads.saving = 保存中
+downloads.restoring = 復元中
+downloads.error = 再試行が必要
+downloads.hint = タップ / {cross}: ファイル · L+R: パネルを選択
+downloads.priority = 優先度
+downloads.list_hint = {cross}: 一時停止 / 再開 · ←/→ 優先度 · {square} キャンセル · {circle}: 戻る
+downloads.carousel_hint = スワイプ ↑/↓
+
+proxy.type.web = WEB (HTTPS)
+proxy.web.invalid = WEB needs a DNS hostname, optional path, secret and HTTPS port 443
+proxy.web.failed = WEB connection failed; save and apply to retry
+proxy.web.tls = WEB TLS connection failed; check the certificate and network
+proxy.web.unsupported = Unsupported WEB transport: only https is supported
+
+proxy.pool.auto = Auto-switch on failure
+proxy.pool.analyze = Check all proxies
+proxy.pool.add = Add proxy
+proxy.pool.unknown = Not checked
+proxy.pool.checking = Checking...
+proxy.pool.available = {0} ms
+proxy.pool.unavailable = Unavailable
+proxy.pool.limit = Up to 16 proxies can be saved
+proxy.pool.empty = Add a proxy manually or scan its QR code
+proxy.pool.saving = Saving proxy settings...
+proxy.pool.hint = Auto-switch chooses a reachable alternative after a sustained connection failure
+proxy.pool.delete_confirm = Delete this saved proxy?
+proxy.pool.use = {cross} Select
+proxy.pool.edit = {square} Edit
+proxy.pool.delete = {triangle} Delete
+proxy.pool.back = {circle} Back
+proxy.pool.confirm = {cross} Delete
+
+proxy.pool.invalid = Proxy fields are incomplete or too long
+
+proxy.check.dns = Cannot resolve the proxy address: DNS error
+proxy.check.error = Proxy unreachable: TDLib connection error ({0})
+
+proxy.pool.checked = Proxy checks complete
+
+logs.proxy = Proxy connections
+
+tg.init_failed = Telegram initialization failed; see proxy.log
+
+# Emoji picker and expanded draft
+emoji.faces = 顔
+emoji.people = 人物
+emoji.nature = 自然
+emoji.food = 食べ物
+emoji.travel = 旅行
+emoji.activities = 活動
+emoji.objects = 物
+emoji.symbols = 記号
+emoji.flags = 旗
+emoji.recent = 最近
+emoji.back = ABC
+emoji.empty = 最近の絵文字はありません
+emoji.help = {cross} 挿入 / 長押し: バリエーション · L/R: ページ · {circle} ABC
+keyboard.expand_help = スワイプ / 矢印: スクロール · タップ / {cross}: キーボード · 長押し: 拡大鏡
+
+emoji.categories = 絵文字のカテゴリ
+emoji.category_help = ↑↓ / スワイプ: スクロール · {cross} 選択 · {circle} 戻る
+
+proxy.pool.interval = 切り替えまでの待機時間
+proxy.pool.seconds = {0}秒
+
+presence.typing = {0} が入力中…
+
+settings.unread_counter = 未読メッセージ数
+
+settings.hide_muted_unread = 通知オフのチャットの未読バッジを置換
+emoji.premium = プレミアム
+emoji.insert = 絵文字を挿入
+
+call.start = 音声通話
+call.hang_up = 通話を終了
+call.dialing = 発信中…
+call.connected = 通話に接続しました
+call.ended = 通話が終了しました
+call.failed = 通話に失敗しました
+call.place = 発信
+call.connecting = 接続中…
+call.mute = マイクをミュート
+call.unmute = ミュート解除
+call.close = 閉じる
+call.confirm_hint = {cross} 決定   {circle} キャンセル
+call.active_hint = {cross} 決定   {circle} 通話を終了
+call.accept = 応答
+call.decline = 拒否
+call.history_incoming = 着信
+call.history_outgoing = 発信
+call.history_missed = 不在着信
+call.history_unanswered = 応答なし
+call.history_declined = 拒否された通話
+call.history_disconnected = 通話が切断されました
+call.history_video = ビデオ通話
+call.incoming_hint = {cross} 応答   {circle} 拒否

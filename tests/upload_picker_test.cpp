@@ -106,6 +106,20 @@ int main() {
         assert(!picker.takeResult(result));
         assert(picker.stage == Stage::Closed && picker.items.empty());
     }
+    // Review and outgoing batch preserve marking order, including remove/re-add.
+    {
+        UploadPicker ordered;
+        ordered.chooseKind(Kind::File); ordered.path = "ux0:data";
+        ordered.entries = {{"a.txt", false, 1}, {"b.txt", false, 2}, {"c.txt", false, 3}};
+        for (int index : {2, 0, 1, 0, 0}) { ordered.selected = index; ordered.enter(); }
+        assert(ordered.items[0].name == "c.txt" && ordered.items[1].name == "b.txt" && ordered.items[2].name == "a.txt");
+        ordered.changeSort(1);
+        ordered.finishSelection(); ordered.selected = 1;
+        assert(ordered.focusedItem()->name == "c.txt");
+        assert(ordered.sendBatch());
+        std::vector<UploadPicker::Item> result; assert(ordered.takeResult(result));
+        assert(result[0].name == "c.txt" && result[1].name == "b.txt" && result[2].name == "a.txt");
+    }
     UploadPicker picker;
     picker.chooseKind(Kind::Photo);
     picker.path = "ux0:picture";

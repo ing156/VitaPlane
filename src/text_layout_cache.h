@@ -1,4 +1,5 @@
 #pragma once
+#include "emoji.h"
 #include <algorithm>
 #include <cstdint>
 #include <cstring>
@@ -31,12 +32,12 @@ private:
     size_t bytes_=0;uint64_t clock_=0;
 };
 // Measurements use complete strings, preserving kerning and fallback fonts.
-// Prefix boundaries match the previous UTF-8 trimming rule.
+// Trim whole emoji/combining sequences.
 template<class Measure> std::string fit_utf8_text(const std::string& text,int width,Measure measure) {
     if (measure(text)<=width) return text;
     std::vector<size_t> ends{0};
     for (size_t i=0;i<text.size();) {
-        ++i;while (i<text.size() && (static_cast<unsigned char>(text[i])&0xc0)==0x80) ++i;
+        i=emoji::next(text,i);
         ends.push_back(i);
     }
     size_t lo=0,hi=ends.size()-1;

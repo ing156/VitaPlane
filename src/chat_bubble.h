@@ -1,8 +1,32 @@
 #pragma once
+#include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstddef>
 
 namespace chat_bubble {
+inline constexpr int avatar_size = 28;
+
+template<class Rows>
+bool has_messages_below(const Rows& rows, int count, bool latest, int viewport_bottom) {
+    return !rows.empty() && (!latest || rows.back().index + 1 < count ||
+        rows.back().top + rows.back().height - rows.back().gap() > viewport_bottom);
+}
+
+// Visible rows can start or end inside a sender group; pin once per visible group.
+template<class Rows, class Draw>
+void for_each_avatar(const Rows& rows, int viewport_top, int viewport_bottom, Draw draw) {
+    for (std::size_t first = 0; first < rows.size();) {
+        std::size_t last = first;
+        while (last + 1 < rows.size() && rows[last].after) ++last;
+        const auto& end = rows[last];
+        const int y = std::max(rows[first].top,
+            std::min(end.top + end.height - end.gap(), viewport_bottom) - avatar_size);
+        if (y < viewport_bottom && y + avatar_size > viewport_top) draw(end.index, y);
+        first = last + 1;
+    }
+}
+
 template<class Message>
 bool joins(const Message& a, const Message& b) {
     return !a.service_message && !b.service_message && a.sender_id != 0 &&

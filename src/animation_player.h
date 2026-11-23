@@ -14,6 +14,7 @@ struct AVCodecContext;
 // One decoder with bounded hardware frame storage. Worker never draws.
 class AnimationPlayer {
 public:
+    explicit AnimationPlayer(bool inline_emoji = false) : inline_emoji_(inline_emoji) {}
     ~AnimationPlayer();
     void setSource(const std::string& path, bool video = false, bool round = false,
                    bool prepare = false, bool cache_only = false,
@@ -41,6 +42,7 @@ public:
     int64_t seekLimitUs() const;
     // Restarts the decoder at `us` (like a replay that starts later); play/pause state is kept.
     void seekTo(int64_t us);
+    void setSuspended(bool value) { suspended_ = value; }
     void upload();                         // UI, outside drawing
     // Video is opened but no current picture is moving: waiting for the first picture after opening or a seek,
     // or playback stalled (typically waiting for streamed bytes). The UI shows a loading indicator.
@@ -49,6 +51,7 @@ public:
     i18n::Text status();
     void shutdown();
 private:
+    const bool inline_emoji_;
     pthread_t thread_{};
     bool started_ = false;
     bool video_ = false, round_ = false, prepare_ = false, cache_only_ = false;
@@ -64,7 +67,7 @@ private:
     std::atomic<bool> awaiting_frame_{false};   // no picture of the current generation published yet
     std::atomic<int64_t> last_frame_us_{0};     // system time of the latest published picture
     std::atomic<int64_t> frame_step_us_{100000};   // container duration of the current source, 0 while unknown
-    std::atomic<bool> stopping_{false};
+    std::atomic<bool> stopping_{false}, suspended_{false};
     std::atomic<unsigned> generation_{0};
     pthread_mutex_t mutex_ = PTHREAD_MUTEX_INITIALIZER;
     std::string source_;
@@ -102,6 +105,7 @@ private:
     void run();
     void decode(const std::string& path, unsigned generation, bool video, bool round, bool prepare, bool cache_only,
                 download_stream::Shared stream);
+    int64_t waitInline(unsigned generation);
     void decodeTgs(const std::string& path, unsigned generation);
     void setStatus(unsigned generation, const i18n::Text& text);
     void releaseYuvTexture();

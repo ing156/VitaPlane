@@ -2,6 +2,9 @@
 #include <cstdint>
 constexpr int SCE_CAMERA_DEVICE_BACK = 1;
 constexpr int SCE_CAMERA_DEVICE_FRONT = 0;
+constexpr int SCE_CAMERA_REVERSE_OFF = 0;
+constexpr int SCE_CAMERA_REVERSE_MIRROR = 1;
+constexpr int SCE_CAMERA_REVERSE_FLIP = 2;
 constexpr int SCE_CAMERA_PRIORITY_SHARE = 0;
 constexpr int SCE_CAMERA_FORMAT_YUV420_PLANE = 3;
 constexpr int SCE_CAMERA_RESOLUTION_640_480 = 1;
@@ -18,6 +21,7 @@ struct SceCameraInfo {
 struct SceCameraRead { unsigned size; int mode; uint64_t frame; };
 int sceCameraOpen(int, SceCameraInfo*);
 int sceCameraStart(int);
+int sceCameraGetReverse(int, int*);
 int sceCameraRead(int, SceCameraRead*);
 int sceCameraStop(int);
 int sceCameraClose(int);

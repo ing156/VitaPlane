@@ -42,6 +42,9 @@
   offer Add set (Triangle or touch).
 - **Audio and video:** supported media playback, progressive playback while downloading,
   voice-message recording and video notes from the front or rear camera.
+  Hold the Vita in the desired orientation before starting a video note. The
+  image inside the circle follows that orientation for the whole take. Double-tap
+  the rear touch pad or press Triangle to switch cameras in preview or while recording.
   Voice, audio and video-note playback continues on other screens: a Telegram-style control bar spans the bottom of the conversation pane, reserving space above it for messages and chat actions, and a video note also floats as a small circle you can drag anywhere and tap to pause. Audio controls include play/pause, draggable seeking within the downloaded part, volume/mute and pitch-preserving 0.5–2× speed. Music adds previous/next, shuffle and repeat off/list/track. Tap the speaker for the volume slider; tap its speaker to mute/restore. L+R focuses the player, Left/Right selects a control, Cross activates it, Up/Down adjusts volume/speed or seeks 10 seconds, and Circle returns to the chat. Previous restarts after three seconds, otherwise selects the preceding track. Up to 64 loaded music tracks around the chosen message form a playlist that survives changing chats. Player controls use the active palette; queue controls and speed are disabled for video notes (volume, pause and seeking remain available). Playback settings last for the app session. Music tracks of a chat play as a playlist: the next track starts when one ends and keeps downloading in the background. Music continues when another chat is opened or another voice message is selected; only pressing play on another message replaces it. Music and video with sound (clips and video notes) share one audio output: starting one pauses the other.
   Fullscreen video: Left/Right selects 10-second seek steps; holding repeats faster
   after two and four seconds. The time and cursor update while held, and releasing
@@ -89,7 +92,7 @@
   the app closes. Input-language preferences survive restarts independently of the UI language.
   Vault passphrases always use the in-app keyboard; controller hints are placed
   directly on its keys. See [keyboard layouts](../docs/keyboard-layouts.md).
-- **Connection and privacy:** MTProxy, SOCKS5 and HTTP CONNECT proxies, proxy-link
+- **Connection and privacy:** MTProxy, SOCKS5, HTTP CONNECT and WEB (HTTPS carrier) proxies, proxy-link
   and QR import, optional data encryption and automatic screen locking.
 - **Updates:** signed VPK packages from GitHub Releases, with manual and automatic
   update checks.
@@ -104,6 +107,17 @@ Built-in fonts supply missing characters; emoji and controller icons keep their 
 Choose **Default** to restore the built-in fonts. Unreadable, corrupt, bitmap-only or
 non-Unicode fonts cannot replace the current font. A missing or invalid saved font falls
 back to the default at startup. Font files remain ordinary, unencrypted user resources.
+
+### Experimental audio calls
+
+In a call-enabled build, open a private chat and select **Start → Audio call**.
+The call window shows the contact's avatar and name. Select **Call** to dial
+or **Cancel** to return to the chat. Incoming audio calls open their own window
+while VitaGram is open, with **Accept** and **Decline**. During a call you can
+mute the microphone or hang up. Incoming and outgoing calls play different
+sounds while waiting for an answer. A call card in a private chat shows the result,
+time and duration where available. Tap an audio call card or select it with
+**Cross** to open a new call window.
 
 ### Limitations
 
@@ -206,7 +220,7 @@ back to the default at startup. Font files remain ordinary, unencrypted user res
   до закрытия приложения. Список языков сохраняется между запусками независимо от языка интерфейса.
   Пароли хранилища всегда вводятся встроенной клавиатурой; подсказки управления
   расположены прямо на её клавишах. [Список раскладок](../docs/keyboard-layouts.md).
-- **Подключение и приватность:** MTProxy, SOCKS5 и HTTP CONNECT, импорт прокси
+- **Подключение и приватность:** MTProxy, SOCKS5, HTTP CONNECT и WEB (транспорт HTTPS), импорт прокси
   по ссылке и QR-коду, необязательное шифрование данных и автоблокировка экрана.
 - **Обновления:** подписанные VPK из GitHub Releases, ручная и автоматическая проверка.
 
@@ -221,6 +235,22 @@ back to the default at startup. Font files remain ordinary, unencrypted user res
 нечитаемый, растровый или не поддерживающий Unicode файл не заменяет рабочий шрифт.
 Если сохранённый файл удалён или повреждён, при запуске используется стандартный.
 Файлы шрифтов остаются обычными пользовательскими ресурсами без шифрования.
+
+### Экспериментальные аудиозвонки
+
+В сборке с поддержкой звонков откройте личный чат и выберите **Start → Аудиозвонок**.
+В окне звонка появятся аватар и имя собеседника. Выберите **Позвонить**, чтобы
+начать вызов, или **Отмена**, чтобы вернуться в чат. Входящий аудиозвонок
+показывается в открытом VitaGram с кнопками **Принять** и **Отклонить**.
+В ожидании ответа входящий и исходящий вызовы звучат по-разному.
+Во время разговора можно выключить микрофон или дать отбой. В карточке звонка
+в личном чате видны результат, время и длительность разговора. Коснитесь карточки
+аудиозвонка или выберите её кнопкой **×**, чтобы открыть окно нового вызова.
+
+В **Настройки → Подключение → Звук звонков** можно выбрать **Низкая задержка**.
+В этом режиме Vita использует меньший буфер входящего звука, поэтому при
+нестабильной связи голос может чаще прерываться. По умолчанию выбран
+**Стабильный** режим. Выбор сохраняется и применяется со следующего звонка.
 
 ### Ограничения
 
@@ -263,6 +293,42 @@ menu and restores its selection and scroll position.
 Tap the floating date or a day separator to open the themed calendar. L/R change months, the D-pad selects a day, Cross jumps and Circle returns. Future days are disabled; the calendar starts in August 2013. A bounded history window opens at the last available message no later than the selected day; Telegram controls history availability. Topics and comments keep their current scope.
 
 ### Downloads and background playback / Загрузки и фоновое воспроизведение
+
+Open the bottom Downloads panel to manage up to eight documents. Tap a file to
+pause or resume it, use −/+ to change its priority (1 is lowest, 3 is highest), or tap Cancel to remove
+the task and its partial file. With the controller, L+R focuses the panel, Cross
+opens the list, Up/Down selects a file, Left/Right changes priority, Square
+cancels and Circle returns. When music is also active, swipe vertically on the
+panel title or its shaded edge to switch panels.
+
+New Telegram document downloads write to a temporary file in the chosen folder.
+Once TDLib confirms completion, final renames run in completion order ahead of other storage jobs. A running cache copy yields between blocks. The account journal records
+the destination, confirmed prefix, priority and pause state. After restart,
+VitaPlane verifies the source message before reusing the partial file.
+Already cached documents can also be copied to a chosen folder.
+
+Откройте нижнюю панель «Загрузки», чтобы управлять очередью из восьми документов.
+Касание строки ставит загрузку на паузу или продолжает её. Кнопки −/+ меняют
+приоритет: 1 — низкий, 2 — обычный, 3 — высокий. «Отмена» удаляет задание и его недокачанный файл.
+На контроллере L+R переводит фокус на панель, крестик открывает список,
+вверх/вниз выбирают файл, влево/вправо меняют приоритет, квадрат отменяет
+загрузку, круг возвращает в чат. Если играет музыка, вертикальный свайп
+по заголовку или затенённому краю переключает панели.
+
+Новый документ скачивается во временный файл в выбранной папке и получает
+окончательное имя после подтверждения от TDLib. Готовые файлы переименовываются в порядке завершения перед остальными заданиями очереди загрузок. Копирование из кеша уступает им очередь между блоками. Журнал аккаунта хранит папку, подтверждённую
+позицию, приоритет и состояние паузы. После перезапуска VitaPlane проверяет
+исходное сообщение и продолжает загрузку с сохранённой позиции.
+Уже скачанный документ можно скопировать из кеша в выбранную папку.
+
+При зависании на 100% включите журнал производительности до начала загрузки.
+В `ux0:data/vitagram/performance.log` строки `document` связаны номером
+`attempt` в пределах сеанса. `bytes_full` означает получение всех байтов по
+счётчику, `td_complete` — подтверждение TDLib. За постановкой в очередь
+(`rename_queued`) и началом переименования (`rename_started`) следует
+`rename_ok` либо `rename_error` с системным кодом `errno`. После обработки
+результата `row_removed` отмечает удаление задания из списка. При ротации
+предыдущие строки доступны в `performance.previous.log`.
 
 Enable **Settings → Data and storage → Ask where to save downloads** to choose a
 folder for each document before downloading. The folder browser supports drives,
@@ -344,3 +410,316 @@ a request already sent to Telegram may still complete on the server.
 При изменении исходника на другом устройстве отмените и откройте редактор заново.
 Выход из чата/темы или начало другого сообщения отменяет локальный редактор;
 уже отправленный запрос Telegram всё ещё может выполнить.
+
+### WEB proxy / WEB-прокси
+
+Import `https://t.me/webproxy?server=HOST&secret=SECRET` or
+`tg://webproxy?server=HOST&secret=SECRET` from a message or QR code, or select
+**Settings → Proxy → Type → WEB (HTTPS)**. Enter the hostname (ASCII/IDNA;
+`xn--…` for internationalized names), optional base path and secret, then save
+and apply. HTTPS/443 is fixed; omit the `port` parameter. A path in a shared link
+is URL-encoded, and a path-aware marked secret is decoded during import.
+
+The first Vita implementation supports the reference relay's `https` carrier.
+Servers selecting `https-lanes`, `websocket` or `websocket-lanes` report an
+unsupported-transport error. The carrier uses native OpenSSL HTTPS with
+certificate/hostname verification, without WebKit; it does not reproduce a
+browser's TLS fingerprint. It sends already encrypted MTProxy bytes through a
+loopback adapter, bounds streams and queues, and never falls back to a direct
+Telegram connection after a WEB startup failure. Save and apply again after a
+transport failure. Mini Apps and ordinary web pages still connect directly.
+
+Импортируйте `https://t.me/webproxy?server=HOST&secret=SECRET` или
+`tg://webproxy?server=HOST&secret=SECRET` из сообщения либо QR-кода. Для ручного
+ввода выберите **Настройки → Прокси → Тип → WEB (HTTPS)**, укажите домен
+(ASCII/IDNA, для международных имён — `xn--…`), необязательный путь и секрет,
+затем сохраните и примените. Используется только HTTPS/443, параметр `port`
+в ссылке не нужен. Путь в ссылке кодируется как URL; специальный секрет для
+ссылок с путём преобразуется при импорте.
+
+Первая реализация поддерживает транспорт `https` эталонного сервера. Режимы
+`https-lanes`, `websocket` и `websocket-lanes` пока дают явную ошибку. HTTPS
+работает через OpenSSL с проверкой сертификата и имени сервера, без WebKit;
+TLS-отпечаток браузера не воспроизводится. Число потоков и очереди ограничены.
+При ошибке запуска WEB прямое подключение к Telegram не включается. После сбоя
+транспорта повторите сохранение и применение. Мини-приложения и обычные
+веб-страницы продолжают подключаться напрямую.
+
+Host tests cover the wire protocol and a local TLS relay. Real WEB servers,
+Vita throughput, suspend/resume and installation still require device checks.
+Хост-тесты проверяют протокол и локальный TLS-сервер. Реальные WEB-серверы,
+скорость на Vita, сон/возобновление и установку нужно проверить на устройстве.
+
+### Multiple proxies / Несколько прокси
+
+**Settings → Proxy** stores up to 16 MTProxy, SOCKS5, HTTP CONNECT or WEB entries.
+The old single-proxy configuration becomes the first entry automatically. Add a
+proxy manually or scan a QR code; importing an existing entry selects it without
+creating another copy. Cross selects a saved proxy, Square edits it, Triangle
+asks to delete it, and Circle returns. The same actions are available by touch.
+The outlined row is navigation focus; the filled row with a drawn check is the
+selected proxy. Saving runs in the background and temporarily disables edits.
+
+**Check all proxies** measures availability and Telegram round-trip latency one
+entry at a time. Measurements are kept in memory. With **Auto-switch on failure**
+enabled (the default), background checks run while the proxy connection is in
+use. After at least 15 seconds of connection failure, the client picks the
+reachable alternative with the lowest recent latency. It waits at least 30
+seconds between switches and avoids the failed entry for two minutes. It keeps
+a working connection even when another proxy measures faster. Offline state and
+resume invalidate the failure timer; old measurements cannot trigger a switch.
+When every entry fails, the client keeps using the selected proxy rather than
+connecting directly. Automatic choices apply to the current session; the saved
+manual preference is tried again after restart. To allow direct networking,
+explicitly disable **Use proxy**. Deleting the last entry does not disable it.
+WEB still supports only the native `https` carrier described above.
+
+**Настройки → Прокси** хранит до 16 записей MTProxy, SOCKS5, HTTP CONNECT или WEB.
+Прежний одиночный прокси автоматически становится первой записью. Добавляйте
+прокси вручную или через QR-код; повторный импорт выбирает существующую запись.
+Крестик выбирает прокси, квадрат открывает редактирование, треугольник запрашивает
+удаление, круг возвращает назад. Эти действия доступны и касанием. Рамка
+показывает фокус навигации, заливка с нарисованной галочкой — выбранный прокси.
+Список сохраняется в фоне; до завершения записи редактирование недоступно.
+
+**Проверить все прокси** последовательно измеряет доступность и задержку до
+Telegram. Результаты хранятся только в памяти. **Автопереключение при сбое**
+включено по умолчанию: при использовании прокси выполняются фоновые проверки.
+Если соединение не восстанавливается минимум 15 секунд, выбирается доступный
+резерв с наименьшей свежей задержкой. Между переключениями выдерживается не
+менее 30 секунд, сбойный сервер исключается на две минуты. Работающее соединение
+не меняется ради небольшой разницы задержки. При отсутствии сети и после
+возобновления таймер сбоя сбрасывается; старые результаты не вызывают переключение.
+Если недоступны все записи, прямое соединение не включается. Автоматический выбор
+действует в текущем сеансе; после перезапуска снова пробуется сохранённый ручной
+выбор. Для прямого подключения явно отключите **Использовать прокси**. Удаление
+последней записи само по себе эту настройку не выключает. WEB по-прежнему
+поддерживает только нативный транспорт `https`.
+
+On a physical Vita, check controller/touch navigation, the last page, chosen rows
+with and without focus, large fonts and light/dark/custom palettes. Also verify
+switching during real connection failures, Wi-Fi loss, suspend/resume, active
+uploads/downloads and WEB proxy operation. Host tests do not establish these.
+
+### Proxy connection diagnostics / Диагностика подключения прокси (0.39.16)
+
+From 0.39.17 proxy diagnostics start automatically before sign-in, including after a settings reset; no menu action is required. Repeat **Check all** or select and apply a proxy. Wait a few seconds and copy `ux0:data/vitagram/proxy.log` and, if present, `proxy.previous.log`. The **Settings → About and diagnostics → Diagnostic logs → Proxy connections** switch can disable writing for the current session; the next launch enables it again. Each file is capped at 256 KiB; writes run on the Storage worker. Pending events are bounded and `omitted` reports events lost to overflow or write errors. Logs are removed on logout.
+
+Начиная с 0.39.17 журнал прокси включается автоматически до входа в аккаунт, в том числе после сброса настроек; меню не требуется. Повторите **Проверить все** либо выберите и примените прокси. Подождите несколько секунд и скопируйте `ux0:data/vitagram/proxy.log` и, если он есть, `proxy.previous.log`. Переключатель **Настройки → О приложении и диагностика → Диагностические логи → Подключение прокси** отключает запись на текущий сеанс; следующий запуск включает её снова. Каждый файл ограничен 256 КиБ; запись выполняется в потоке Storage. Очередь событий ограничена, `omitted` показывает потери из-за переполнения или ошибок записи. При выходе из аккаунта журналы удаляются.
+
+Only fixed event names and numeric values are recorded. No hostname, IP address, URL, proxy secret, password, bridge/session token, request/response body or account identifier is written. / Записываются только фиксированные названия событий и числа. Имена серверов, IP-адреса, URL, secret, пароли, токены, тела запросов и ответов и идентификаторы аккаунта не записываются.
+
+`id` correlates one application/check with its WEB worker; `at_us` is monotonic time. The initial `apply`/`check` event uses `code` for proxy kind (0 MTProto, 1 SOCKS5, 2 HTTP CONNECT, 3 WEB) and `detail` for the zero-based saved-list index, or -1 for a draft. `queued` and `sent` distinguish application queueing from dispatch to TDLib.
+
+- `dns_system`: system resolver return code; `dns_https`: HTTP status, DNS status in `detail`, and `aux=1` for an absent/invalid IPv4 answer. `dns_cache` marks cached resolution.
+- `tcp`: socket `errno` on failure. `tls`: OpenSSL SSL error in `code`, certificate verification result in `detail`, OpenSSL reason code in `aux` (or `errno` for SSL_ERROR_SYSCALL). `ca` uses -1 when the CA store could not be loaded.
+- `http_status`: HTTP response status, with a fixed `endpoint` label. Successful stream polls are omitted to keep logging small; errors are retained. `http_io` marks read/write or HTTP parsing failures: -2 oversized headers, -3 invalid response/body limit, -4 invalid/duplicate headers, -5 incomplete headers; nonnegative codes are SSL I/O errors.
+- `bootstrap`/`session`: HTTP status and validation success (1/0 in `detail`). `carrier`: 1 HTTPS, 2 HTTPS lanes, 3 WebSocket, 0 other; only HTTPS is supported. `listen` and `downlink` report local listener/thread setup.
+- `result`: TDLib error code, latency in milliseconds for checks, and success in `aux` (or success in `detail` for application). `failed` classifies TDLib errors in `detail`: 3 secret, 4 DNS, 5 timeout, 6 connection/socket, 7 authentication, 8 unclassified. Local `failed` codes: 1 incomplete fields, 2 client starting, 10 invalid WEB settings, 11 TLS, 12 DNS, 13 unsupported carrier, 14 WEB protocol/session, 15 worker creation (pthread error in `detail`).
+- `timeout`, `cancel`, `retry` and `switch` distinguish timeout, cancellation, retry and automatic failover. `connection` codes are 0 waiting for network, 1 connecting to proxy, 2 connecting, 3 updating, 4 ready, 5 unknown.
+
+DNS/TCP/TLS internals are recorded for native WEB transport. MTProto/SOCKS5/HTTP checks record dispatch and TDLib result/classification; they do not enable TDLib's raw verbose log. Physical Vita network and storage behaviour still requires a device check.
+
+From 0.39.40, Vita TDLib proxy resolution uses asynchronous HTTPS DNS without system-DNS fallback, which can block its single scheduler for 30 seconds after a network failure. If HTTPS DNS is unreachable, resolution fails and can be retried. The shared network pool is 4 MiB; socket writes are capped at 16 KiB and temporary `ENOBUFS` pressure is retried without closing the connection. These measures still require physical Vita upload testing.
+
+Начиная с 0.39.40, TDLib на Vita разрешает имена прокси через асинхронный HTTPS DNS без системного резолвера, способного блокировать сетевой обработчик на 30 секунд после сбоя сети. При недоступном HTTPS DNS запрос завершается ошибкой и может быть повторён. Общий сетевой пул увеличен до 4 МиБ, запись в сокет ограничена порциями по 16 КиБ; временный `ENOBUFS` обрабатывается как пауза без закрытия соединения. Стабильность отправки ещё требует проверки на физической Vita.
+
+TDLib initialization failures use `parameters code=<TDLib code>` and a fixed `detail` classification: 1 API ID, 2 API hash, 3 UTF-8, 4 base64, 5 database/SQLite, 6 database directory, 7 files directory, 8 encryption key, 9 binlog, 10 other. Successful initialization remains `code=0 detail=1`. Local `failed code=16` means a proxy operation is blocked by rejected Telegram initialization; it is not evidence that the proxy itself is unreachable.
+
+For initialization failures, `aux` further classifies known database error messages: 1 cannot open, 2 locked, 3 disk I/O, 4 read-only, 5 malformed/corrupt, 6 not a database, 7 out of memory, 8 missing function, 0 unclassified. The original message and database path are never written.
+
+### Recovery build 0.39.19 / Восстановительная сборка 0.39.19
+
+The native TDLib file database is temporarily disabled, matching 0.39.05, to isolate minute-long internal actor stalls recorded on Vita. The existing SQLite index and its encryption key are retained. In 0.39.19, explicit document-save jobs persisted, but without the native part map an interrupted transfer could download its bytes again after restart. Proxy lists and WEB transport remain available; automatic proxy logging remains enabled.
+
+Файловая база TDLib временно отключена, как в 0.39.05, для проверки многоминутных остановок внутреннего обработчика, зафиксированных на Vita. Существующий индекс SQLite и его ключ шифрования сохраняются. В версии 0.39.19 задания сохранения документов оставались в журнале, но без нативной карты частей незавершённая загрузка после перезапуска могла повторно скачать данные. Список прокси и WEB-транспорт доступны, автозапись журнала прокси включена.
+
+TDLib DNS diagnostics (0.39.21) are written automatically to `proxy.log`. Each
+`dns_begin` has its own ID: `code=0` is system DNS and `code=1` is verified HTTPS
+DNS; `detail=4/6` is the preferred address family and `aux=1` identifies a lookup
+of the HTTPS resolver itself. A matching `dns_system` records the getaddrinfo
+result in `code`, errno on failure in `detail`, and duration in microseconds in
+`aux`. A matching `dns_https` records the TDLib result code (0 means success),
+HTTP status if available, and duration. An unfinished HTTPS lookup ends with
+code=-1. These TDLib records use endpoint=dns; no names, IP addresses, credentials
+or response bodies are logged. Existing WEB transport records keep their format.
+
+Диагностика DNS TDLib (0.39.21) автоматически пишется в `proxy.log`: отдельные
+попытки системного и проверяемого HTTPS DNS получают ID, результат, длительность
+и числовые ошибки. Адреса, имена серверов, secret и тела ответов не записываются.
+Порядок разрешения имён и выбор прокси диагностика не меняет.
+
+In 0.39.23, TDLib and WEB bootstrap `dns.google:443` through its public anycast
+IPv4 address, retaining `dns.google` for TLS verification, SNI and HTTP Host.
+This removes the resolver's dependency on system DNS. Google documents the
+endpoint and hostname requirements in its [secure transport guide](https://developers.google.com/speed/public-dns/docs/secure-transports).
+The numeric bootstrap is logged as `dns_begin code=2` followed by
+`dns_bootstrap` for TDLib; WEB uses `dns_bootstrap endpoint=dns`. TDLib HTTPS DNS
+errors without a numeric error code now use code=-2; code=-1 remains an
+unfinished attempt. In 0.39.21, code=0 alone did not establish success.
+
+В 0.39.23 TDLib и WEB подключают HTTPS-резолвер по его публичному anycast IPv4,
+сохраняя проверку сертификата и имя `dns.google` в TLS и HTTP. Системный DNS для
+запуска HTTPS-резолвера больше не нужен. Отдельная запись `dns_bootstrap`
+показывает этот этап; ошибка HTTPS DNS без числового кода теперь помечается -2.
+
+
+### Premium emoji / Премиум-эмодзи
+
+When composing a message, the custom keyboard's emoji panel has a **Premium** button. Open an installed
+custom emoji pack, then press Cross or tap an emoji to insert it into the draft.
+Circle returns to the pack list; Square closes the picker and restores the draft.
+The custom emoji ID is preserved when sending mixed text. Telegram decides whether
+the account can send the chosen emoji. Messages, captions, drafts and the premium
+picker play TGS/WebM emoji at up to 15 fps and 64 px. Up to four distinct visible
+emoji animate together; repeated instances share their animation. During scrolling,
+typing and main video playback the current frame freezes and the decoder resumes
+without reopening the file. Beyond that limit, static previews remain. When Telegram
+provides no preview, a static TGS/WebM frame is generated in the image worker.
+All visible emoji can load progressively, including large mosaics; full files
+download at most four at a time.
+The Unicode symbol remains visible until an image is available. Full emoji files
+are limited to 1 MiB; inline TGS JSON to 256 KiB and WebM frames to 512×512.
+Drafts containing custom emoji stay in the custom keyboard when switching layouts.
+
+В панели эмодзи встроенной клавиатуры нажмите **Премиум**, откройте установленный
+набор и выберите эмодзи крестиком или касанием. Кружок возвращает к списку наборов,
+квадрат закрывает выбор и возвращает черновик. При отправке сохраняется ID эмодзи;
+доступность отправки проверяет Telegram. В сообщениях, подписях, черновике и
+выборе премиум-эмодзи проигрываются TGS/WebM до 15 кадров/с с размером до 64 пикселей.
+Одновременно анимируются до четырёх разных видимых эмодзи; повторы используют
+общую анимацию. При прокрутке, вводе текста и воспроизведении основного видео
+текущий кадр замирает, затем декодер продолжает работу без повторного открытия
+файла. Сверх лимита остаются статичные превью. Если Telegram не прислал превью,
+статичный кадр TGS/WebM создаётся фоновым обработчиком изображений. Все видимые
+эмодзи, включая большие мозаики, загружаются постепенно — до четырёх полных файлов
+одновременно. Пока изображение недоступно, виден
+обычный символ. Полные файлы ограничены 1 МиБ, JSON TGS — 256 КиБ, кадры WebM — 512×512. Черновик с премиум-эмодзи остаётся во встроенной клавиатуре
+при переключении раскладки.
+
+### Built-in emoji and draft view / Эмодзи и просмотр черновика
+
+The custom keyboard's smile button opens font-supported Unicode emoji. Use the
+category button to cycle groups; hold it to open the category list. Scroll the
+list by swiping or using Up/Down, choose with a tap or Cross, and return with
+Circle. Use L/R or the arrow buttons for emoji pages, and hold a
+tile or Cross for skin-tone variants. Circle or ABC returns to letters without
+sending the message. The emoji panel also has Send (Save when editing), disabled
+for an empty message. Variants are prepared on the first press and load while the
+finger remains down. Recent emoji and chosen variants remain available until the
+keyboard closes. The built-in
+Noto emoji font stays independent of the selected user text font. Password fields
+have neither the emoji picker nor the collapse control.
+
+The lower-left arrow hides the keys and expands the draft to sixteen lines.
+The upper-right Circle control beside the language badge closes the keyboard. Swipe or use the directional buttons to scroll. A
+quick tap places the cursor and restores the keys; holding for 350 ms opens the
+existing themed magnifier and keeps the keys hidden. Release after a swipe or
+long hold keeps the expanded view open. Cross also restores the keys. Emoji sequences stay intact during cursor movement and deletion.
+
+Кнопка со смайлом во встроенной клавиатуре открывает эмодзи Unicode, поддержанные
+шрифтом. Короткое нажатие кнопки категории переключает группы, удержание открывает
+прокручиваемый список. Прокрутка — свайпом или вверх/вниз, выбор — касанием или
+Cross, возврат — Circle. L/R и кнопки со стрелками переключают страницы эмодзи.
+Удержание плитки или Cross открывает варианты оттенка кожи. Circle или АБВ
+возвращает буквы без отправки сообщения. В панели эмодзи есть кнопка «Отправить»
+(«Сохранить» при редактировании); пустое сообщение отправить нельзя. Варианты
+готовятся при первом нажатии и загружаются, пока палец удерживает экран.
+Недавние эмодзи и выбранные варианты доступны до закрытия клавиатуры.
+Встроенный шрифт эмодзи Noto не зависит от выбранного пользовательского шрифта
+текста. В полях паролей нет выбора эмодзи и кнопки сворачивания.
+
+Нижняя левая стрелка скрывает клавиши и расширяет черновик до шестнадцати строк.
+Верхняя правая кнопка Circle рядом с обозначением языка закрывает клавиатуру. Прокрутка — свайпом или кнопками направления.
+Короткое касание устанавливает курсор и возвращает клавиши; удержание 350 мс
+открывает прежнюю лупу в цветах темы, оставляя клавиши скрытыми. Отпускание после
+свайпа или долгого удержания сохраняет расширенный просмотр. Cross тоже
+возвращает клавиши. Перемещение курсора и удаление не разделяют
+составные эмодзи.
+
+
+For emoji variants, keep holding after the choices open and slide horizontally
+along the key row or into the popup. Release to insert the indicated variant;
+move outside the panel to cancel. For large sets, hold at a panel edge to scroll.
+
+Для выбора варианта эмодзи продолжайте удержание после открытия вариантов и
+ведите палец вбок вдоль ряда клавиш или внутрь всплывающей панели. Отпустите палец,
+чтобы вставить указанный вариант; выход за панель отменяет выбор. В больших
+наборах удержание у края прокручивает варианты.
+
+HTTPS DNS transport diagnostics (0.39.25): `dns_begin code=3` identifies a Wget
+request, and code=4 identifies its TLS stream. The IDs are separate from the
+outer DNS attempt. For endpoint=dns, `tcp code=0` means a socket connect was
+initiated, not that the connection completed. `ca` records CA-context creation;
+`tls` records stream setup and handshake. Fatal handshake records use the
+OpenSSL SSL_ERROR value in code, X509 verification result in detail, and the
+OpenSSL reason in aux (errno for SSL_ERROR_SYSCALL). A TLS completion record
+has code=0, the verification result in detail and duration in aux; code=-1
+means the stream closed before handshake completion. `http_status` records
+received status codes; code=-2 indicates a failed request, with last setup phase
+in detail: 0 socket, 1 CA, 2 TLS setup, 4 awaiting TLS/HTTP. Redirects finish with
+the received status and detail=1. Raw socket failures use id=0, endpoint=control,
+`tcp code=<OS error>` and detail=1 pending SO_ERROR, 2 SO_ERROR query failure,
+3 read, 4 write. These raw failures cover TDLib sockets generally and cannot
+alone identify a proxy. No names, addresses, paths or payloads are included.
+
+Диагностика HTTPS DNS (0.39.25) отдельно отмечает создание сокета, загрузку
+сертификатов, настройку и завершение TLS, HTTP-ответы и исходные ошибки сокетов.
+Записи содержат только числовые значения. Успешное создание сокета ещё не
+означает завершённое TCP-подключение; фактическую работу нужно проверить на Vita.
+
+### Proxy auto-switch delay / Задержка автопереключения прокси
+
+In 0.39.27 the proxy list has an auto-switch checkbox and 5, 10, 15, 30 or
+60-second waiting periods (default 10). The value is saved. On the interval row,
+Left/Right moves focus and Cross saves; a tap selects the touched interval.
+A fill and drawn check show the saved value separately from the focus outline.
+The timer applies to sustained connection failure and the next attempt after
+an automatic switch. It chooses a recently checked available alternative;
+healthy connections stay on their current proxy, offline mode does not switch,
+and failed checks can delay selection beyond the chosen interval.
+
+В 0.39.27 в списке прокси есть флажок автопереключения и ожидание 5, 10, 15,
+30 или 60 секунд (по умолчанию 10). Значение сохраняется. На строке интервала
+влево/вправо перемещает фокус, Cross сохраняет; касание выбирает конкретный
+интервал. Заливка с графической галочкой показывает сохранённый вариант,
+рамка — фокус. После устойчивого сбоя выбирается проверенный доступный прокси;
+работающее соединение сохраняется. При отсутствии сети переключения нет.
+Если доступный запасной прокси ещё не найден, ожидание может быть дольше.
+
+
+Unread mentions / Непрочитанные упоминания: an @ appears beside the unread
+indicator in the chat list. While reading away from the end of history, tap the
+circular @ to jump to the first unread mention. Visible messages are marked as
+read without opening an expanded post. A separate line below the date chip in chat history shows
+“{USER} is typing…”.
+В списке чатов @ рядом с индикатором непрочитанного обозначает упоминания.
+Если история открыта не в конце, круглая кнопка @ переводит к первому
+непрочитанному упоминанию. Видимые сообщения учитываются как прочитанные
+без открытия развёрнутого поста. Под плашкой даты в истории чата отдельно показывается
+«{USER} печатает…».
+
+In 0.39.29 the proxy auto-switch option uses Yes/No text. Its interval row is
+shown only while auto-switch is enabled; the saved interval is retained when
+the option is turned off.
+
+В 0.39.29 автопереключение прокси отображается через «Да/Нет». Строка интервала
+видна только при включённом автопереключении; выбранное время сохраняется после
+его отключения.
+
+
+Settings → Chats → Unread message counter replaces the unread dot with the
+full unread count in a glowing circle or oval. The @ mention marker stays
+beside it. The switch is off by default and applies to Classic and Combined views.
+Настройки → Чаты → Счётчик непрочитанных заменяет точку числом в светящемся
+круге или овале. Значок @ остаётся рядом. Переключатель по умолчанию выключен
+и действует в классическом и объединённом видах.
+
+Settings → Chats → Muted chats: replace unread badge shows a crossed speaker
+instead of unread dots/counts for chats with disabled notifications. @ mentions
+stay visible. This display-only switch is off by default; it respects chat
+overrides, inherited notification scopes and temporary mute expiry.
+Настройки → Чаты → Тихие чаты: значок вместо счётчика показывает перечёркнутый
+динамик вместо точки или числа для чатов без уведомлений. @ остаётся видимым.
+Настройка по умолчанию выключена и меняет только отображение, учитывая
+личные и общие параметры уведомлений и срок временного отключения.

@@ -33,8 +33,9 @@ extern "C" int __wrap_pthread_create(pthread_t* thread, const pthread_attr_t* at
 namespace update {
 HttpsResult https_get(const std::string& url, const std::string&, const std::string&,
     const std::function<bool(const char*, size_t)>& sink, const std::atomic<bool>* cancel,
-    const std::function<void(int64_t)>&) {
+    const std::function<void(int64_t)>&, const HttpsResume* resume) {
     HttpsResult result; result.status = 200;
+    (void)resume;
     std::string data;
     if (url.find("api.github.com") != std::string::npos) {
         ++metadata_calls;

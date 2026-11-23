@@ -40,6 +40,11 @@ GitHub updates install only signed packages. VitaPlane restarts after installati
 preserves settings and account data. If manual installation is needed, follow
 the instructions shown in settings.
 
+An interrupted update keeps its partial download. Retry the update to continue
+the same release; if the artifact changed or the server cannot continue it,
+VitaPlane downloads it again. The complete package must pass signature verification
+before installation, including bytes saved by an earlier attempt.
+
 VPK files saved from chats can be installed directly after enabling **Settings → Updates and installation → Allow VPK installation** (off by default). Each installation requires confirmation and a warning about console access. The saved package is kept on cancellation or failure. For a VitaPlane VPK, the package is then handed directly to the separate updater: VitaPlane closes, the updater installs it and launches VitaPlane again. Local packages are explicitly trusted by the user; automatic GitHub updates still require release signatures. Packages are limited to 512 MiB unpacked.
 
 ## Русский
@@ -81,6 +86,11 @@ VPK files saved from chats can be installed directly after enabling **Settings �
 При обновлении с GitHub устанавливаются только подписанные пакеты. После установки VitaPlane перезапускается;
 настройки и данные аккаунта сохраняются. Если нужна ручная установка, следуйте
 инструкции в настройках.
+
+Прерванное обновление сохраняет частично скачанный пакет. Повторите обновление,
+чтобы продолжить загрузку того же релиза. Если файл изменился или сервер не
+поддерживает продолжение, загрузка начнётся заново. Перед установкой проверяется
+подпись всего пакета, включая данные, сохранённые при предыдущей попытке.
 
 VPK из чатов можно устанавливать после включения **Настройки → Обновления и установка → Разрешить установку VPK** (по умолчанию выключено). Перед каждой установкой появляются подтверждение и предупреждение о доступе к консоли. При отмене или ошибке скачанный файл сохраняется. VPK самого VitaPlane затем передаётся отдельному установщику без дополнительного вопроса о закрытии: клиент закрывается, установщик заменяет приложение и запускает его снова. Доверие к локальному пакету подтверждает пользователь; автоматические обновления с GitHub по-прежнему требуют подписи релиза. Поддерживаются пакеты размером до 512 МиБ после распаковки.
 

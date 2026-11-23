@@ -31,6 +31,7 @@ public:
     const std::string& path() const { return path_; }
     void upload();
     vita2d_texture* preview() const { return texture_; }
+    int previewTurns() const { return texture_turns_; }
 private:
     static void* entry(void*);
     static void* audioEntry(void*);
@@ -47,6 +48,7 @@ private:
     std::unique_ptr<video_note::CaptureBuffer> capture_;
     std::atomic<bool> writer_error_{false};
     bool camera_open_ = false, camera_started_ = false;
+    int camera_reverse_ = 0;
     int memory_ = -1;
     uint8_t* camera_ = nullptr;
     vita2d_texture* texture_ = nullptr;
@@ -57,6 +59,7 @@ private:
     std::atomic<int> device_{0}, progress_{0}, level_{0};
     mutable pthread_mutex_t mutex_ = PTHREAD_MUTEX_INITIALIZER;
     std::vector<uint32_t> preview_pixels_;
+    int preview_turns_ = 0, texture_turns_ = 0;
     bool preview_ready_ = false;
     std::string path_, raw_path_, pcm_path_;
     i18n::Text status_;

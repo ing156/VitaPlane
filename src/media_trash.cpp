@@ -20,12 +20,11 @@ struct Spec {
 // TDLib keeps profile photos, thumbnails and stickers under the database
 // directory (FileDirType::Secure). Stickers are rotated once for layout 3 only
 // (their flat directory made every lookup scan 150+ entries).
+// TDLib owns temp parts and their persistent ready masks; never rotate or flag them.
 const Spec specs[] = {
     {VITAGRAM_DB_DIR "/profile_photos", 2000, true, 2, performance::Metric::DirProfilePhotos},
     {VITAGRAM_DB_DIR "/thumbnails", 2000, true, 2, performance::Metric::DirThumbnails},
-    {VITAGRAM_DB_DIR "/temp", 300, true, 0, performance::Metric::DirTemp},
     {VITAGRAM_FILES_DIR "/photos", 2000, true, 2, performance::Metric::DirPhotos},
-    {VITAGRAM_FILES_DIR "/temp", 300, true, 0, performance::Metric::DirTemp},
     {VITAGRAM_DB_DIR "/stickers", 3000, false, 3, performance::Metric::DirStickers},
 };
 constexpr const char* layout_marker = VITAGRAM_DB_DIR "/media-layout-1";

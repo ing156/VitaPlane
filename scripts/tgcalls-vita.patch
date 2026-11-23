@@ -1,0 +1,228 @@
+diff --git a/tgcalls/Instance.h b/tgcalls/Instance.h
+index 1ade11d..890994a 100644
+--- a/tgcalls/Instance.h
++++ b/tgcalls/Instance.h
+@@ -220,6 +220,19 @@ template <typename Implementation>
+ bool Register();
+ 
+ struct Descriptor {
++#ifdef __vita__
++    bool lowAudioLatency = false;
++    enum class IceEvent { State, LocalHost, LocalStun, LocalRelay, RemoteCandidate, RemoteSdp, Error };
++    std::function<void(IceEvent, int)> iceEvent;
++    struct AudioRtpStats {
++        int receivedLost = 0, receivedJitterMs = -1, sentLost = 0, sentJitterMs = -1;
++        uint64_t concealed = 0, receivedSamples = 0, discarded = 0;
++        uint64_t sentPackets = 0;
++        double sentDelaySeconds = 0;
++    };
++    std::function<void(const AudioRtpStats &)> audioRtpStats;
++    std::function<void(int64_t)> sendQueueDelay;
++#endif
+     std::string version;
+ 	Config config;
+ 	PersistentState persistentState;
+diff --git a/tgcalls/v2/InstanceV2ReferenceImpl.cpp b/tgcalls/v2/InstanceV2ReferenceImpl.cpp
+index dbaf093..697951f 100644
+--- a/tgcalls/v2/InstanceV2ReferenceImpl.cpp
++++ b/tgcalls/v2/InstanceV2ReferenceImpl.cpp
+@@ -37,6 +37,9 @@
+ #include "pc/peer_connection_proxy.h"
+ #include "api/rtc_event_log/rtc_event_log_factory.h"
+ #include "api/stats/rtc_stats_report.h"
++#ifdef __vita__
++#include "api/stats/rtcstats_objects.h"
++#endif
+ #include "api/enable_media.h"
+ #include "p2p/client/basic_port_allocator.h"
+ #include "p2p/base/basic_packet_socket_factory.h"
+@@ -143,6 +146,9 @@ public:
+         std::function<void(webrtc::scoped_refptr<webrtc::RtpTransceiverInterface>)> onTransceiverAdded;
+         std::function<void(webrtc::scoped_refptr<webrtc::RtpReceiverInterface>)> onTransceiverRemoved;
+         std::function<void(const cricket::CandidatePairChangeEvent &)> onCandidatePairChangeEvent;
++#ifdef __vita__
++        std::function<void(int)> onIceError;
++#endif
+     };
+ 
+ public:
+@@ -205,6 +211,14 @@ public:
+         }
+     }
+ 
++#ifdef __vita__
++    void OnIceCandidateError(const std::string&, int, const std::string&, int code, const std::string&) override {
++        if (_parameters.onIceError) {
++            _parameters.onIceError(code);
++        }
++    }
++#endif
++
+     void OnIceCandidatesRemoved(const std::vector<cricket::Candidate> &candidates) override {
+     }
+ 
+@@ -370,6 +384,12 @@ public:
+     _enableP2P(descriptor.config.enableP2P),
+     _encryptionKey(std::move(descriptor.encryptionKey)),
+     _stateUpdated(descriptor.stateUpdated),
++#ifdef __vita__
++    _lowAudioLatency(descriptor.lowAudioLatency),
++    _iceEvent(std::move(descriptor.iceEvent)),
++    _audioRtpStats(std::move(descriptor.audioRtpStats)),
++    _sendQueueDelay(std::move(descriptor.sendQueueDelay)),
++#endif
+     _signalBarsUpdated(descriptor.signalBarsUpdated),
+     _audioLevelUpdated(descriptor.audioLevelUpdated),
+     _remoteBatteryLevelIsLowUpdated(descriptor.remoteBatteryLevelIsLowUpdated),
+@@ -538,8 +558,20 @@ public:
+             if (!strong) {
+                 return;
+             }
++#ifdef __vita__
++            const auto &candidate = iceCandidate->candidate();
++            strong->reportIce(candidate.is_relay() ? Descriptor::IceEvent::LocalRelay :
++                candidate.is_local() ? Descriptor::IceEvent::LocalHost : Descriptor::IceEvent::LocalStun, 0);
++#endif
+             strong->sendIceCandidate(iceCandidate);
+         };
++#ifdef __vita__
++        delegateParameters.onIceError = [weak](int code) {
++            if (auto strong = weak.lock()) {
++                strong->reportIce(Descriptor::IceEvent::Error, code);
++            }
++        };
++#endif
+         delegateParameters.onSignalingChange = [weak](webrtc::PeerConnectionInterface::SignalingState state) {
+             const auto strong = weak.lock();
+             if (!strong) {
+@@ -564,6 +596,9 @@ public:
+                 return;
+             }
+ 
++#ifdef __vita__
++            strong->reportIce(Descriptor::IceEvent::State, static_cast<int>(state));
++#endif
+             bool isConnected = false;
+             switch (state) {
+                 case webrtc::PeerConnectionInterface::IceConnectionState::kIceConnectionConnected:
+@@ -709,7 +744,13 @@ public:
+         peerConnectionConfiguration.rtcp_mux_policy = webrtc::PeerConnectionInterface::RtcpMuxPolicy::kRtcpMuxPolicyRequire;
+         peerConnectionConfiguration.enable_implicit_rollback = true;
+         peerConnectionConfiguration.continual_gathering_policy = webrtc::PeerConnectionInterface::ContinualGatheringPolicy::GATHER_CONTINUALLY;
++#ifdef __vita__
++        // Leave time for late packets before NetEq has to synthesize audio.
++        peerConnectionConfiguration.audio_jitter_buffer_min_delay_ms = _lowAudioLatency ? 40 : 80;
++        peerConnectionConfiguration.audio_jitter_buffer_fast_accelerate = false;
++#else
+         peerConnectionConfiguration.audio_jitter_buffer_fast_accelerate = true;
++#endif
+         peerConnectionConfiguration.prioritize_most_likely_ice_candidate_pairs = true;
+ 
+         const bool allowHostnameIceServers = getCustomParameterBoolDefaultTrue(_customParameters, "network_reference_allow_hostname_ice_servers");
+@@ -1045,6 +1086,41 @@ public:
+ 
+     void writeStateLogRecords() {
+         const auto weak = std::weak_ptr<InstanceV2ReferenceImplInternal>(shared_from_this());
++#ifdef __vita__
++        if (_audioRtpStats && _isConnected && !_isStopped.load() && rtc::TimeMillis() >= _nextAudioStatsMs) {
++            _nextAudioStatsMs = rtc::TimeMillis() + 5000;
++            auto callback = rtc::make_ref_counted<StatsCollectorCallbackAdapter>([sink = _audioRtpStats](const auto &report) {
++                Descriptor::AudioRtpStats stats;
++                const auto jitterMs = [](double seconds) {
++                    return seconds >= 0 ? static_cast<int>(std::min(seconds, 1000.0) * 1000 + 0.5) : -1;
++                };
++                for (const auto *audio : report->template GetStatsOfType<webrtc::RTCInboundRtpStreamStats>()) {
++                    if (audio->kind.value_or("") != "audio" || !audio->jitter) continue;
++                    stats.receivedLost = audio->packets_lost.value_or(0);
++                    stats.receivedJitterMs = jitterMs(*audio->jitter);
++                    const auto total = audio->concealed_samples.value_or(0);
++                    stats.concealed = total - std::min(total, audio->silent_concealed_samples.value_or(0));
++                    stats.receivedSamples = audio->total_samples_received.value_or(0);
++                    stats.discarded = audio->packets_discarded.value_or(0);
++                    break;
++                }
++                for (const auto *audio : report->template GetStatsOfType<webrtc::RTCRemoteInboundRtpStreamStats>()) {
++                    if (audio->kind.value_or("") != "audio" || !audio->jitter) continue;
++                    stats.sentLost = audio->packets_lost.value_or(0);
++                    stats.sentJitterMs = jitterMs(*audio->jitter);
++                    break;
++                }
++                for (const auto *audio : report->template GetStatsOfType<webrtc::RTCOutboundRtpStreamStats>()) {
++                    if (audio->kind.value_or("") != "audio" || !audio->total_packet_send_delay) continue;
++                    stats.sentPackets = audio->packets_sent.value_or(0);
++                    stats.sentDelaySeconds = *audio->total_packet_send_delay;
++                    break;
++                }
++                sink(stats);
++            });
++            _peerConnection->GetStats(callback.get());
++        }
++#endif
+         auto call = ((webrtc::PeerConnectionProxyWithInternal<webrtc::PeerConnection> *)_peerConnection.get())->internal()->call_ptr();
+         if (!call) {
+             return;
+@@ -1060,6 +1136,11 @@ public:
+             }
+ 
+             auto stats = call->GetStats();
++#ifdef __vita__
++            if (strong->_sendQueueDelay) {
++                strong->_sendQueueDelay(stats.pacer_delay_ms);
++            }
++#endif
+             float sendBitrateKbps = ((float)stats.send_bandwidth_bps / 1024.0f);
+ 
+             strong->_threads->getMediaThread()->PostTask([weak, sendBitrateKbps]() {
+@@ -1341,6 +1422,9 @@ public:
+         webrtc::SdpParseError sdpParseError;
+         std::unique_ptr<webrtc::SessionDescriptionInterface> remoteDescription(webrtc::CreateSessionDescription(type, sdp, &sdpParseError));
+         if (!remoteDescription) {
++#ifdef __vita__
++            reportIce(Descriptor::IceEvent::RemoteSdp, -1);
++#endif
+             RTC_LOG(LS_ERROR) << "Failed to parse remote SDP";
+             return;
+         }
+@@ -1368,6 +1452,9 @@ public:
+                 }
+ 
+                 strong->_isSettingRemoteAnswerPending = false;
++#ifdef __vita__
++                strong->reportIce(Descriptor::IceEvent::RemoteSdp, isOk ? 1 : -2);
++#endif
+ 
+                 if (!isOk) {
+                     // Do NOT fall through to sendLocalDescription(): a failed
+@@ -1397,7 +1484,13 @@ public:
+         if (_peerConnection->local_description() && _peerConnection->remote_description()) {
+             for (const auto &candidate : _pendingIceCandidates) {
+                 if (candidate) {
++#ifdef __vita__
++                    if (_peerConnection->AddIceCandidate(candidate.get())) {
++                        reportIce(Descriptor::IceEvent::RemoteCandidate, 0);
++                    }
++#else
+                     _peerConnection->AddIceCandidate(candidate.get());
++#endif
+                 }
+             }
+ 
+@@ -1835,6 +1928,18 @@ private:
+     bool _enableP2P = false;
+     EncryptionKey _encryptionKey;
+     std::function<void(State)> _stateUpdated;
++#ifdef __vita__
++    const bool _lowAudioLatency;
++    std::function<void(Descriptor::IceEvent, int)> _iceEvent;
++    std::function<void(const Descriptor::AudioRtpStats &)> _audioRtpStats;
++    std::function<void(int64_t)> _sendQueueDelay;
++    int64_t _nextAudioStatsMs = 0;
++    void reportIce(Descriptor::IceEvent event, int value) {
++        if (_iceEvent) {
++            _iceEvent(event, value);
++        }
++    }
++#endif
+     std::function<void(int)> _signalBarsUpdated;
+     std::function<void(float)> _audioLevelUpdated;
+     std::function<void(bool)> _remoteBatteryLevelIsLowUpdated;

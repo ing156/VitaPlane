@@ -20,6 +20,8 @@ struct Layout {
     int searchTop() const { return ui_layout::content_top; }
     int listTop() const { return folders && !combined ? ui_layout::chat_top_folders : ui_layout::chat_top_plain; }
     int left() const { return combined ? sidebar : 0; }
+    // Leave room for the outer focus ring inside the unchanged history clip.
+    int messageTop() const { return top + 8; }
     int x(int base) const { return left() + base; }
     int y(int base) const { return base + top - ui_layout::history_top; }
     int width(int base) const { return base - left(); }

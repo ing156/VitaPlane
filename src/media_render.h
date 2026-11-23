@@ -23,6 +23,8 @@ LanguageFontStatus rich_text_prepare_custom_font(const std::string& filename);
 bool rich_text_set_custom_font(const std::string& filename);
 // Japanese uses the permanent fallback face, loaded by the startup worker.
 LanguageFontStatus rich_text_japanese_font_status();
+// Queue a glyph ahead of background requests without decoding or uploading it.
+void emoji_prioritize(const char* text);
 void emoji_load_one();
 void rich_text_shutdown();
 int rich_text_width(vita2d_pgf* font, float scale, const char* text);

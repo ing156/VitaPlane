@@ -123,9 +123,12 @@ doc.download_failed = Download mislukt: {0}
 doc.downloading = Downloaden: {0}
 doc.exists = Al opgeslagen: {0}
 doc.invalid_path = Ongeldig downloadpad
+doc.queue_full = De downloadwachtrij is vol (8 taken)
 doc.save_failed = Bestand kon niet worden opgeslagen
 doc.saved = Opgeslagen: {0}
 doc.saving = Opslaan: {0}
+doc.source_changed = Het bronbestand is gewijzigd
+doc.source_unavailable = Het bronbestand kan niet veilig worden hersteld
 folder.all = Alle chats
 folder.default = Map
 folder.archive = Gearchiveerd
@@ -843,7 +846,7 @@ about.description = Een onofficiële opensource Telegram-client op basis van Vit
 about.development = Het project wordt actief ontwikkeld. Nog niet alle Telegram-functies zijn beschikbaar; sommige hebben beperkingen of fouten.
 about.privacy_title = Privacy
 about.privacy_servers = VitaPlane stuurt je berichten, bestanden en diagnostische logboeken niet naar de servers van de auteur.
-about.privacy_logs = Logboeken bevatten technische informatie en staan standaard uit. VitaPlane legt hierin geen berichttekst, telefoonnummers of wachtwoorden vast. Ze blijven op de console en worden nooit automatisch verstuurd. Bij problemen kun je ze vrijwillig handmatig naar de ontwikkelaar sturen voor onderzoek.
+about.privacy_logs = Verbindingslogboeken voor proxy’s starten automatisch; andere diagnoselogboeken staan standaard uit. VitaPlane legt hierin geen berichttekst, telefoonnummers of wachtwoorden vast. Ze blijven op de console en worden nooit automatisch verstuurd. Bij problemen kun je ze vrijwillig handmatig naar de ontwikkelaar sturen voor onderzoek.
 about.privacy_connections = De client verbindt met Telegram-servers. Updatecontroles en downloads gebruiken GitHub. TDLib kan externe diensten benaderen om proxyhostnamen op te zoeken en verbindingsinstellingen te verkrijgen. Met een proxy loopt de verbinding via de gekozen server.
 about.security_title = Veiligheid en risico's
 about.security_intro = VitaPlane is een onofficiële client. Softwarefouten en platformbeperkingen kunnen de veiligheid beïnvloeden.
@@ -1070,6 +1073,10 @@ settings.section.chats = Chats
 settings.section.controls = Bediening en invoer
 settings.section.data = Gegevens en opslag
 settings.section.connection = Verbinding
+settings.call_audio = Gespreksaudio
+settings.call_audio_stable = Stabiel
+settings.call_audio_low = Lage vertraging
+settings.call_audio_hint = Lage vertraging kan meer haperingen geven. Geldt vanaf het volgende gesprek.
 settings.section.security = Gegevensbescherming
 settings.section.updates = Updates en installatie
 settings.section.about = Over en diagnostiek
@@ -1114,3 +1121,106 @@ message.edit_invalid = Voer tekst in, maximaal 1023 UTF-8-bytes.
 message.edit_changed = Bericht is gewijzigd. Annuleer en open het opnieuw.
 message.edit_timeout = Geen antwoord. Controleer het bericht voor een nieuwe poging.
 keyboard.save = Opslaan
+
+# --- Download panel ---
+downloads.title = Downloads
+downloads.queued = In wachtrij
+downloads.paused = Gepauzeerd
+downloads.pause = Pauzeren
+downloads.resume = Hervatten
+downloads.saving = Opslaan
+downloads.restoring = Herstellen
+downloads.error = Opnieuw proberen
+downloads.hint = Tik / {cross}: bestanden · L+R: paneel selecteren
+downloads.priority = Prioriteit
+downloads.list_hint = {cross}: pauzeren / hervatten · ←/→ Prioriteit · {square} Annuleren · {circle}: terug
+downloads.carousel_hint = Veeg ↑/↓
+
+proxy.type.web = WEB (HTTPS)
+proxy.web.invalid = WEB needs a DNS hostname, optional path, secret and HTTPS port 443
+proxy.web.failed = WEB connection failed; save and apply to retry
+proxy.web.tls = WEB TLS connection failed; check the certificate and network
+proxy.web.unsupported = Unsupported WEB transport: only https is supported
+
+proxy.pool.auto = Auto-switch on failure
+proxy.pool.analyze = Check all proxies
+proxy.pool.add = Add proxy
+proxy.pool.unknown = Not checked
+proxy.pool.checking = Checking...
+proxy.pool.available = {0} ms
+proxy.pool.unavailable = Unavailable
+proxy.pool.limit = Up to 16 proxies can be saved
+proxy.pool.empty = Add a proxy manually or scan its QR code
+proxy.pool.saving = Saving proxy settings...
+proxy.pool.hint = Auto-switch chooses a reachable alternative after a sustained connection failure
+proxy.pool.delete_confirm = Delete this saved proxy?
+proxy.pool.use = {cross} Select
+proxy.pool.edit = {square} Edit
+proxy.pool.delete = {triangle} Delete
+proxy.pool.back = {circle} Back
+proxy.pool.confirm = {cross} Delete
+
+proxy.pool.invalid = Proxy fields are incomplete or too long
+
+proxy.check.dns = Cannot resolve the proxy address: DNS error
+proxy.check.error = Proxy unreachable: TDLib connection error ({0})
+
+proxy.pool.checked = Proxy checks complete
+
+logs.proxy = Proxy connections
+
+tg.init_failed = Telegram initialization failed; see proxy.log
+
+# Emoji picker and expanded draft
+emoji.faces = Gezichten
+emoji.people = Personen
+emoji.nature = Natuur
+emoji.food = Eten
+emoji.travel = Reizen
+emoji.activities = Activiteiten
+emoji.objects = Voorwerpen
+emoji.symbols = Symbolen
+emoji.flags = Vlaggen
+emoji.recent = Recent
+emoji.back = ABC
+emoji.empty = Geen recente emoji
+emoji.help = {cross} Invoegen / vasthouden: varianten · L/R: paginas · {circle} ABC
+keyboard.expand_help = Vegen / pijlen: scrollen · Tik / {cross}: toetsenbord · Vasthouden: vergrootglas
+
+emoji.categories = Emoji-categorieën
+emoji.category_help = ↑↓ / vegen: scrollen · {cross} Kiezen · {circle} Terug
+
+proxy.pool.interval = Wisselen na
+proxy.pool.seconds = {0} s
+
+presence.typing = {0} typt…
+
+settings.unread_counter = Aantal ongelezen berichten
+
+settings.hide_muted_unread = Gedempte chats: vervang ongelezen badge
+emoji.premium = Premium
+emoji.insert = Emoji invoegen
+
+call.start = Audiogesprek
+call.hang_up = Ophangen
+call.dialing = Bellen…
+call.connected = Gesprek verbonden
+call.ended = Gesprek beëindigd
+call.failed = Gesprek mislukt
+call.place = Bellen
+call.connecting = Verbinden…
+call.mute = Microfoon uit
+call.unmute = Microfoon aan
+call.close = Sluiten
+call.confirm_hint = {cross} Bevestigen   {circle} Annuleren
+call.active_hint = {cross} Bevestigen   {circle} Ophangen
+call.accept = Opnemen
+call.decline = Weigeren
+call.history_incoming = Inkomende oproep
+call.history_outgoing = Uitgaande oproep
+call.history_missed = Gemiste oproep
+call.history_unanswered = Onbeantwoorde oproep
+call.history_declined = Geweigerde oproep
+call.history_disconnected = Oproep verbroken
+call.history_video = Video-oproep
+call.incoming_hint = {cross} Opnemen   {circle} Weigeren

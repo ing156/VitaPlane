@@ -52,13 +52,17 @@ inline size_t td_event_wire_bytes(json_t* root) {
 inline bool urgent_td_event(json_t* root) {
     const char* type = json_string_value(json_object_get(root, "@type"));
     if (!type) return false;
+#if VITAGRAM_CALLS
+    if (!std::strcmp(type, "updateCall") || !std::strcmp(type, "updateNewCallSignalingData") ||
+        !std::strcmp(type, "callId")) return true;
+#endif
     if (!std::strcmp(type, "updateAuthorizationState") || !std::strcmp(type, "updateConnectionState") ||
         !std::strcmp(type, "updateMessageSendSucceeded") || !std::strcmp(type, "updateMessageSendFailed") ||
         !std::strcmp(type, "error")) return true;
     auto* extra = json_object_get(root, "@extra");
     const char* kind = json_string_value(json_object_get(extra, "kind"));
-    return (kind && (!std::strcmp(kind, "media_upload") || !std::strcmp(kind, "proxy_check") ||
-                    !std::strcmp(kind, "proxy_config") || !std::strncmp(kind, "gif_", 4))) ||
+    return (kind && (!std::strcmp(kind, "media_upload") || !std::strcmp(kind, "media_upload_album") || !std::strcmp(kind, "proxy_check") ||
+                    !std::strcmp(kind, "proxy_config") || !std::strcmp(kind,"tdlib_params") || !std::strncmp(kind, "gif_", 4))) ||
         (json_is_string(extra) && !std::strcmp(json_string_value(extra), "send_message"));
 }
 
@@ -92,7 +96,7 @@ inline TdEventMetadata describe_td_event(json_t* root) {
         m.history=true;m.chat=json_integer_value(json_object_get(extra,"chat"));
         m.generation=json_integer_value(json_object_get(extra,"generation"));
     } else if (kind && (!std::strncmp(kind,"reaction_",9) || !std::strncmp(kind,"forum_",6) ||
-                       !std::strncmp(kind,"post_",5) || !std::strcmp(kind,"sticker_items"))) {
+                       !std::strncmp(kind,"post_",5) || !std::strncmp(kind,"emoji_",6) || !std::strcmp(kind,"sticker_items"))) {
         m.chat=json_integer_value(json_object_get(extra,"chat"));
         m.response=!std::strncmp(kind,"reaction_",9) ? TdResponseKind::Reaction :
             !std::strncmp(kind,"forum_",6) ? TdResponseKind::Forum :
@@ -248,5 +252,5 @@ inline bool td_reply_is_foreground(const char* text) {
     const char* kind=std::strstr(extra,"\"kind\":\"");
     if (!kind) return false;
     kind+=8;
-    return !std::strncmp(kind,"history\"",8) || !std::strncmp(kind,"reaction_",9) || !std::strncmp(kind,"forum_",6) || !std::strncmp(kind,"gif_",4);
+    return !std::strncmp(kind,"media_upload",12) || !std::strncmp(kind,"history\"",8) || !std::strncmp(kind,"reaction_",9) || !std::strncmp(kind,"emoji_",6) || !std::strncmp(kind,"forum_",6) || !std::strncmp(kind,"gif_",4);
 }

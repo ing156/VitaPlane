@@ -1,5 +1,6 @@
 #pragma once
 #include "performance.h"
+#include "document_diagnostics.h"
 #include "td_diagnostics.h"
 #include "stream_diagnostics.h"
 #include "video_diagnostics.h"
@@ -58,6 +59,7 @@ inline bool flush(const char* path, const char* previous, const char* version, i
         FILE* file = std::fopen(path, "ab");
         if (file) {
             writeSnapshot(file, snapshot, version);
+            document_diagnostics::write(file);
             audio_startup_trace::write(file);
             td_diagnostics::write(file);
             stream_diagnostics::write(file);

@@ -69,7 +69,19 @@ int main() {
     json_decref(latest.begin("old.ogg", 100, false, 42, 1000000));
     json_decref(latest.begin("new.mp4", 100, true, 42, 2000000));
     assert(latest.summary(2000000).find("Кружок") == 0);
-    assert(latest.lines(2000000)[0].find("Кружок") == 0);
+    assert(latest.lines(2000000)[0].find("Аудио") == 0);
+    assert(latest.lines(2000000, true)[0].find("upload=1 ") == 0);
+    // Resending the same path must not attach a different file ID to an older operation.
+    MediaUploads same_path;
+    json_decref(same_path.beginFile("same.png", 100, MediaUploads::Kind::Photo, 42, 1000000));
+    event(same_path, R"({"@type":"message","id":101,"chat_id":42,"sending_state":{},"@extra":{"kind":"media_upload","token":1},"content":{"photo":{"sizes":[{"photo":{"id":11,"size":100}}]}}})", 2000000);
+    json_decref(same_path.beginFile("same.png", 100, MediaUploads::Kind::Photo, 42, 3000000));
+    event(same_path, R"({"@type":"updateFile","file":{"id":12,"size":100,"local":{"path":"same.png"},"remote":{"uploaded_size":100,"is_uploading_completed":true}}})", 4000000);
+    assert(same_path.items()[0].file == 11 && same_path.items()[0].done == 0);
+    assert(same_path.items()[1].file == 12 && same_path.items()[1].uploaded);
+    auto* album_reply = parse(R"({"@type":"messages","@extra":{"kind":"media_upload_album"}})");
+    assert(urgent_td_event(album_reply)); json_decref(album_reply);
+    assert(td_reply_is_foreground(R"({"@type":"messages","@extra":{"kind":"media_upload_album","tokens":[1,2,3]}})"));
 
     TdEventQueue queue;
     for (int i = 1; i <= 1000; ++i)

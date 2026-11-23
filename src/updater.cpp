@@ -4,6 +4,7 @@
 #include "package_promote.h"
 #include "vpk_package.h"
 #include <cstdio>
+#include <algorithm>
 #include <vector>
 #ifdef __vita__
 #include <psp2/appmgr.h>
@@ -19,6 +20,7 @@
 #endif
 
 namespace {
+bool read_small(const std::string& path, size_t limit, std::string& out);
 const char* const kLatestReleases[] = {
     "https://api.github.com/repos/" VITAGRAM_UPDATE_REPO "/releases/latest",
     "https://api.github.com/repos/ing156/VitaGram/releases/latest"
@@ -70,23 +72,35 @@ Updater::Updater(std::string current_version, std::string ca_file, std::string w
 
 // Picks the first of work_dir_/fallback_dir_ that is writable and has room for the package and its
 // unpacked copy. A stale staged package in the other directory is dropped so that only one can be applied.
-bool Updater::chooseDir(uint64_t package_size, std::string& dir, std::string& detail) {
+bool Updater::chooseDir(uint64_t package_size, const std::string& identity, std::string& dir, std::string& detail) {
     const uint64_t need = (package_size ? package_size : kUnknownSize) * 2 + kSpaceMargin;
-    std::vector<std::string> candidates{work_dir_};
-    if (!fallback_dir_.empty() && fallback_dir_ != work_dir_) candidates.push_back(fallback_dir_);
+    auto credit = [&](const std::string& candidate) -> uint64_t {
+        std::string stored;
+        if (!package_size || !read_small(candidate + "/update.partial", 8192, stored) || stored != identity) return 0;
+        FILE* partial = std::fopen((candidate + "/update.part").c_str(), "rb");
+        if (!partial) return 0;
+        const long size = std::fseek(partial, 0, SEEK_END) == 0 ? std::ftell(partial) : -1;
+        std::fclose(partial);
+        return size > 0 && (uint64_t)size <= package_size && (uint64_t)size <= kMaxPackage ? (uint64_t)size : 0;
+    };
+    std::vector<std::pair<std::string, uint64_t>> candidates{{work_dir_, credit(work_dir_)}};
+    if (!fallback_dir_.empty() && fallback_dir_ != work_dir_) candidates.push_back({fallback_dir_, credit(fallback_dir_)});
+    std::stable_sort(candidates.begin(), candidates.end(), [](const auto& a, const auto& b) { return a.second > b.second; });
     detail.clear();
-    for (const std::string& candidate : candidates) {
+    for (const auto& entry : candidates) {
+        const std::string& candidate = entry.first;
+        const uint64_t remaining_need = need - entry.second;
         std::string why;
         uint64_t free_bytes = 0;
         if (!writable_dir(candidate, why)) { detail += (detail.empty() ? "" : "; ") + why; continue; }
-        if (free_space(candidate, free_bytes) && free_bytes < need) {
-            detail += (detail.empty() ? "" : "; ") + std::string("not enough space on ") + candidate + ": need " + mib(need) +
+        if (free_space(candidate, free_bytes) && free_bytes < remaining_need) {
+            detail += (detail.empty() ? "" : "; ") + std::string("not enough space on ") + candidate + ": need " + mib(remaining_need) +
                       ", free " + mib(free_bytes);
             continue;
         }
         dir = candidate;
-        for (const std::string& other : candidates)
-            if (other != dir) std::remove((other + "/pending").c_str());
+        for (const auto& other : candidates)
+            if (other.first != dir) std::remove((other.first + "/pending").c_str());
         return true;
     }
     return false;
@@ -205,11 +219,6 @@ void Updater::runInstall() {
         version = snap_.version; vpk_url = vpk_url_; sig_url = sig_url_; expected = vpk_size_;
     }
     if (expected > kMaxPackage) { fail(Error::Package, "package is unreasonably large"); return; }
-    std::string dir, why;
-    if (!chooseDir(expected, dir, why)) { fail(Error::Storage, why); return; }
-    const std::string vpk_path = dir + "/update.vpk", package_dir = dir + "/pkg";
-    update::remove_tree(package_dir);
-
     // The signature is small: fetch it first so a bad release fails before a long download.
     std::vector<unsigned char> signature;
     update::HttpsResult http = update::https_get(sig_url, ca_file_, "application/octet-stream",
@@ -221,15 +230,78 @@ void Updater::runInstall() {
     if (cancel_) { fail(Error::Cancelled, "cancelled"); return; }
     if (!http.error.empty()) { fail(Error::Network, http.error); return; }
 
+    const std::string identity = version + "\n" + vpk_url + "\n" + std::to_string(expected) + "\n" +
+        std::string(signature.begin(), signature.end());
+    std::string dir, why;
+    if (!chooseDir(expected, identity, dir, why)) { fail(Error::Storage, why); return; }
+    const std::string vpk_path = dir + "/update.vpk", package_dir = dir + "/pkg";
+    const std::string partial_path = dir + "/update.part", identity_path = dir + "/update.partial";
+    update::remove_tree(package_dir);
+    std::string stored;
+    bool same = read_small(identity_path, 8192, stored) && stored == identity;
+    if (!same) std::remove(partial_path.c_str());
+    const std::string identity_temp = identity_path + ".tmp";
+    FILE* metadata = std::fopen(identity_temp.c_str(), "wb");
+    bool metadata_ok = metadata && identity.size() <= 8192 && std::fwrite(identity.data(), 1, identity.size(), metadata) == identity.size();
+    if (metadata && std::fclose(metadata) != 0) metadata_ok = false;
+    if (metadata_ok) metadata_ok = std::rename(identity_temp.c_str(), identity_path.c_str()) == 0;
+    if (!metadata_ok) { std::remove(identity_temp.c_str()); fail(Error::Storage, "cannot write download identity"); return; }
     update::SignatureVerifier verifier;
     if (!verifier.begin(version)) { fail(Error::BadSignature, "cannot load the signing key"); return; }
-    FILE* file = std::fopen(vpk_path.c_str(), "wb");
-    if (!file) { fail(Error::Storage, "cannot write " + vpk_path); return; }
+    FILE* file = std::fopen(partial_path.c_str(), same ? "rb+" : "wb+");
+    if (!file && same) file = std::fopen(partial_path.c_str(), "wb+");
+    if (!file) { fail(Error::Storage, "cannot write " + partial_path); return; }
     uint64_t received = 0;
-    bool write_failed = false;
-    http = update::https_get(vpk_url, ca_file_, "application/octet-stream",
+    char buffer[16384];
+    size_t count;
+    bool write_failed = false, oversized = false;
+    while ((count = std::fread(buffer, 1, sizeof(buffer), file)) > 0) {
+        received += count;
+        if (received > kMaxPackage || (expected && received > expected)) { oversized = true; break; }
+        verifier.update(buffer, count);
+        if (cancel_) break;
+    }
+    if (std::ferror(file) || oversized) {
+        std::fclose(file); std::remove(partial_path.c_str());
+        fail(oversized ? Error::Package : Error::Storage, "invalid partial package"); return;
+    }
+    // Switching an update stream from reads to writes requires a positioning call.
+    if (std::fseek(file, 0, SEEK_END) != 0) {
+        std::fclose(file); fail(Error::Storage, "cannot seek partial package"); return;
+    }
+    if (cancel_) { std::fclose(file); fail(Error::Cancelled, "cancelled"); return; }
+    update::HttpsResume resume;
+    resume.offset = received; resume.total = expected;
+    const std::string validator_path = dir + "/update.etag";
+    if (same) read_small(validator_path, 1024, resume.etag);
+    if (resume.etag.size() < 2 || resume.etag.front() != '"' || resume.etag.back() != '"' ||
+        resume.etag.find_first_of("\r\n") != std::string::npos) resume.etag.clear();
+    resume.response = [&](int status, int64_t length, const std::string& etag) {
+        std::remove(validator_path.c_str());
+        if (etag.size() >= 2 && etag.size() <= 1024 && etag.front() == '"' && etag.back() == '"' &&
+            etag.find_first_of("\r\n") == std::string::npos) {
+            FILE* validator = std::fopen(validator_path.c_str(), "wb");
+            bool saved = validator && std::fwrite(etag.data(), 1, etag.size(), validator) == etag.size();
+            if (validator && std::fclose(validator) != 0) saved = false;
+            if (!saved) { write_failed = true; return false; }
+        }
+        if (status == 200 && received) {
+            FILE* restarted = std::freopen(partial_path.c_str(), "wb+", file);
+            file = restarted;
+            if (!file) { write_failed = true; return false; }
+            received = 0;
+            if (!verifier.begin(version)) return false;
+        }
+        if (length > 0 && ((uint64_t)length > kMaxPackage - received ||
+            (expected && (uint64_t)length != expected - received))) { oversized = true; return false; }
+        std::lock_guard<std::mutex> lock(mutex_);
+        snap_.bytes = received; snap_.total = length >= 0 ? received + (uint64_t)length : expected;
+        return true;
+    };
+    // A complete partial needs no range request (servers normally answer 416 at EOF).
+    if (!expected || received != expected) http = update::https_get(vpk_url, ca_file_, "application/octet-stream",
         [&](const char* data, size_t size) {
-            if (received + size > kMaxPackage) return false;
+            if (received + size > kMaxPackage || (expected && received + size > expected)) { oversized = true; return false; }
             if (std::fwrite(data, 1, size, file) != size) { write_failed = true; return false; }
             verifier.update(data, size);
             received += size;
@@ -237,23 +309,26 @@ void Updater::runInstall() {
             snap_.bytes = received;
             snap_.percent = snap_.total ? (int)(received * 100 / snap_.total) : 0;
             return true;
-        }, &cancel_,
-        [&](int64_t length) {
-            std::lock_guard<std::mutex> lock(mutex_);
-            snap_.total = length > 0 ? (uint64_t)length : expected;
-        });
-    bool closed = std::fclose(file) == 0;
-    if (write_failed || !closed) { std::remove(vpk_path.c_str()); fail(Error::Storage, "disk write failed (storage full?)"); return; }
-    if (cancel_) { std::remove(vpk_path.c_str()); fail(Error::Cancelled, "cancelled"); return; }
-    if (!http.error.empty()) { std::remove(vpk_path.c_str()); fail(Error::Network, http.error); return; }
+        }, &cancel_, nullptr, &resume);
+    bool closed = file && std::fclose(file) == 0;
+    if (write_failed || !closed || oversized) {
+        std::remove(partial_path.c_str());
+        fail(oversized ? Error::Package : Error::Storage, oversized ? "invalid package length" : "disk write failed (storage full?)"); return;
+    }
+    if (cancel_) { fail(Error::Cancelled, "cancelled"); return; }
+    if (!http.error.empty()) { fail(Error::Network, http.error); return; }
+    if (expected && received != expected) { fail(Error::Network, "download was cut off"); return; }
 
     set(State::Verifying);
     if (!verifier.finish(signature.data(), signature.size())) {
-        std::remove(vpk_path.c_str());
+        std::remove(partial_path.c_str());
         fail(Error::BadSignature, "the package signature does not match");
         return;
     }
 
+    if (std::rename(partial_path.c_str(), vpk_path.c_str()) != 0) { fail(Error::Storage, "cannot stage the package"); return; }
+    std::remove(identity_path.c_str());
+    std::remove(validator_path.c_str());
     set(State::Extracting);
     std::string error;
     bool extracted = update::extract_zip(vpk_path, package_dir, [&](uint64_t done, uint64_t total) {
@@ -300,8 +375,9 @@ bool read_small(const std::string& path, size_t limit, std::string& out) {
         out.append(buffer, n);
         if (out.size() > limit) { std::fclose(f); return false; }
     }
-    std::fclose(f);
-    return true;
+    bool ok = !std::ferror(f);
+    if (std::fclose(f) != 0) ok = false;
+    return ok;
 }
 
 // Re-checks the stored package against the release signature; the version in the marker is part of

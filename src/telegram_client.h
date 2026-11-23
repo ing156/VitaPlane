@@ -1,6 +1,9 @@
 #pragma once
 #include "i18n.h"
+#include "custom_emoji.h"
 #include "proxy_config.h"
+#include "proxy_pool.h"
+#include "web_proxy.h"
 #include "vault_sweep.h"
 #include "media_uploads.h"
 #include "td_event_queue.h"
@@ -8,7 +11,9 @@
 #include "bot_buttons.h"
 #include "peer_colors.h"
 #include "gif_catalog.h"
+#include <array>
 #include <map>
+#include <memory>
 #include <set>
 #include "media_cache.h"
 #include "ui_cache.h"
@@ -39,7 +44,10 @@ struct ChatItem {
     int64_t order = 0;
     int64_t last_message_id = 0;
     int unread_count = 0;
+    int unread_mention_count = 0;
     bool marked_unread = false;
+    bool use_default_mute = true;
+    int64_t muted_until = 0;
     int64_t last_read_inbox = 0; // Synchronized Telegram read position.
     std::string title;
     int32_t avatar_file_id = 0;
@@ -57,7 +65,7 @@ struct PhotoItem {
 
 enum class DeliveryState { Pending, Sent, Read, Failed };
 struct ForumTopicItem { int32_t id = 0; std::string title; int unread = 0; bool closed = false; int64_t last_read_inbox = 0; };
-struct SendStickerItem { int32_t file = 0, preview = 0; int width = 0, height = 0; bool animated = false; std::string emoji, path, full_path; int64_t set_id = 0; };
+struct SendStickerItem { int32_t file = 0, preview = 0; int width = 0, height = 0; bool animated = false; std::string emoji, path, full_path; int64_t set_id = 0, custom_emoji_id = 0; bool needs_repainting = false; };
 // Folder tab id of the Archive (TDLib chatListArchive); TDLib folder ids are positive.
 constexpr int32_t kArchiveFolderId = -2;
 struct ChatFolderItem {
@@ -94,6 +102,10 @@ struct MessageItem {
     int64_t date = 0, edit_date = 0;
     int64_t media_album_id = 0;
     bool outgoing = false;
+    enum class CallRecord { None, Finished, Missed, Declined, Disconnected };
+    CallRecord call_record = CallRecord::None;
+    bool video_call = false;
+    int call_duration = 0;
     bool editable_text = false;
     std::string edit_preview_options;
     DeliveryState delivery = DeliveryState::Sent;
@@ -112,11 +124,12 @@ struct MessageItem {
     std::string media_fallback; // Embedded GIF JPEG: immediate preview without a download.
     bool media_video_preview = false; // Separate MP4/GIF thumbnail, decoded by the image worker.
     bool document = false;
-    std::string document_name;
+    std::string document_name, document_remote_unique, document_remote_id;
     int64_t document_size = 0, document_downloaded = 0;
     bool sticker = false;
     int64_t sticker_set_id = 0;
     std::vector<int64_t> custom_emoji_ids;
+    std::vector<CustomEmojiSpan> custom_emojis;
     bool animation = false;
     bool video = false, video_note = false; // Shares the animation download/preview fields.
     int video_duration = 0;
@@ -190,6 +203,11 @@ public:
         ProxyConfig proxy; proxy.server = server; proxy.port = port; proxy.secret = secret;
         configureProxy(enabled, proxy);
     }
+    void configureProxyList(const std::vector<ProxyConfig>& entries,int active,bool enabled,bool automatic,int switch_seconds=10);
+    const ProxyPool& proxyPool() const { return proxy_pool_; }
+    const ProxyConfig& connectionProxy() const { return proxy_; }
+    void analyzeProxies();
+    void pauseProxyAnalysis(bool pause);
     const i18n::Text& proxyStatus() const { return proxy_status_; }
     void checkProxy(const ProxyConfig& proxy);
     void checkProxy(const std::string& server, int port, const std::string& secret) {
@@ -246,7 +264,7 @@ public:
     std::string inputInitial() const { return edit_.message ? edit_.draft : std::string(); }
     bool editingMessage() const { return edit_.message != 0; }
     bool inputSecret() const { return input_kind_ == InputKind::Password; }
-    void submitInput(const std::string& value);
+    void submitInput(const std::string& value, const std::vector<CustomEmojiSpan>& custom_emojis = {});
     const bot_buttons::Markup& botMenu() const;
     const MessageItem& botKeyboard() const { return bot_keyboard_; }
     bool activateBotButton(int64_t message, int row, int column, bool keyboard);
@@ -288,6 +306,18 @@ public:
     const std::vector<ChatItem>& chats() const { return chats_; }
     const std::vector<MessageItem>& messages() const { return messages_; }
     void downloadDocument(const MessageItem& message, const std::string& directory);
+    struct DocumentTransfer {
+        int64_t chat = 0, message = 0;
+        std::string name;
+        int64_t downloaded = 0, total = 0;
+        int priority = 16;
+        bool paused = false, exporting = false, waiting = false, restoring = false, error = false;
+        bool adjustable() const { return !exporting && (total <= 0 || downloaded < total); }
+    };
+    std::vector<DocumentTransfer> documentTransfers() const;
+    bool cancelDocument(int64_t chat, int64_t message);
+    bool changeDocumentPriority(int64_t chat, int64_t message, int direction);
+    bool setDocumentPaused(int64_t chat, int64_t message, bool paused);
     bool hasSavedDocuments() const { return !saved_documents_.empty(); }
     std::string takeSavedDocument() {
         if (saved_documents_.empty()) return {};
@@ -300,10 +330,16 @@ public:
     i18n::Text currentChatTitle() const;
     bool currentChatIsDeleted() const;
     bool chatIsDeleted(const ChatItem& chat) const;
+    bool chatMuted(const ChatItem& chat) const;
     i18n::Text chatTitle(const ChatItem& chat) const;
     std::string currentUserStatus() const;
+    std::string currentTypingStatus() const;
+    int unreadMentionCount() const;
+    bool historyAtLatest() const;
+    void openFirstUnreadMention();
     bool currentChatIsGroup() const;
     std::string senderAvatar(const MessageItem& message) const;
+    void ensureSenderMedia(const MessageItem& message);
     i18n::Text senderName(const MessageItem& message) const;
     bool senderIsDeleted(const MessageItem& message) const;
     peer_colors::Palette senderColors(int64_t id, bool chat, bool dark) const;
@@ -361,7 +397,8 @@ public:
     // kind: 0 photo, 1 video, 2 file. original=true sends a document without recompression.
     bool sendLocalFiles(const std::vector<std::pair<std::string, int>>& files, int64_t chat, int32_t topic, const std::string& caption = "");
     bool sendLocalFile(const std::string& path, int kind, bool original, int64_t chat, int32_t topic, const std::string& caption = "");
-    void openStickers();
+    void openStickers(bool custom_emoji = false);
+    bool customEmojiPicker() const { return sticker_view_open_ ? sticker_view_emoji_ : sticker_emoji_mode_; }
     void openStickerSet(int64_t set_id, int64_t custom_emoji_id = 0);
     void installStickerSet();
     bool stickerSetOpen() const { return sticker_view_open_; }
@@ -389,13 +426,20 @@ public:
     bool pollPending(int64_t message) const;
     void loadReactions(int64_t message_id, bool refresh = false);
     void viewMessage(int64_t message_id);
+    void viewVisibleMessages(const std::vector<int64_t>& ids);
     void messagesPresented(int64_t selected_message = 0);
     void toggleReaction(int64_t message_id, const std::string& emoji);
     void ensureReactionMedia(size_t index);
     std::string reactionIcon(size_t index) const;
     MessageItem::Reaction reactionState(size_t index) const;
     void ensureMessageReactionMedia();
+    void ensureCustomEmojiMedia(const std::vector<int64_t>& ids);
     std::string customReactionIcon(int64_t custom_emoji_id) const;
+    bool customEmojiNeedsRepainting(int64_t id) const;
+    void updateCustomEmojiAnimations(const std::vector<int64_t>& ids, int32_t preserve_file = 0);
+    bool customEmojiAnimated(int64_t id) const;
+    std::string customEmojiAnimation(int64_t id) const;
+    bool customEmojiHasStaticPreview(int64_t id) const;
     const std::vector<std::string>& reactionChoices() const { return reaction_choices_; }
     int reactionTopCount() const { return reaction_top_count_; }
     const i18n::Text& reactionStatus() const { return reaction_status_; }
@@ -431,6 +475,23 @@ public:
     bool pasteForward();
     void leaveCurrentGroup();
     bool currentChatIsPrivate() const;
+#if VITAGRAM_CALLS
+    enum class AudioCallPhase { Idle, Incoming, Dialing, Connecting, Connected, Ended, Failed };
+    void setCallLowLatency(bool enabled) { call_low_latency_ = enabled; }
+    bool canStartAudioCall() const;
+    bool startAudioCall();
+    bool acceptAudioCall();
+    int64_t audioCallPeer() const;
+    bool audioCallActive() const;
+    AudioCallPhase audioCallPhase() const { return audio_call_phase_; }
+    std::string audioCallDiagnostic() const;
+    std::string audioCallNetworkDiagnostic() const;
+    const std::array<std::string, 2>& audioCallQuality();
+    bool audioCallMuted() const;
+    void toggleAudioCallMute();
+    void discardAudioCall(bool disconnected = false);
+    bool shutdownAudioCallTransport();
+#endif
     // Private chats: remove=true deletes the conversation from the list, false only clears its messages (both for this account).
     void deleteCurrentHistory(bool remove);
     void ensureChatMedia(size_t index);
@@ -470,9 +531,20 @@ private:
     std::map<std::pair<int64_t,int64_t>, PollRequest> poll_requests_;
     i18n::Text video_note_status_;
 
+    ProxyPool proxy_pool_;
+    ProxyPool::Connection proxy_connection_ = ProxyPool::Connection::Offline;
+    int pool_check_ = -1, proxy_check_ms_ = -1;
+    enum class ProxyCheck { Idle, Checking, Available, Failed };
+    ProxyCheck proxy_check_result_ = ProxyCheck::Idle;
+    bool pool_paused_ = false;
+    void pumpProxyPool();
     bool proxy_enabled_ = false;
     ProxyConfig proxy_;
+    WebProxy web_proxy_, web_proxy_check_;
+    ProxyConfig web_check_config_;
+    bool web_proxy_pending_ = false, web_check_pending_ = false, proxy_network_paused_ = false;
     i18n::Text proxy_status_;
+    uint64_t proxy_trace_=0,proxy_check_trace_=0;
     int proxy_generation_ = 0;
     int proxy_check_generation_ = 0;
     int64_t proxy_check_deadline_ = 0;
@@ -523,7 +595,7 @@ private:
     void requestGifResults(const std::string& offset);
     std::vector<ChatFolderItem> sticker_packs_;
     std::vector<int64_t> sticker_set_ids_;
-    bool sticker_packs_fresh_ = false;
+    bool sticker_packs_fresh_ = false, sticker_emoji_mode_ = false;
     std::unordered_map<int64_t, int64_t> sticker_icon_retry_;
     // supergroup_id -> is_forum from updateSupergroup/getSupergroup; avoids a
     // TDLib round trip before the first history request of an ordinary group.
@@ -535,8 +607,16 @@ private:
     std::vector<std::string> reaction_choices_;
     int reaction_top_count_ = 0;
     std::unordered_map<std::string,int64_t> reaction_custom_choices_;
-    struct ReactionPreview { int32_t file=0; std::string path; };
+    struct ReactionPreview { int32_t file=0; std::string path; int64_t requested_at=0; bool needs_repainting=false; int32_t animation_file=0; std::string animation_path; bool animation_tgs=false; };
     std::unordered_map<int64_t,ReactionPreview> reaction_previews_;
+    struct EmojiDownload {
+        int64_t token, deadline;
+        int64_t downloaded = 0;
+        bool owned = false;
+    };
+    std::map<int32_t, EmojiDownload> custom_emoji_downloads_;
+    std::map<int32_t, int64_t> custom_emoji_retry_at_;
+    int64_t custom_emoji_download_token_ = 0;
     int64_t viewed_message_=0, viewed_message_at_=0;
     int64_t chat_open_at_=0;
     bool chat_present_pending_=false, chat_live_present_pending_=false, chat_live_ready_=false;
@@ -545,6 +625,8 @@ private:
     bool reaction_pending_ = false, reaction_loading_ = false, reaction_loaded_ = false;
     bool cache_maintenance_ = false;
     std::string cache_cleanup_error_;
+    int64_t notification_mute_until_[3] = {-1, -1, -1};
+    unsigned notification_generation_ = 0;
     std::unordered_map<int64_t, std::string> user_names_;
     std::unordered_map<int64_t, peer_colors::Peer> user_colors_;
     peer_colors::Colors accent_colors_;
@@ -564,7 +646,6 @@ private:
     struct SenderPhoto { int32_t file=0; std::string path; bool fresh=false; bool deleted=false; };
     std::unordered_map<int64_t, SenderPhoto> user_photos_;
     std::unordered_map<std::string,int64_t> sender_requests_;
-    void ensureSenderMedia(const MessageItem& message);
     void parseUser(void* user);
     MediaCache media_cache_;
     UiCache ui_cache_;
@@ -695,7 +776,7 @@ private:
     std::atomic<bool> worker_started_{false};
     std::atomic<bool> parser_started_{false};
     std::atomic<int> request_batch_size_{64};
-    struct Request { i18n::Text text; int priority; int64_t queued; bool first_history=false, backlog_exempt=false; int32_t file_id=0; bool forum_check=false; int64_t selected=0; };
+    struct Request { i18n::Text text; int priority; int64_t queued; bool first_history=false, backlog_exempt=false; int32_t file_id=0; bool forum_check=false; int64_t selected=0; uint64_t proxy_trace=0; };
     std::deque<Request> outgoing_;
     struct Incoming { i18n::Text text; int64_t received = 0; bool priority = false; };
     size_t incoming_priority_ = 0; // Leading priority entries of incoming_; protected by queue_mutex_.
@@ -720,6 +801,12 @@ private:
     std::vector<MessageItem> history_items_;
     std::unordered_map<int64_t, std::vector<MessageItem::Reaction>> cached_reactions_;
     unsigned int history_generation_ = 0;
+    struct TypingSender { int64_t id; bool chat; int64_t until; };
+    std::vector<TypingSender> typing_senders_;
+    int64_t mention_request_at_ = 0;
+    std::vector<int64_t> presented_ids_;
+    unsigned presented_generation_ = 0;
+    int64_t presented_at_ = 0;
     int64_t message_jump_ = 0;
     bool message_jump_post_ = true, next_jump_post_ = true;
     int64_t current_thread_ = 0, pending_thread_ = 0;
@@ -755,6 +842,7 @@ private:
     bool closed_;
     bool requested_chats_;
     bool tdlib_parameters_sent_;
+    bool tdlib_parameters_failed_=false;
     InputKind input_kind_;
     int64_t current_chat_id_;
     i18n::Text current_chat_title_;
@@ -778,19 +866,44 @@ private:
     ChatItem chatFromJson(void* chat_obj) const;
     std::vector<MessageItem> messages_;
     std::unordered_set<int32_t> pending_files_;
-    struct DocumentDownload { std::string directory, name; unsigned generation; bool exporting = false; };
+    struct DocumentDownload { std::string directory, name; unsigned generation; bool exporting = false; int64_t chat = 0, message = 0, size = 0; bool preflight = false, paused = false; int64_t downloaded = 0; std::string completed_source, part; int priority = 16; int64_t prefix = 0; unsigned traced = 0; };
+    bool documentAdjustable(int64_t chat, int64_t message) const;
+    bool applyDocumentPause(int64_t chat, int64_t message, bool paused);
+    struct DocumentIntention {
+        int64_t chat, message; std::string directory, name, stage, unique, remote;
+        unsigned attempts = 0, resolve_token = 0;
+        int64_t retry_at = 0, deadline = 0;
+        bool restoring = false;
+        int64_t total = 0, downloaded = 0;
+        std::string part;
+        int64_t prefix = 0;
+        int priority = 16;
+    };
+    std::vector<DocumentIntention> document_intentions_; // UI; at most eight explicit tasks.
+    std::string document_journal_pending_, document_journal_loaded_; // queue_mutex_; Storage handoff.
+    bool document_journal_read_ = false, document_journal_applied_ = false;
+    unsigned document_restore_generation_ = 0;
+    unsigned document_restore_token_ = 0;
+    int64_t document_journal_retry_at_ = 0; // Storage; throttles failed card writes.
+    bool document_journal_failed_ = false; // queue_mutex_; reported once by UI.
+    void downloadDocumentForChat(const MessageItem& message, const std::string& directory, int64_t source_chat);
+    void queueDocumentJournal(); // UI: latest snapshot only.
+    void readDocumentJournal(); // Storage.
+    void writeDocumentJournal(); // Storage.
+    void restoreDocumentJobs(); // UI, after account identity is known.
+    void finishDocumentIntention(int64_t chat, int64_t message);
     unsigned document_download_generation_ = 0;
     std::unordered_map<int32_t, DocumentDownload> document_downloads_;
-    struct DocumentExport { int32_t id; unsigned generation; std::string source, directory, name; };
-    struct DocumentExportResult { int32_t id; unsigned generation; std::string path; bool ok, existed; };
+    struct DocumentExport { int32_t id; unsigned generation; std::string source, directory, name; int64_t size; std::string part; bool cleanup = false; bool isRename() const; };
+    struct DocumentExportResult { int32_t id; unsigned generation; std::string path; bool ok, existed; bool preflight = false; std::string part; int64_t prefix_limit = 0; };
     // Queues cross UI/Storage under queue_mutex_; document_downloads_ stays on UI.
     std::deque<DocumentExport> document_exports_;
     std::deque<DocumentExportResult> document_export_results_;
-    int32_t document_export_id_ = 0; // queue_mutex_; current copy progress.
-    int document_export_percent_ = 0;
     pthread_t document_export_worker_{};
     bool document_export_started_ = false;
     std::atomic<bool> document_export_stopping_{false};
+    bool startDocumentStorage();
+    void requestDocumentDownload(int32_t id, bool priority_only = false);
     void queueDocumentExport(int32_t id, const std::string& source);
     void applyDocumentExports();
     void stopDocumentExports();
@@ -810,15 +923,35 @@ private:
     std::deque<std::string> video_quality_logs_; // Bounded diagnostic snapshots; only the cache worker writes them.
     void flushVideoQualityLogs();
 
+#if VITAGRAM_CALLS
+    struct CallSession;
+    bool call_low_latency_ = false;
+    std::shared_ptr<CallSession> call_;
+    AudioCallPhase audio_call_phase_ = AudioCallPhase::Idle;
+    struct {
+        const char* stage = "";
+        const char* failure = "";
+        int64_t td_error = 0;
+        unsigned tx = 0, rx = 0;
+        std::string ice;
+        std::array<std::string, 2> quality;
+        uint64_t quality_at = 0;
+    } audio_call_diagnostic_;
+    uint64_t call_generation_ = 0;
+    int32_t last_incoming_audio_id_ = 0;
+    bool processAudioCall(void* json_root);
+    void pumpAudioCall();
+    void stopAudioCallWorker();
+#endif
     void sendJson(void* json_root);
-    void sendRaw(const char* json, int priority = 3, bool first_history=false, bool backlog_exempt=false, int32_t file_id=0, bool forum_check=false);
+    void sendRaw(const char* json, int priority = 3, bool first_history=false, bool backlog_exempt=false, int32_t file_id=0, bool forum_check=false, uint64_t proxy_trace=0);
     void process(void* json_root);
     void processAuth(void* root);
     void parseChat(void* chat_obj);
     MessageItem parseMessage(void* msg_obj);
-    void requestFile(int32_t file_id, int priority = 16, bool visible_avatar=false);
+    bool requestFile(int32_t file_id, int priority = 16, bool visible_avatar=false, int64_t emoji_token=0);
     void dropListAvatarDownloads();
-    void updateFile(void* file_obj, bool stream_update = true);
+    void updateFile(void* file_obj, bool stream_update = true, const std::string& completed_part = {});
     void serviceStreamTails();
     download_stream::Shared mediaStream(void* file_obj, bool live_update = false);
     std::unordered_map<int32_t, std::weak_ptr<download_stream::State>> media_streams_;

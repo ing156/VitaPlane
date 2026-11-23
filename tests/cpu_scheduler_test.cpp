@@ -1,4 +1,5 @@
 #include "cpu_scheduler.h"
+#include <psp2/kernel/cpu.h>
 #include <psp2/kernel/threadmgr.h>
 #include <atomic>
 #include <cassert>
@@ -20,8 +21,9 @@ int sceKernelGetThreadInfo(int, SceKernelThreadInfo* info) {
 int sceKernelCreateThread(const char*, int (*)(SceSize, void*), int, unsigned, unsigned, int, void*) { return -1; }
 int sceKernelStartThread(int, unsigned, void*) { return 0; }
 int sceKernelDeleteThread(int) { return 0; }
-int sceKernelChangeThreadCpuAffinityMask(int, int) { return 0; }
-int sceKernelChangeThreadPriority(int, int) { return 0; }
+static thread_local int affinity, priority;
+int sceKernelChangeThreadCpuAffinityMask(int, int mask) { affinity = mask; return 0; }
+int sceKernelChangeThreadPriority(int, int value) { priority = value; return 0; }
 int scePowerGetArmClockFrequency() { return 500; }
 int sceKernelGetSystemInfo(SceKernelSystemInfo* info) {
     for (auto& cpu : info->cpuInfo) cpu.idleClock = clock_us / 2;
@@ -78,5 +80,17 @@ int main() {
     cpu_scheduler::writeReport(next);
     assert(contents(next).find("cpu_cores samples=0") != std::string::npos);
     std::fclose(next); std::fclose(slow_file);
+    std::thread playback([] {
+        cpu_scheduler::Thread audio(cpu_scheduler::Role::Audio);
+        assert(affinity == SCE_KERNEL_CPU_MASK_USER_1);
+        assert(priority == 0x10000100 - 8);
+    });
+    std::thread capture([] {
+        cpu_scheduler::Thread audio(cpu_scheduler::Role::CallCapture);
+        assert(affinity == SCE_KERNEL_CPU_MASK_USER_2);
+        assert(priority == 0x10000100 - 8);
+    });
+    playback.join();
+    capture.join();
     std::puts("CPU report: stalled log output leaves UI ticks and media transitions responsive; interval counters preserved");
 }

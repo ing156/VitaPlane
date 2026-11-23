@@ -123,9 +123,12 @@ doc.download_failed = İndirme başarısız: {0}
 doc.downloading = İndiriliyor: {0}
 doc.exists = Zaten kaydedildi: {0}
 doc.invalid_path = Geçersiz indirme yolu
+doc.queue_full = İndirme kuyruğu dolu (8 görev)
 doc.save_failed = Dosya kaydedilemedi
 doc.saved = Kaydedildi: {0}
 doc.saving = Kaydediliyor: {0}
+doc.source_changed = Kaynak dosya değişti
+doc.source_unavailable = Kaynak dosya güvenli bir şekilde geri yüklenemiyor
 folder.all = Tüm sohbetler
 folder.default = Klasör
 folder.archive = Arşivlenenler
@@ -843,7 +846,7 @@ about.description = VitaSDK, vita2d ve TDLib tabanlı, açık kaynaklı ve gayri
 about.development = Proje aktif olarak geliştiriliyor. Tüm Telegram özellikleri henüz yok; bazıları sınırlı veya hatalı çalışabilir.
 about.privacy_title = Gizlilik
 about.privacy_servers = VitaPlane mesajlarınızı, dosyalarınızı veya tanılama günlüklerini yazarın sunucularına göndermez.
-about.privacy_logs = Günlükler teknik bilgi içerir ve varsayılan olarak kapalıdır. VitaPlane bunlara mesaj metni, telefon numarası veya parola kaydetmez. Günlükler konsolda kalır ve asla otomatik gönderilmez. Sorun yaşarsanız tanılama için geliştiriciye isteğe bağlı olarak elle gönderebilirsiniz.
+about.privacy_logs = Proxy bağlantı günlükleri otomatik olarak açılır; diğer tanılama günlükleri varsayılan olarak kapalıdır. VitaPlane bunlara mesaj metni, telefon numarası veya parola kaydetmez. Günlükler konsolda kalır ve asla otomatik gönderilmez. Sorun yaşarsanız tanılama için geliştiriciye isteğe bağlı olarak elle gönderebilirsiniz.
 about.privacy_connections = İstemci Telegram sunucularına bağlanır. Güncelleme kontrolü ve indirmeleri GitHub'ı kullanır. TDLib proxy adlarını çözmek ve bağlantı yapılandırmasını almak için dış hizmetlere başvurabilir. Proxy açıkken bağlantı seçtiğiniz sunucudan geçer.
 about.security_title = Güvenlik ve riskler
 about.security_intro = VitaPlane gayriresmî bir istemcidir. Uygulama hataları ve platform sınırlamaları güvenliği etkileyebilir.
@@ -1070,6 +1073,10 @@ settings.section.chats = Sohbetler
 settings.section.controls = Kontroller ve giriş
 settings.section.data = Veri ve depolama
 settings.section.connection = Bağlantı
+settings.call_audio = Arama sesi
+settings.call_audio_stable = Kararlı
+settings.call_audio_low = Düşük gecikme
+settings.call_audio_hint = Düşük gecikme daha fazla ses kesintisine neden olabilir. Sonraki aramada uygulanır.
 settings.section.security = Veri koruması
 settings.section.updates = Güncellemeler ve kurulum
 settings.section.about = Hakkında ve tanılama
@@ -1114,3 +1121,106 @@ message.edit_invalid = Boş olmayan metin girin; en çok 1023 UTF-8 baytı.
 message.edit_changed = Mesaj değişti. İptal edip yeniden açın.
 message.edit_timeout = Yanıt yok. Tekrar denemeden önce mesajı kontrol edin.
 keyboard.save = Kaydet
+
+# --- Download panel ---
+downloads.title = İndirmeler
+downloads.queued = Sırada
+downloads.paused = Duraklatıldı
+downloads.pause = Duraklat
+downloads.resume = Sürdür
+downloads.saving = Kaydediliyor
+downloads.restoring = Geri yükleniyor
+downloads.error = Yeniden deneyin
+downloads.hint = Dokun / {cross}: dosyalar · L+R: paneli seç
+downloads.priority = Öncelik
+downloads.list_hint = {cross}: duraklat / sürdür · ←/→ Öncelik · {square} İptal · {circle}: geri
+downloads.carousel_hint = Kaydır ↑/↓
+
+proxy.type.web = WEB (HTTPS)
+proxy.web.invalid = WEB needs a DNS hostname, optional path, secret and HTTPS port 443
+proxy.web.failed = WEB connection failed; save and apply to retry
+proxy.web.tls = WEB TLS connection failed; check the certificate and network
+proxy.web.unsupported = Unsupported WEB transport: only https is supported
+
+proxy.pool.auto = Auto-switch on failure
+proxy.pool.analyze = Check all proxies
+proxy.pool.add = Add proxy
+proxy.pool.unknown = Not checked
+proxy.pool.checking = Checking...
+proxy.pool.available = {0} ms
+proxy.pool.unavailable = Unavailable
+proxy.pool.limit = Up to 16 proxies can be saved
+proxy.pool.empty = Add a proxy manually or scan its QR code
+proxy.pool.saving = Saving proxy settings...
+proxy.pool.hint = Auto-switch chooses a reachable alternative after a sustained connection failure
+proxy.pool.delete_confirm = Delete this saved proxy?
+proxy.pool.use = {cross} Select
+proxy.pool.edit = {square} Edit
+proxy.pool.delete = {triangle} Delete
+proxy.pool.back = {circle} Back
+proxy.pool.confirm = {cross} Delete
+
+proxy.pool.invalid = Proxy fields are incomplete or too long
+
+proxy.check.dns = Cannot resolve the proxy address: DNS error
+proxy.check.error = Proxy unreachable: TDLib connection error ({0})
+
+proxy.pool.checked = Proxy checks complete
+
+logs.proxy = Proxy connections
+
+tg.init_failed = Telegram initialization failed; see proxy.log
+
+# Emoji picker and expanded draft
+emoji.faces = Yüzler
+emoji.people = İnsanlar
+emoji.nature = Doğa
+emoji.food = Yiyecek
+emoji.travel = Seyahat
+emoji.activities = Etkinlikler
+emoji.objects = Nesneler
+emoji.symbols = Semboller
+emoji.flags = Bayraklar
+emoji.recent = Son
+emoji.back = ABC
+emoji.empty = Son emoji yok
+emoji.help = {cross} Ekle / basılı tut: çeşitler · L/R: sayfalar · {circle} ABC
+keyboard.expand_help = Kaydır / oklar: gezin · Dokun / {cross}: klavye · Basılı tut: büyüteç
+
+emoji.categories = Emoji kategorileri
+emoji.category_help = ↑↓ / kaydır: gezin · {cross} Seç · {circle} Geri
+
+proxy.pool.interval = Geçiş bekleme süresi
+proxy.pool.seconds = {0} sn
+
+presence.typing = {0} yazıyor…
+
+settings.unread_counter = Okunmamış mesaj sayacı
+
+settings.hide_muted_unread = Sessiz sohbetler: okunmamış rozetini değiştir
+emoji.premium = Premium
+emoji.insert = Emoji ekle
+
+call.start = Sesli arama
+call.hang_up = Aramayı sonlandır
+call.dialing = Aranıyor…
+call.connected = Arama bağlandı
+call.ended = Arama sonlandı
+call.failed = Arama başarısız
+call.place = Ara
+call.connecting = Bağlanıyor…
+call.mute = Mikrofonu kapat
+call.unmute = Mikrofonu aç
+call.close = Kapat
+call.confirm_hint = {cross} Onayla   {circle} İptal
+call.active_hint = {cross} Onayla   {circle} Aramayı bitir
+call.accept = Yanıtla
+call.decline = Reddet
+call.history_incoming = Gelen arama
+call.history_outgoing = Giden arama
+call.history_missed = Cevapsız arama
+call.history_unanswered = Yanıtlanmayan arama
+call.history_declined = Reddedilen arama
+call.history_disconnected = Arama kesildi
+call.history_video = Görüntülü arama
+call.incoming_hint = {cross} Yanıtla   {circle} Reddet

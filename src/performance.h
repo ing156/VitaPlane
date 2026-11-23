@@ -45,7 +45,7 @@ enum class Metric {
     VideoCaptureRead, VideoCaptureCrop, VideoCapturePreview, VideoCaptureWrite, VideoCaptureGpuWait,
     VideoCaptureQueuePeak, AudioCaptureQueuePeak, VideoCaptureDropped,
     WebRunLoop, WebPaint, WebBridgeSubmit, WebBridgeReply, WebBridgeLatency, FrameTail, TextPoll,
-    ParsedWait, ParsedOldestAge, RawOldestAge, PumpBudget, PumpBatch, PumpOverrun, StreamRead, StreamWait, VideoDownloadRate, VideoPrefixRate, Count
+    ParsedWait, ParsedOldestAge, RawOldestAge, PumpBudget, PumpBatch, PumpOverrun, StreamRead, StreamWait, VideoDownloadRate, VideoPrefixRate, DocumentRestoreError, Count
 };
 constexpr const char* names[] = {
     "frame_us", "ui_work_us", "input_submit_us", "gpu_wait_us", "swap_us", "image_decode_us", "image_upload_us", "emoji_decode_us",
@@ -63,7 +63,7 @@ constexpr const char* names[] = {
     "video_capture_read_us", "video_capture_crop_us", "video_capture_preview_us", "video_capture_write_us", "video_capture_gpu_wait_us",
     "video_capture_queue_peak_frames", "audio_capture_queue_peak_blocks", "video_capture_dropped_frames",
     "web_runloop_us", "web_paint_us", "web_bridge_submit_us", "web_bridge_reply_us", "web_bridge_latency_us", "frame_tail_us", "text_poll_us",
-    "parsed_wait_us", "parsed_oldest_age_us", "raw_oldest_age_us", "pump_budget_us", "pump_batch_events", "pump_overrun_us", "stream_read_us", "stream_wait_us", "video_download_bytes_per_s", "video_prefix_bytes_per_s"
+    "parsed_wait_us", "parsed_oldest_age_us", "raw_oldest_age_us", "pump_budget_us", "pump_batch_events", "pump_overrun_us", "stream_read_us", "stream_wait_us", "video_download_bytes_per_s", "video_prefix_bytes_per_s", "document_restore_error_code"
 };
 constexpr size_t metric_count = static_cast<size_t>(Metric::Count);
 static_assert(sizeof(names)/sizeof(*names) == metric_count, "Metric names");
@@ -106,9 +106,11 @@ struct FrameContext {
 };
 // UI context stays on its owning thread; parser/network events retain frame=0.
 inline thread_local FrameContext frame_context;
-enum class Counter { Received, Parsed, Processed, PumpEmpty, PumpFiltered, PumpBudgetStop, PumpLimitStop, FrameOver33, FrameOver50, FrameOver100, Count };
+enum class Counter { Received, Parsed, Processed, PumpEmpty, PumpFiltered, PumpBudgetStop, PumpLimitStop, FrameOver33, FrameOver50, FrameOver100,
+    DocumentJournalSaved, DocumentJournalFailed, DocumentJournalLoaded, DocumentRestoreRequest, DocumentRestoreRetry, DocumentRestoreFailed, DocumentDownloadStarted, EmojiMetadataRequest, EmojiAnimationAsset, EmojiAnimationSource, EmojiAnimationStartFailed, EmojiAnimationDecoded, EmojiAnimationUploaded, Count };
 constexpr size_t counter_count = static_cast<size_t>(Counter::Count);
-constexpr const char* counter_names[] = {"received_events", "parsed_events", "processed_events", "pump_empty", "pump_filtered", "pump_budget_stop", "pump_limit_stop", "frames_over_33ms", "frames_over_50ms", "frames_over_100ms"};
+constexpr const char* counter_names[] = {"received_events", "parsed_events", "processed_events", "pump_empty", "pump_filtered", "pump_budget_stop", "pump_limit_stop", "frames_over_33ms", "frames_over_50ms", "frames_over_100ms",
+    "document_journal_saved", "document_journal_failed", "document_journal_loaded", "document_restore_request", "document_restore_retry", "document_restore_failed", "document_download_started", "emoji_metadata_request", "emoji_animation_asset", "emoji_animation_source", "emoji_animation_start_failed", "emoji_animation_decoded", "emoji_animation_uploaded"};
 static_assert(sizeof(counter_names)/sizeof(*counter_names) == counter_count, "Counter names");
 enum class SlowPhase { Parse, Process, Remember, Copy, Retain, PollScan, Delete, Ui, Release, TdFileMeta, TdFileSync, Storage };
 constexpr const char* slow_names[] = {"parse", "process", "remember", "copy", "retain", "poll_scan", "delete", "ui", "release", "td_file_meta", "td_file_sync", "storage"};

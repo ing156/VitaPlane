@@ -73,7 +73,7 @@ private:
     void fail(Error error, const std::string& detail);
     bool finishThread();
     static Pending applyIn(const std::string& work_dir, const std::string& current_version, const HandoffText& text, const Progress& progress, std::string& detail);
-    bool chooseDir(uint64_t package_size, std::string& dir, std::string& detail);
+    bool chooseDir(uint64_t package_size, const std::string& identity, std::string& dir, std::string& detail);
     static bool prepareInstaller(const std::string& work_dir, std::string& detail);
     static bool startInstaller(const std::string& work_dir, const std::string& package_dir, const HandoffText& text, std::string& detail);
     static bool stageHead(const std::string& package_dir, std::string& detail,

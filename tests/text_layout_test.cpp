@@ -27,6 +27,14 @@ int main() {
     probes=0;assert(fit_utf8_text(std::string(10000,'x'),23,width)==std::string(20,'x')+"...");assert(probes<=16);
     assert(fit_utf8_text("АБВГДЕ",5,width)=="АБ...");
     assert(fit_utf8_text("😀😁😂😃😄😅",5,width)=="😀😁...");
+    const std::string sequence=u8"👩🏽‍💻";
+    const auto cluster_width=[&](const std::string& text) {
+        size_t clusters=0;
+        for (size_t i=0;i<text.size();i=emoji::next(text,i)) ++clusters;
+        return static_cast<int>(clusters);
+    };
+    assert(fit_utf8_text(sequence+sequence+sequence,4,cluster_width)==sequence+sequence+sequence);
+    assert(fit_utf8_text(sequence+sequence+sequence+sequence+sequence,4,cluster_width)==sequence+"...");
     assert(fit_utf8_text("abc",0,width)=="...");
     std::cout << "Text layout: exact cache keys, invalidation, limits, logarithmic fitting and UTF-8 boundaries passed\n";
 }

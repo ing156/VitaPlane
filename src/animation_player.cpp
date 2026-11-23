@@ -29,8 +29,7 @@
 #include <optional>
 #include <zlib.h>
 #ifdef VITAGRAM_RLOTTIE
-#include <rlottie_capi.h>
-#include "tgs_policy.h"
+#include "tgs_animation.h"
 #endif
 extern "C" {
 #include <libavformat/avformat.h>
@@ -250,6 +249,7 @@ void AnimationPlayer::setSource(const std::string& path, bool video, bool round,
          (file_id && file_id == source_file_id_ && !source_.empty() && !finished_))) {
         pthread_mutex_unlock(&mutex_); return;
     }
+    if (inline_emoji_ && !path.empty()) performance::count(performance::Counter::EmojiAnimationSource);
     source_ = path; stream_ = stream; source_file_id_ = file_id;
     video_ = video; round_ = round; prepare_ = prepare; cache_only_ = cache_only;
     preparation_required_ = false;
@@ -277,7 +277,10 @@ void AnimationPlayer::setSource(const std::string& path, bool video, bool round,
         int rc = pthread_create(&thread_, &attr, entry, this);
         pthread_attr_destroy(&attr);
         if (!rc) started_ = true;
-        else setStatus(generation_, i18n::text("anim.decoder_start_failed"));
+        else {
+            if (inline_emoji_) performance::count(performance::Counter::EmojiAnimationStartFailed);
+            setStatus(generation_, i18n::text("anim.decoder_start_failed"));
+        }
     }
 }
 
@@ -371,6 +374,7 @@ void AnimationPlayer::upload() {
                     yuv_pitch_ = pitch; yuv_height_ = aligned_height;
                     vita2d_texture_set_filters(&yuv_texture_, SCE_GXM_TEXTURE_FILTER_LINEAR, SCE_GXM_TEXTURE_FILTER_LINEAR);
                     ++uploaded_frames_;
+                    if (inline_emoji_) performance::count(performance::Counter::EmojiAnimationUploaded);
                 } else {
                     status_ = i18n::text("anim.nv12_failed");
                     av_frame_free(&displayed_yuv_frame_);
@@ -388,6 +392,7 @@ void AnimationPlayer::upload() {
             if (yuv_valid_) {
                 copyNv12(yuv);
                 ++uploaded_frames_;
+                if (inline_emoji_) performance::count(performance::Counter::EmojiAnimationUploaded);
             }
             av_frame_free(&pending_yuv_frame_);
             ready_ = false;
@@ -411,6 +416,7 @@ void AnimationPlayer::upload() {
                 std::memcpy(dest + y * stride, pixels_.data() + y * width_ * 4, width_ * 4);
             vita2d_texture_set_filters(texture_, SCE_GXM_TEXTURE_FILTER_LINEAR, SCE_GXM_TEXTURE_FILTER_LINEAR);
             ++uploaded_frames_;
+            if (inline_emoji_) performance::count(performance::Counter::EmojiAnimationUploaded);
         } else status_ = i18n::text("anim.gpu_gif");
         ready_ = false;
     }
@@ -465,9 +471,10 @@ int AnimationPlayer::interrupted(void* opaque) {
 }
 void* AnimationPlayer::entry(void* opaque) { static_cast<AnimationPlayer*>(opaque)->run(); return nullptr; }
 void AnimationPlayer::run() {
-    cpu_scheduler::Thread scheduling(cpu_scheduler::Role::Video);
+    cpu_scheduler::Thread scheduling(inline_emoji_ ? cpu_scheduler::Role::Prefetch : cpu_scheduler::Role::Video);
     unsigned handled = 0;
     while (!stopping_) {
+        if (inline_emoji_ && suspended_) { sceKernelDelayThread(10000); continue; }
         pthread_mutex_lock(&mutex_);
         unsigned generation = generation_;
         std::string path = source_;
@@ -481,87 +488,50 @@ void AnimationPlayer::run() {
     }
 }
 
+int64_t AnimationPlayer::waitInline(unsigned generation) {
+    if (!inline_emoji_ || !suspended_) return 0;
+    const int64_t since=sceKernelGetSystemTimeWide();
+    while (suspended_ && !stopping_ && generation==generation_) sceKernelDelayThread(10000);
+    return sceKernelGetSystemTimeWide()-since;
+}
+
 void AnimationPlayer::decodeTgs(const std::string& path, unsigned generation) {
 #ifdef VITAGRAM_RLOTTIE
-    std::string packed;
-    if (!vault::read_file(path, tgs_policy::kMaxPacked, packed)) { setStatus(generation, i18n::text("anim.tgs_open")); return; }
-    std::string data;
-    {
-        // TGS is gzip; inflate from memory so a sealed file never has to exist in plain text.
-        z_stream stream{};
-        const bool initialised = inflateInit2(&stream, 16 + MAX_WBITS) == Z_OK;
-        bool ok = initialised;
-        int status = Z_OK;
-        char block[8192];
-        stream.next_in = reinterpret_cast<Bytef*>(&packed[0]);
-        stream.avail_in = (uInt)packed.size();
-        while (ok && status != Z_STREAM_END && !stopping_ && generation == generation_) {
-            stream.next_out = reinterpret_cast<Bytef*>(block);
-            stream.avail_out = sizeof(block);
-            status = inflate(&stream, Z_NO_FLUSH);
-            if (status != Z_OK && status != Z_STREAM_END) { ok = false; break; }
-            data.append(block, sizeof(block) - stream.avail_out);
-            if (data.size() > tgs_policy::kMaxJson) break;
-        }
-        if (initialised) inflateEnd(&stream); // also after a decode error: no zlib state is leaked
-        if (stopping_ || generation != generation_) return;
-        if (!ok || status != Z_STREAM_END || data.empty() || data.size() > tgs_policy::kMaxJson) {
-            setStatus(generation, i18n::text("anim.tgs_invalid")); return;
-        }
-    }
-    // rlottie parses the whole model (and would decode embedded images) before anything below
-    // can check it: refuse what stickers never contain first.
-    std::string refusal;
-    if (!tgs_policy::acceptable(data, &refusal)) {
-        std::fprintf(stderr, "TGS refused before parsing: %s\n", refusal.c_str());
-        setStatus(generation, i18n::text("anim.tgs_unsupported")); return;
-    }
-    Lottie_Animation* animation = lottie_animation_from_data(data.c_str(), path.c_str(), "");
-    if (!animation) { setStatus(generation, i18n::text("anim.tgs_parse")); return; }
-    size_t frames = lottie_animation_get_totalframe(animation);
-    double fps = lottie_animation_get_framerate(animation);
-    size_t source_w = 0, source_h = 0;
-    lottie_animation_get_size(animation, &source_w, &source_h);
-    if (!frames || frames > 1800 || !std::isfinite(fps) || fps <= 0 || fps > 120 ||
-        !source_w || !source_h || source_w > 4096 || source_h > 4096) {
-        lottie_animation_destroy(animation); setStatus(generation, i18n::text("anim.tgs_unsupported")); return;
-    }
-    double scale = 256.0/std::max(source_w, source_h);
-    int w = std::max(1, (int)(source_w*scale)), h = std::max(1, (int)(source_h*scale));
-    std::vector<uint32_t> argb(w*h);
-    std::vector<unsigned char> rgba(w*h*4);
+    TgsAnimation animation;
+    auto proceed=[&] { return !stopping_ && generation==generation_; };
+    const char* error=animation.open(path,proceed,inline_emoji_ ? 256*1024 : tgs_policy::kMaxJson);
+    if (!proceed()) return;
+    if (error) { setStatus(generation,i18n::text(error)); return; }
+    const size_t frames=animation.frames(); const double fps=animation.fps();
+    int w=0,h=0;
+    std::vector<unsigned char> rgba;
     int64_t start = sceKernelGetSystemTimeWide();
 #if VITAGRAM_TGS_DIAGNOSTIC
     bool frame_saved = false;
 #endif
     while (!stopping_ && generation == generation_) {
+        start += waitInline(generation);
+        if (stopping_ || generation!=generation_) break;
         int64_t tick = sceKernelGetSystemTimeWide();
         size_t frame = (size_t)((tick-start)*fps/1000000.0) % frames;
-        std::fill(argb.begin(), argb.end(), 0);
-        lottie_animation_render(animation, frame, argb.data(), w, h, w*4);
+        animation.render(frame,inline_emoji_ ? 64 : 256,rgba,w,h);
 #if VITAGRAM_TGS_DIAGNOSTIC
         if (!frame_saved && frame >= std::min<size_t>(20, frames - 1)) {
             frame_saved = true;
             std::fprintf(stderr, "TGS diagnostic frame %zu: %s\n", frame,
-                save_tgs_frame(argb, w, h) ? "ux0:data/vitagram/tgs-render-frame.ppm" : "save failed");
+                save_tgs_frame(animation.argb(), w, h) ? "ux0:data/vitagram/tgs-render-frame.ppm" : "save failed");
         }
 #endif
-        for (size_t i=0; i<argb.size(); ++i) {
-            unsigned pixel = argb[i], alpha = pixel>>24;
-            // rlottie outputs premultiplied ARGB; vita2d expects straight RGBA.
-            rgba[i*4] = alpha ? std::min(255u, ((pixel>>16)&255)*255/alpha) : 0;
-            rgba[i*4+1] = alpha ? std::min(255u, ((pixel>>8)&255)*255/alpha) : 0;
-            rgba[i*4+2] = alpha ? std::min(255u, (pixel&255)*255/alpha) : 0;
-            rgba[i*4+3] = alpha;
-        }
         pthread_mutex_lock(&mutex_);
-        if (generation == generation_) { pixels_.swap(rgba); width_ = w; height_ = h; ready_ = true; status_ = i18n::text("anim.tgs_playing"); }
+        if (generation == generation_) {
+            pixels_.swap(rgba); width_ = w; height_ = h; ready_ = true; status_ = i18n::text("anim.tgs_playing");
+            if (inline_emoji_) performance::count(performance::Counter::EmojiAnimationDecoded);
+        }
         pthread_mutex_unlock(&mutex_);
         rgba.resize(w*h*4);
-        int64_t wait = 33333-(sceKernelGetSystemTimeWide()-tick);
+        int64_t wait = (inline_emoji_ ? 66667 : 33333)-(sceKernelGetSystemTimeWide()-tick);
         sceKernelDelayThread(wait > 0 ? (unsigned)wait : 1000);
     }
-    lottie_animation_destroy(animation);
 #else
     setStatus(generation, i18n::text("anim.tgs_needs_rlottie"));
 #endif
@@ -633,7 +603,7 @@ void AnimationPlayer::decode(const std::string& source_path, unsigned generation
         }
         file.close();
     }
-    if (file_size <= 0 || file_size > (video ? media_limits::video_bytes : 20LL * 1024 * 1024)) {
+    if (file_size <= 0 || file_size > (inline_emoji_ ? 1024 * 1024 : video ? media_limits::video_bytes : 20LL * 1024 * 1024)) {
         early_error(video ? i18n::text("anim.limit_video") : i18n::text("anim.limit_gif")); return;
     }
     AVFormatContext* format = avformat_alloc_context();
@@ -727,7 +697,8 @@ void AnimationPlayer::decode(const std::string& source_path, unsigned generation
     if (!media_decode::video_codec(parameters->codec_id, video)) {
         fail(video ? i18n::text("anim.supported_video") : i18n::text("anim.supported_anim")); return;
     }
-    auto dimensions_ok = [](int w, int h) { return w > 0 && h > 0 && w <= 1280 && h <= 1280 && (int64_t)w * h <= 1280 * 720; };
+    if (inline_emoji_ && parameters->codec_id!=AV_CODEC_ID_VP8 && parameters->codec_id!=AV_CODEC_ID_VP9) { fail(i18n::text("anim.decoder_missing")); return; }
+    auto dimensions_ok = [&](int w, int h) { const int side=inline_emoji_ ? 512 : 1280; return w > 0 && h > 0 && w <= side && h <= side && (int64_t)w * h <= (inline_emoji_ ? 512*512 : 1280*720); };
     if (!dimensions_ok(parameters->width, parameters->height)) { fail(i18n::text("anim.limit_720p")); return; }
     // The hardware AVC decoder rejects rasters taller than 1088 (e.g. 720x1280 portrait).
     // Telegram metadata can disagree with the stream, so check the real stream here.
@@ -766,7 +737,7 @@ void AnimationPlayer::decode(const std::string& source_path, unsigned generation
     if (rc < 0) { fail(decoder_error("Parameters", rc)); return; }
     codec->thread_count = 1;
     codec->pkt_timebase = stream->time_base;
-    codec->max_pixels = 1280 * 720;
+    codec->max_pixels = inline_emoji_ ? 512*512 : 1280*720;
     if (parameters->codec_id == AV_CODEC_ID_H264) codec->pix_fmt = AV_PIX_FMT_NV12;
     const bool direct_video = video && !round && parameters->codec_id == AV_CODEC_ID_H264;
     AVDictionary* codec_options = nullptr;
@@ -874,7 +845,14 @@ void AnimationPlayer::decode(const std::string& source_path, unsigned generation
         }
         return due;
     };
+    auto hold_inline = [&]() {
+        const int64_t held=waitInline(generation);
+        if (origin_wall) origin_wall+=held;
+        if (next_wall) next_wall+=held;
+    };
     auto present_frame = [&]() -> bool {
+            hold_inline();
+            if (interrupted(&job)) return true;
             ++frames_decoded;
             if (hardware_log && !logged_first_hardware_frame) {
                 logged_first_hardware_frame = true;
@@ -965,7 +943,7 @@ void AnimationPlayer::decode(const std::string& source_path, unsigned generation
             had_frame = true;
             // Limit conversion and GPU uploads on Vita; the decoder still
             // receives every compressed frame needed for future references.
-            const int64_t display_interval = video && !round && frame->format == AV_PIX_FMT_NV12 ? 16000 : 33000;
+            const int64_t display_interval = inline_emoji_ ? 66667 : video && !round && frame->format == AV_PIX_FMT_NV12 ? 16000 : 33000;
             if (!last_output || now - last_output >= display_interval) {
                 if (video && !round && frame->format == AV_PIX_FMT_NV12 &&
                     !(frame->width & 1) && !(frame->height & 1)) {
@@ -998,8 +976,8 @@ void AnimationPlayer::decode(const std::string& source_path, unsigned generation
                     av_frame_unref(frame);
                     return true;
                 }
-                float max_width = video ? 480.0f : 640.0f;
-                float max_height = video ? 270.0f : 360.0f;
+                float max_width = inline_emoji_ ? 64.0f : video ? 480.0f : 640.0f;
+                float max_height = inline_emoji_ ? 64.0f : video ? 270.0f : 360.0f;
                 float scale = std::min(1.0f, std::min(max_width / frame->width, max_height / frame->height));
                 int w = std::max(1, (int)(frame->width * scale)), h = std::max(1, (int)(frame->height * scale));
                 // FFmpeg 7 ARM unscaled YUV->RGBA NEON wrappers return 0 after
@@ -1028,6 +1006,7 @@ void AnimationPlayer::decode(const std::string& source_path, unsigned generation
                 pthread_mutex_lock(&mutex_);
                 if (generation == generation_) {
                     pixels_.swap(rgba); width_ = w; height_ = h; ready_ = true; status_ = i18n::text(video ? "anim.video_playing" : "anim.play_pause");
+                    if (inline_emoji_) performance::count(performance::Counter::EmojiAnimationDecoded);
                     awaiting_frame_ = false; last_frame_us_ = now;
                 }
                 pthread_mutex_unlock(&mutex_);
@@ -1139,6 +1118,8 @@ void AnimationPlayer::decode(const std::string& source_path, unsigned generation
     VideoPacketPacer packet_pacer;
     unsigned packets_without_frame = 0;
     while (!interrupted(&job)) {
+        hold_inline();
+        if (interrupted(&job)) break;
         if (video && paused_ && !((round || seek_base > 0) && !had_frame)) {
             decoder_stage("paused");
             reservation.reset();
@@ -1259,7 +1240,7 @@ void AnimationPlayer::decode(const std::string& source_path, unsigned generation
                             logged_codec = codec;
                             codec->thread_count = 1;
                             codec->pkt_timebase = stream->time_base;
-                            codec->max_pixels = 1280 * 720;
+                            codec->max_pixels = inline_emoji_ ? 512*512 : 1280*720;
                             codec->pix_fmt = AV_PIX_FMT_NV12;
                             codec->opaque = this;
                             codec->get_buffer2 = directBuffer;

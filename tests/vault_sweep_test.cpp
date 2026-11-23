@@ -179,6 +179,29 @@ int main() {
         }
     }
 
+    // The optional unread counter persists; old and malformed files keep dots.
+    {
+        for (bool enabled : {false, true}) {
+            AppSettings settings; settings.unread_counter = enabled; assert(settings.save());
+            AppSettings loaded; loaded.load(); assert(loaded.unread_counter == enabled);
+        }
+        for (const char* json : {"{}", R"({"unread_counter":1})", R"({"unread_counter":"true"})", R"({"unread_counter":null})"}) {
+            spit("ux0:data/vitagram/settings.json", json);
+            AppSettings loaded; loaded.load(); assert(!loaded.unread_counter);
+        }
+    }
+
+    {
+        for (bool enabled : {false, true}) {
+            AppSettings settings; settings.hide_muted_unread = enabled; assert(settings.save());
+            AppSettings loaded; loaded.load(); assert(loaded.hide_muted_unread == enabled);
+        }
+        for (const char* json : {"{}", R"({"hide_muted_unread":1})", R"({"hide_muted_unread":"true"})"}) {
+            spit("ux0:data/vitagram/settings.json", json);
+            AppSettings loaded; loaded.load(); assert(!loaded.hide_muted_unread);
+        }
+    }
+
     // Layout survives a settings round trip; old or malformed files keep classic mode.
     {
         for (bool combined : {false, true}) {
@@ -233,11 +256,20 @@ int main() {
         loaded.keyboard_languages.clear(); assert(loaded.save()); loaded.load(); assert(loaded.keyboard_languages.empty());
     }
 
+    for (const auto& d : {files + "/temp", files + "/temp/nested", db + "/temp", db + "/temp/nested",
+                          files + "/temp-complete", db + "/completed", db + "/completed/temp"}) assert(!mkdir(d.c_str(), 0777));
+    struct Partial { std::string path, data; } partials[] = {
+        {files + "/temp/123", blob(70000, 21)}, {files + "/temp/nested/124", blob(9000, 22)},
+        {db + "/temp/456", blob(70000, 23)}, {db + "/temp/nested/457", blob(9000, 24)},
+        {files + "/temp/123.vgs", "unfinished raw part"},
+    };
+    for (const auto& item : partials) spit(item.path, item.data);
     struct Item { std::string path, data; } items[] = {
         {files + "/photos/a.jpg", blob(30000, 1)}, {files + "/videos/v.mp4", blob(200000, 2)},
         {db + "/stickers/s.webp", blob(9000, 3)}, {db + "/thumbnails/b1/t.jpg", blob(1, 4)},
         {db + "/ui-cache.json", "{\"chats\":{\"1\":{\"title\":\"secret chat\"}}}"},
         {"ux0:data/vitagram/portrait-432x768-0123456789abcdef.mp4", blob(70000, 5)},
+        {files + "/temp-complete/123", blob(3000, 25)}, {db + "/completed/temp/123", blob(3000, 26)},
     };
     for (auto& i : items) spit(i.path, i.data);
     // Not user data: TDLib's own database files and trash that is being emptied anyway.
@@ -248,6 +280,9 @@ int main() {
 
     using namespace vault_sweep;
     assert(is_user_file(files + "/photos/a.jpg") && is_user_file("ux0:/data/vitagram/files/photos/a.jpg"));
+    for (const auto& item : partials) assert(!is_user_file(item.path));
+    assert(!is_user_file("ux0:/data/vitagram/files/temp/123") && !is_user_file(db + "/temp"));
+    assert(is_user_file(files + "/temp-complete/123") && is_user_file(db + "/completed/temp/123"));
     assert(is_user_file(db + "/stickers/s.webp") && is_user_file(db + "/ui-cache.json"));
     assert(is_db_cache(db + "/ui-cache.json") && is_db_cache(db + "/ui-history/42.json"));
     assert(!is_db_cache(db + "/stickers/s.json") && !is_db_cache(db + "/ui-history/x/42.json"));
@@ -257,7 +292,7 @@ int main() {
     assert(!mkdir("outside", 0777)); spit("outside/foreign.jpg", blob(500, 12));
     assert(!symlink((dir + "/outside").c_str(), (files + "/link").c_str()));
     size_t unlisted = 99;
-    assert(list_user_files(&unlisted).size() == 6 && unlisted == 0 && access((files + "/photos/stale.jpg.vgs").c_str(), F_OK) != 0);
+    assert(list_user_files(&unlisted).size() == 8 && unlisted == 0 && access((files + "/photos/stale.jpg.vgs").c_str(), F_OK) != 0);
 
     vault::set_config_path("ux0:data/vitagram/vault.json");
     vault::load();
@@ -265,7 +300,7 @@ int main() {
 
     // Whole-tree migration in.
     auto outcome = convert_all(true, nullptr, nullptr, nullptr, nullptr);
-    assert(outcome.completed && outcome.total == 6 && outcome.converted == 6 && outcome.failed == 0);
+    assert(outcome.completed && outcome.total == 8 && outcome.converted == 8 && outcome.failed == 0);
     for (auto& i : items) {
         // Absence of the plaintext only means something for items of 12+ bytes: random ciphertext
         // contains any given single byte about one time in six.
@@ -273,6 +308,7 @@ int main() {
         std::string back; assert(vault::read_file(i.path, 1 << 20, back) && back == i.data);
     }
     assert(!vault::is_sealed(db + "/db.sqlite") && !vault::is_sealed(db + "/td.binlog") && !vault::is_sealed(db + "/old.trash/x.jpg"));
+    for (const auto& item : partials) assert(slurp(item.path) == item.data && !vault::is_sealed(item.path));
     assert(convert_all(true, nullptr, nullptr, nullptr, nullptr).converted == 0);          // idempotent
 
     // An interrupted run leaves every file either plain or fully sealed, and resumes cleanly.
@@ -292,6 +328,8 @@ int main() {
     // The background sealer picks up a freshly downloaded file.
     Sealer sealer;
     sealer.start();
+    for (const auto& item : partials) sealer.enqueue(item.path);
+    assert(sealer.pending() == 0);
     spit(files + "/photos/live.jpg", blob(12345, 11));
     sealer.enqueue(files + "/photos/live.jpg");
     sealer.enqueue(db + "/db.sqlite");                                                  // ignored: not user data

@@ -5,7 +5,6 @@
 #include "updater.h"
 #include "i18n.h"
 #include <vita2d.h>
-#include <psp2/message_dialog.h>
 #include <psp2/kernel/threadmgr.h>
 #include <psp2/kernel/processmgr.h>
 #include <pthread.h>
@@ -22,29 +21,6 @@ std::string short_text(const std::string& text, size_t limit) {
     while (end && (static_cast<unsigned char>(text[end]) & 0xc0) == 0x80) --end;
     return text.substr(0, end) + "…";
 }
-void frame() {
-    sceKernelPowerTick(SCE_KERNEL_POWER_TICK_DEFAULT);
-    vita2d_start_drawing();
-    vita2d_clear_screen();
-    vita2d_end_drawing();
-    vita2d_wait_rendering_done();
-    vita2d_common_dialog_update();
-    vita2d_swap_buffers();
-    sceGxmDisplayQueueFinish();
-}
-bool dialog(const std::string& text, bool question) {
-    SceMsgDialogUserMessageParam user{};
-    user.buttonType = question ? SCE_MSG_DIALOG_BUTTON_TYPE_YESNO : SCE_MSG_DIALOG_BUTTON_TYPE_OK;
-    user.msg = reinterpret_cast<const SceChar8*>(text.c_str());
-    SceMsgDialogParam param; sceMsgDialogParamInit(&param);
-    param.mode = SCE_MSG_DIALOG_MODE_USER_MSG; param.userMsgParam = &user;
-    if (sceMsgDialogInit(&param) < 0) return false;
-    while (sceMsgDialogGetStatus() != SCE_COMMON_DIALOG_STATUS_FINISHED) frame();
-    SceMsgDialogResult result{};
-    bool yes = sceMsgDialogGetResult(&result) >= 0 && result.result == 0 && result.buttonId == SCE_MSG_DIALOG_BUTTON_ID_YES;
-    sceMsgDialogTerm();
-    return yes;
-}
 bool read(const std::string& path, std::vector<uint8_t>& bytes) {
     FILE* f = std::fopen(path.c_str(), "rb");
     if (!f) return false;
@@ -56,13 +32,15 @@ bool read(const std::string& path, std::vector<uint8_t>& bytes) {
 struct Job {
     std::string path, error;
     vpk::Metadata metadata;
-    bool promote = false, prepare_helper = false, ok = false;
+    bool prepare_modules = false, promote = false, prepare_helper = false, ok = false;
     std::atomic<bool> done{false};
     std::atomic<unsigned> percent{0};
 };
 void* worker(void* arg) {
     Job& job = *static_cast<Job*>(arg);
-    if (job.prepare_helper) {
+    if (job.prepare_modules) {
+        job.ok = prepare_package_promoter(job.error);
+    } else if (job.prepare_helper) {
         job.ok = Updater::prepareLocalInstaller(job.error);
     } else if (job.promote) {
         job.ok = promote_package(staging, job.error);
@@ -97,39 +75,45 @@ void* worker(void* arg) {
     job.done.store(true, std::memory_order_release);
     return nullptr;
 }
-bool run(Job& job) {
-    std::string text = i18n::tr(job.promote ? "vpk.installing" : "vpk.extracting");
-    SceMsgDialogProgressBarParam bar{}; bar.msg = reinterpret_cast<const SceChar8*>(text.c_str());
-    SceMsgDialogParam param; sceMsgDialogParamInit(&param);
-    param.mode = SCE_MSG_DIALOG_MODE_PROGRESS_BAR; param.progBarParam = &bar;
-    if (sceMsgDialogInit(&param) < 0) { job.error = i18n::tr("vpk.dialog_failed"); return false; }
+bool run(Job& job, const std::function<void(const std::string&, int)>& progress) {
+    const bool indeterminate = job.prepare_modules || job.promote || job.prepare_helper;
+    const std::string text = i18n::tr(job.promote || job.prepare_helper ? "vpk.installing" : "vpk.extracting");
+    auto show = [&](int percent) {
+        sceKernelPowerTick(SCE_KERNEL_POWER_TICK_DEFAULT);
+        progress(text, percent);
+        vita2d_wait_rendering_done();
+        sceGxmDisplayQueueFinish();
+    };
     struct PowerLock {
         bool locked = sceKernelPowerLock(SCE_KERNEL_POWER_TICK_DEFAULT) >= 0;
         ~PowerLock() { if (locked) sceKernelPowerUnlock(SCE_KERNEL_POWER_TICK_DEFAULT); }
     } power_lock;
     job.done = false; job.percent = 0;
+    show(indeterminate ? -1 : 0);
     pthread_t thread;
     if (pthread_create(&thread, nullptr, worker, &job) != 0) {
-        sceMsgDialogAbort();
-        while (sceMsgDialogGetStatus() != SCE_COMMON_DIALOG_STATUS_FINISHED) frame();
-        sceMsgDialogTerm(); job.error = i18n::tr("vpk.thread_failed"); return false;
+        job.error = i18n::tr("vpk.thread_failed"); return false;
     }
     while (!job.done.load(std::memory_order_acquire)) {
-        sceMsgDialogProgressBarSetValue(SCE_MSG_DIALOG_PROGRESSBAR_TARGET_BAR_DEFAULT, job.percent.load());
-        frame();
+        show(indeterminate ? -1 : int(job.percent.load()));
     }
     pthread_join(thread, nullptr);
-    if (job.ok) sceMsgDialogProgressBarSetValue(SCE_MSG_DIALOG_PROGRESSBAR_TARGET_BAR_DEFAULT, 100);
-    sceMsgDialogClose();
-    while (sceMsgDialogGetStatus() != SCE_COMMON_DIALOG_STATUS_FINISHED) frame();
-    sceMsgDialogTerm();
+    if (job.ok && !indeterminate) show(100);
     return job.ok;
 }
 }
-bool install_downloaded_vpk(const std::string& path) {
+bool install_downloaded_vpk(const std::string& path,
+                            const std::function<void(const std::string&, int)>& progress,
+                            const std::function<bool(const std::string&, bool)>& dialog) {
+    Job job; job.prepare_modules = true;
+    if (!run(job, progress)) {
+        dialog(i18n::tr("vpk.failed", {short_text(job.error, 240)}), false);
+        return false;
+    }
+    job.prepare_modules = false;
     if (!dialog(i18n::tr("vpk.question", {short_text(path.substr(path.find_last_of('/') + 1), 120)}), true)) return false;
-    Job job; job.path = path;
-    bool ok = run(job);
+    job.path = path;
+    bool ok = run(job, progress);
     if (ok && !dialog(i18n::tr("vpk.warning", {short_text(job.metadata.title, 80), job.metadata.title_id}), true)) {
         update::remove_tree(staging); return false;
     }
@@ -137,7 +121,7 @@ bool install_downloaded_vpk(const std::string& path) {
         // Launch must run on the main thread. The helper uses the same handoff as signed updates,
         // while the local package is authorized only by these explicit confirmations.
         job.prepare_helper = true;
-        if (run(job)) {
+        if (run(job, progress)) {
             // The helper's system font does not contain CJK glyphs.
             const std::string language = i18n::current();
             bool cjk = language == "ja" || language == "ko" || language == "zh-Hans" || language == "zh-Hant";
@@ -146,7 +130,7 @@ bool install_downloaded_vpk(const std::string& path) {
             if (Updater::handoffConfirmedPackage(staging, text, job.error)) return true;
         }
         ok = false;
-    } else if (ok) { job.promote = true; ok = run(job); }
+    } else if (ok) { job.promote = true; ok = run(job, progress); }
     update::remove_tree(staging);
     std::string result = ok ? i18n::tr("vpk.success") : i18n::tr("vpk.failed", {short_text(job.error, 240)});
     dialog(result, false);

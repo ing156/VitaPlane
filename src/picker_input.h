@@ -1,6 +1,19 @@
 #pragma once
 #include "reaction_input.h"
 
+struct StickerGrid {
+    static constexpr int left=30, top=130, columns=6, page_size=18;
+    static constexpr int step_x=150, step_y=110, width=144, height=104;
+    static int x(int cell) { return left + cell%columns*step_x; }
+    static int y(int cell) { return top + cell/columns*step_y; }
+    static int hit(int px, int py, int current, int count) {
+        px-=left; py-=top;
+        if (px<0 || py<0 || px>=columns*step_x || py>=page_size/columns*step_y || px%step_x>=width || py%step_y>=height) return -1;
+        const int index=current/page_size*page_size+py/step_y*columns+px/step_x;
+        return index<count ? index : -1;
+    }
+};
+
 class PickerPress {
 public:
     struct Target {

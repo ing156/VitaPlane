@@ -3,6 +3,7 @@
 #include "update_core.h"
 #include <vita2d.h>
 #include <psp2/kernel/threadmgr.h>
+#include <psp2/io/devctl.h>
 #include <atomic>
 #include <cassert>
 #include <chrono>
@@ -21,7 +22,9 @@ static std::atomic<bool> download_entered{false}, release_download{false};
 static int helper_launches = 0, app_launches = 0, promotions = 0, deletions = 0;
 static bool fail_launch = false, fail_install = false, silent_install = false;
 static std::string last_promoted;
-static int release_mode = 0;
+static int release_mode = 0, transfer_mode = 0;
+static uint64_t last_offset = 0;
+static int64_t available_space = -1;
 static std::atomic<int> new_checks{0}, old_checks{0};
 static std::thread::id ui_thread;
 static std::string read(const std::string& path) {
@@ -40,7 +43,7 @@ static void wait_for(const std::function<bool()>& condition) {
 namespace update {
 HttpsResult https_get(const std::string& url, const std::string&, const std::string&,
                      const std::function<bool(const char*, size_t)>& sink, const std::atomic<bool>* cancel,
-                     const std::function<void(int64_t)>& length) {
+                     const std::function<void(int64_t)>& length, const HttpsResume* resume) {
     std::string data;
     if (url.find("/releases/latest") != std::string::npos) {
         const bool newer_repo = url.find("/VitaPlane/") != std::string::npos;
@@ -60,12 +63,27 @@ HttpsResult https_get(const std::string& url, const std::string&, const std::str
         wait_for([&] { return release_download.load() || (cancel && *cancel); });
         data = read(fixtures + "/good.vpk");
     }
-    if (length) length(data.size());
-    if ((cancel && *cancel) || !sink(data.data(), data.size())) return {0, -1, "cancelled"};
+    size_t offset = resume ? resume->offset : 0;
+    if (resume) {
+        last_offset = offset;
+        if (transfer_mode == 3) offset = 0;
+    }
+    if (resume && resume->response) assert(resume->response(offset ? 206 : 200, data.size() - offset, "\"fixture\""));
+    if (length) length(data.size() - offset);
+    if (resume && (transfer_mode == 1 || transfer_mode == 2)) {
+        assert(sink(data.data() + offset, (data.size() - offset) / 2));
+        if (transfer_mode == 2) const_cast<std::atomic<bool>*>(cancel)->store(true);
+        return {206, (int64_t)data.size(), "download was cut off"};
+    }
+    if ((cancel && *cancel) || !sink(data.data() + offset, data.size() - offset)) return {0, -1, "cancelled"};
     return {200, (int64_t)data.size(), {}};
 }
 }
-int sceIoDevctl(const char*, int, void*, unsigned, void*, unsigned) { return -1; }
+int sceIoDevctl(const char*, int, void*, unsigned, void* output, unsigned) {
+    if (available_space < 0) return -1;
+    static_cast<SceIoDevInfo*>(output)->free_size = available_space;
+    return 0;
+}
 int sceAppMgrLaunchAppByUri(int, const char* uri) {
     assert(std::this_thread::get_id() == ui_thread);
     if (std::string(uri).find("VGUPDATE1") != std::string::npos) { ++helper_launches; return fail_launch ? -1 : 0; }
@@ -125,6 +143,65 @@ int main(int argc, char** argv) {
         else assert(check.snapshot().state == Updater::State::Available && check.snapshot().version == "9.9.9");
     }
     release_mode = 0;
+    for (int mode : {1, 2, 3}) {
+        fs::remove_all(primary);
+        transfer_mode = mode == 2 ? 2 : 1;
+        {
+            Updater interrupted("0.37.73", "unused-ca", primary, fallback);
+            const auto failed = download(interrupted);
+            assert(failed.state == Updater::State::Failed);
+            assert(failed.error == (mode == 2 ? Updater::Error::Cancelled : Updater::Error::Network));
+            assert(fs::file_size(primary + "/update.part") > 0 && !fs::exists(primary + "/pending"));
+        }
+        transfer_mode = mode == 3 ? 3 : 0;
+        Updater resumed("0.37.73", "unused-ca", primary, fallback);
+        assert(download(resumed).state == Updater::State::Installed && last_offset > 0);
+        assert(read(primary + "/update.vpk") == read(fixtures + "/good.vpk"));
+        assert(!fs::exists(primary + "/update.part") && !fs::exists(primary + "/update.partial"));
+    }
+    // Changed artifact identities restart, while tampered saved prefixes fail the full signature.
+    for (bool tamper : {false, true}) {
+        fs::remove_all(primary); transfer_mode = 1;
+        { Updater interrupted("0.37.73", "unused-ca", primary, fallback); assert(download(interrupted).state == Updater::State::Failed); }
+        if (tamper) write(primary + "/update.part", std::string(read(primary + "/update.part").size(), 'X'));
+        else write(primary + "/update.partial", "different release");
+        transfer_mode = 0;
+        Updater retry("0.37.73", "unused-ca", primary, fallback);
+        const auto result = download(retry);
+        if (tamper) assert(result.error == Updater::Error::BadSignature && !fs::exists(primary + "/update.part"));
+        else assert(result.state == Updater::State::Installed && last_offset == 0);
+    }
+    // A complete saved partial is verified locally, without an EOF range request.
+    fs::remove_all(primary); transfer_mode = 1;
+    { Updater interrupted("0.37.73", "unused-ca", primary, fallback); assert(download(interrupted).state == Updater::State::Failed); }
+    copy(fixtures + "/good.vpk", primary + "/update.part"); transfer_mode = 0;
+    download_entered = false;
+    {
+        Updater complete("0.37.73", "unused-ca", primary, fallback);
+        complete.check(); wait_for([&] { return !complete.snapshot().busy(); });
+        complete.install(); wait_for([&] { return !complete.snapshot().busy(); });
+        assert(complete.snapshot().state == Updater::State::Installed && !download_entered);
+    }
+    // Resume credits only the exact artifact's bounded saved bytes, and prefers their directory.
+    for (int fault : {0, 1, 2}) {
+        fs::remove_all(primary); fs::remove_all(fallback); transfer_mode = 1;
+        { Updater interrupted("0.37.73", "unused-ca", fallback); assert(download(interrupted).state == Updater::State::Failed); }
+        const uint64_t package_size = read(fixtures + "/good.vpk").size();
+        const uint64_t saved_size = fs::file_size(fallback + "/update.part");
+        available_space = package_size * 2 + (16 << 20) - saved_size;
+        if (fault == 1) write(fallback + "/update.partial", "unrelated artifact");
+        if (fault == 2) write(fallback + "/update.part", std::string(package_size + 1, 'X'));
+        transfer_mode = 0; release_download = true; download_entered = false;
+        Updater retry("0.37.73", "unused-ca", primary, fallback);
+        retry.check(); wait_for([&] { return !retry.snapshot().busy(); });
+        retry.install(); wait_for([&] { return !retry.snapshot().busy(); });
+        if (!fault) assert(retry.snapshot().state == Updater::State::Installed && last_offset == saved_size && fs::exists(fallback + "/pending"));
+        else assert(retry.snapshot().error == Updater::Error::Storage && !download_entered);
+        available_space = -1;
+    }
+    fs::remove_all(fallback);
+    fs::remove_all(primary); transfer_mode = 0;
+    std::puts("Interrupted/cancelled partials resume after restart, 200 fallback resets full signature: PASS");
     Updater updater("0.37.73", "unused-ca", primary, fallback);
     assert(updater.allowsLocalInstall());
     assert(download(updater).state == Updater::State::Installed);

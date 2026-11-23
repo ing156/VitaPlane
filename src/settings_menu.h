@@ -1,19 +1,25 @@
 #pragma once
 
 namespace settings_menu {
-// IDs match the existing settings labels and actions; 33 is the user-colors switch.
+// IDs match the settings labels and actions; 33 is user colors, 35 is the unread counter.
+inline constexpr int call_audio = 37;
+#if VITAGRAM_CALLS
+inline constexpr bool calls_enabled = true;
+#else
+inline constexpr bool calls_enabled = false;
+#endif
 inline constexpr int rows[][9] = {
     {-1, -2, -3, -4, -5, -6, -7, -8, 31},
     {0, 28, 3, 33, 17, 18, 30, 4},
-    {27, 19, 23},
+    {27, 19, 23, 35, 36},
     {24, 25, 22, 16},
     {29, 7, 34, 1, 2, 32},
-    {8, 6},
+    {8, 6, call_audio},
     {11, 14, 15, 12, 13},
     {10, 9, 26},
     {21, 5, 20},
 };
-inline constexpr int counts[] = {9, 8, 3, 4, 6, 2, 5, 3, 3};
+inline constexpr int counts[] = {9, 8, 5, 4, 6, 2 + calls_enabled, 5, 3, 3};
 inline constexpr const char* titles[] = {
     "settings.title", "settings.section.interface", "settings.section.chats",
     "settings.section.controls", "settings.section.data", "settings.section.connection",

@@ -222,6 +222,42 @@ int main(int argc, char** argv) {
     for (int i = 0; i < 70; ++i) std::ofstream(user_fonts::path("font" + std::to_string(i) + ".otf")) << "x";
     const auto many = user_fonts::scan();
     assert(many.size() == user_fonts::max_fonts && std::is_sorted(many.begin(), many.end()));
+    const auto emoji_path_host=assets+"/NotoColorEmoji_b-64.ttf";
+    assert(!FT_New_Face(library,emoji_path_host.c_str(),0,&face));
+    assert(!FT_Select_Size(face,0));
+    for (const char* sequence : {u8"👍🏽",u8"👩🏽‍💻",u8"🇷🇺",u8"1️⃣",u8"👨‍👩‍👧‍👦"}) {
+        const auto* entry=emoji::find(sequence); assert(entry);
+        const int expected=render(nullptr,0,0,~0u,1,sequence,false);
+        assert(expected==kBaseFontSizePx+2); // One complete emoji advance.
+        for (int size=70;size<=130;size+=10) {
+            rich_text_set_scale(size/100.f);
+            const int width=rich_text_width(nullptr,1.05f,sequence);
+            assert(width>0 && width<=64); // Complete sequence fits the fixed picker preview area.
+        }
+        rich_text_set_scale(1.f);
+        assert(rich_text_set_custom_font(""));
+        assert(render(nullptr,0,0,~0u,1,sequence,false)==expected);
+        assert(rich_text_set_custom_font("Coptic.TTF"));
+        assert(render(nullptr,0,0,~0u,1,sequence,false)==expected);
+        assert(rich_text_set_custom_font(""));
+        requested.clear();
+        render(nullptr,0,30,~0u,1,sequence,true);
+        assert(requested.size()==1 && requested.front()==entry->glyph);
+        emoji_load_one();
+        assert(requested.empty() && cache.back().texture);
+    }
+    // A first held popup must jump ahead of a full background queue and stay bounded.
+    const auto* priority=emoji::find(u8"☝🏻");assert(priority);
+    requested.clear();for (unsigned i=10000;i<10128;++i) requested.push_back(i);
+    emoji_prioritize(priority->text);
+    assert(requested.size()==128 && requested.front()==priority->glyph);
+    emoji_prioritize(priority->text);assert(requested.size()==128);
+    emoji_load_one();assert(requested.size()==127 && cache.back().texture);
+    emoji_prioritize(priority->text);assert(requested.size()==127); // Cached choices need no work.
+    requested.clear();
+    // Text presentation must not enter the emoji raster queue.
+    requested.clear(); render(nullptr,0,30,~0u,1,u8"❤︎",true); assert(requested.empty());
+    std::puts("Emoji renderer: complete sequences, glyph IDs, text presentation and shared widths passed");
     fs::current_path(previous_directory);
     fs::remove_all(temporary);
     std::puts("User fonts: discovery, filename validation, size limit, Unicode priority, built-in fallback, async cancellation and safe failure passed");

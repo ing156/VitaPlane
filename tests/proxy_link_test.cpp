@@ -48,5 +48,16 @@ int main() {
                             "tg://socks?server=h&port=0", "tg://socks"})
         assert(parse_proxy_link(url, proxy, error) == ProxyLinkResult::Invalid);
     assert(parse_proxy_link("tg://proxy?server=host&port=1&secret=" + std::string(5000, 'a'), proxy, error) == ProxyLinkResult::Invalid);
+    for (const auto* prefix : {"tg://webproxy?", "https://t.me/webproxy?", "TG:WEBPROXY?"}) {
+        assert(parse_proxy_link(std::string(prefix)+"server=PROXY.Example.com&secret="+secret,proxy,error)==ProxyLinkResult::Valid);
+        assert(proxy.kind==ProxyKind::Web && proxy.port==443 && proxy.server=="proxy.example.com" && proxy.secret==secret);
+    }
+    assert(parse_proxy_link("https://t.me/webproxy?server=proxy.example.com%2FAbC_1&secret=cAABAgMEBQYHCAkKCwwNDg8",proxy,error)==ProxyLinkResult::Valid);
+    assert(proxy.server=="proxy.example.com/AbC_1" && proxy.secret=="000102030405060708090a0b0c0d0e0f");
+    for (const auto* params : {"server=host&secret=0123456789abcdef0123456789abcdef", "server=proxy.example&secret=bad", "server=proxy.example&port=443&secret=0123456789abcdef0123456789abcdef", "server=127.0.0.1&secret=0123456789abcdef0123456789abcdef", "server=proxy.example&secret=cAABAgMEBQYHCAkKCwwNDg8"}) {
+        const ProxyLink before=proxy;
+        assert(parse_proxy_link(std::string("tg://webproxy?")+params,proxy,error)==ProxyLinkResult::Invalid);
+        assert(!error.empty() && proxy.server==before.server && proxy.secret==before.secret);
+    }
     std::cout << "Proxy links: PASS\n";
 }

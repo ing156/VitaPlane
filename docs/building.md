@@ -5,10 +5,14 @@
 Build on Linux or WSL with VitaSDK and its ARM toolchain, CMake (3.16+), Make,
 Git, curl, archive tools, a host C/C++ compiler, `gperf` and Python 3.
 Vita libraries: vita2d, zlib, libpng, libjpeg, libwebp, FreeType and bzip2.
+The build host also needs the HarfBuzz shared library (`libharfbuzz0b` on
+Debian/Ubuntu) to precompute emoji glyphs; HarfBuzz is not linked into the Vita app.
 
 Сборка выполняется в Linux или WSL. Нужны VitaSDK с ARM toolchain, CMake (3.16+),
 Make, Git, curl, средства распаковки, компилятор C/C++ для ПК, `gperf` и Python 3.
 Библиотеки для Vita: vita2d, zlib, libpng, libjpeg, libwebp, FreeType и bzip2.
+На ПК также нужна разделяемая библиотека HarfBuzz (`libharfbuzz0b` в Debian/Ubuntu)
+для подготовки таблицы эмодзи; в приложение Vita она не линкуется.
 
 ### 1. Checkout and API credentials / Исходники и реквизиты API
 
@@ -235,3 +239,24 @@ JSON-каталог, например `assets/little-greene.json`. Катало�
   Частоту кадров и производительность нужно проверять на устройстве.
 
 </details>
+
+Vita SQLite adaptations remain in `scripts/tdlib-vita.patch`: volume paths such as `ux0:data/...` are absolute, and the default Unix VFS uses directory locks because Vita does not provide POSIX record locks. WAL and mmap stay disabled. TDLib clears a crash-left lock before its first SQLite connection; this relies on the single instance of the Vita title. Rebuild the pinned `tdsqlite`/`tddb`/`tdcore` targets through the normal `build-modern` build after changing this patch.
+
+### Experimental Telegram audio calls / Экспериментальные аудиозвонки Telegram
+
+After preparing the standard Vita dependencies, run `bash scripts/prepare-call-engine.sh`.
+It builds the pinned call libraries and a separate OpenSSL with DTLS/SRTP under
+`build-modern/call-port`. Configure and build with:
+
+```bash
+call_root="$PWD/build-modern/call-port"
+cmake -S . -B build-modern -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DTD_ENABLE_TESTS=OFF \
+  -DVITAGRAM_CALL_ENGINE_ROOT="$call_root" \
+  -DVITAGRAM_OPENSSL_ROOT="$call_root/openssl-dtls"
+cmake --build build-modern --parallel "$(nproc)"
+```
+
+После подготовки обычных зависимостей Vita выполните `bash scripts/prepare-call-engine.sh`,
+затем настройку и сборку из примера выше. Скрипт собирает закреплённые версии
+библиотек звонков и отдельный OpenSSL с DTLS/SRTP в `build-modern/call-port`.

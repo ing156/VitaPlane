@@ -3,6 +3,8 @@
 #include <cassert>
 #include <cstdint>
 #include <cstdio>
+#include <utility>
+#include <vector>
 
 struct Message {
     int64_t sender_id = 1, date = 1000;
@@ -43,6 +45,46 @@ int main() {
     b = a; b.service_message = true; assert(!joins(a,b) && !joins(b,a));
     b = a; b.date = 0; assert(!joins(a,b) && !joins(b,a));
     a.sender_id = b.sender_id = 0; assert(!joins(a,b));
+
+    struct Row {
+        int index, top, height;
+        bool after;
+        int gap() const { return after ? 2 : 6; }
+    };
+    using Position = std::pair<int, int>;
+    auto avatars = [](const std::vector<Row>& rows, int top, int bottom) {
+        std::vector<Position> positions;
+        chat_bubble::for_each_avatar(rows, top, bottom,
+            [&](int index, int y) { positions.emplace_back(index, y); });
+        return positions;
+    };
+    assert(avatars({}, 70, 544).empty());
+    // One avatar at the group's bottom, including when its first messages are offscreen.
+    assert((avatars({{0,70,80,true}, {1,150,80,false}}, 70, 544) ==
+        std::vector<Position>{{1,196}}));
+    assert((avatars({{7,-10,90,true}, {8,80,80,false}}, 70, 544) ==
+        std::vector<Position>{{8,126}}));
+    // The last visible row may continue below the viewport or onto the next loaded page.
+    for (int bottom : {494, 506, 544})
+        assert((avatars({{0,-200,800,true}}, 70, bottom) ==
+            std::vector<Position>{{0,bottom-chat_bubble::avatar_size}}));
+    // Scrolling pushes the old avatar out with its group instead of into the next sender.
+    assert((avatars({{0,10,80,false}, {1,90,120,false}}, 70, 544) ==
+        std::vector<Position>{{0,56}, {1,176}}));
+    assert((avatars({{0,-10,80,false}, {1,70,120,false}}, 70, 544) ==
+        std::vector<Position>{{1,156}}));
+    assert(avatars({{0,544,80,false}}, 70, 544).empty());
+    // A date/service boundary splits groups even when both sides have the same sender.
+    assert((avatars({{0,70,80,false}, {1,176,80,false}}, 70, 544) ==
+        std::vector<Position>{{0,116}, {1,222}}));
+
+    const std::vector<Row> end{{2,400,100,false}};
+    assert(!chat_bubble::has_messages_below(std::vector<Row>{}, 0, false, 494));
+    assert(!chat_bubble::has_messages_below(end, 3, true, 494));
+    assert(chat_bubble::has_messages_below(end, 3, true, 493));
+    assert(chat_bubble::has_messages_below(end, 4, true, 544));
+    assert(chat_bubble::has_messages_below(end, 3, false, 544));
+    assert(chat_bubble::has_messages_below(end, 3, true, 312));
 
     for (bool out : {false,true}) for (bool before : {false,true}) for (bool after : {false,true})
         for (float width : {162.f, 408.f, 712.f}) for (float height : {64.f, 180.f}) {

@@ -17,7 +17,8 @@ VitaNet::~VitaNet() { shutdown(); }
 bool VitaNet::init() {
     sceSysmoduleLoadModule(SCE_SYSMODULE_NET);
 
-    const int size = 1024 * 1024;
+    // TDLib upload sockets and DNS/TLS share this pool, separate from the application heap.
+    const int size = 4 * 1024 * 1024;
     memory_ = std::malloc(size);
     if (!memory_) {
         std::snprintf(error_, sizeof(error_), "network memory allocation failed");

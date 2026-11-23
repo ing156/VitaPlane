@@ -9,7 +9,7 @@
 int polls = 0, flight = 0, wifi = 1, state = SCE_NETCTL_STATE_CONNECTED;
 int sceSysmoduleLoadModule(int) { return 0; }
 int sceSysmoduleUnloadModule(int) { return 0; }
-int sceNetInit(SceNetInitParam*) { return 0; }
+int sceNetInit(SceNetInitParam* params) { assert(params->memory && params->size == 4 * 1024 * 1024); return 0; }
 int sceNetTerm() { return 0; }
 int sceNetCtlInit() { return 0; }
 int sceNetCtlTerm() { return 0; }

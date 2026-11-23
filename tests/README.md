@@ -1,5 +1,83 @@
 # Native checks
 
+HTTPS DNS transport diagnostics (0.39.25): `bash tests/run-td-dns-tests.sh`
+also compiles the pinned SocketFd implementation, injects ECONNRESET at its read
+boundary and checks the numeric transport event before TDLib wraps the error.
+Hook tests check TLS error/verification/reason fields, IDs and errno preservation.
+Transfer and proxy-diagnostics suites verify the app bridge builds and the log
+remains bounded and worker-written. Physical Vita TCP/TLS behavior still needs
+the new proxy.log; these checks do not establish live proxy connectivity.
+
+DNS bootstrap (0.39.23): `bash tests/run-td-dns-tests.sh` also verifies that
+dns.google:443 resolves to the fixed resolver IP without getaddrinfo, even when
+system DNS fails, while other ports retain normal resolution. The WEB relay
+suite rejects every hostname lookup, redirects the numeric bootstrap IP to its
+local TLS fixture and verifies fallback success, DNS caching and rejection of a
+wrong TLS hostname. No live proxies are used; Vita connectivity still needs a
+device check.
+
+DNS diagnostics (0.39.21): `bash tests/run-td-dns-tests.sh` builds the pinned TDLib
+IPAddress implementation on the host with the diagnostic hooks enabled. It mocks
+only getaddrinfo/freeaddrinfo and verifies success, resolver error/errno, numeric
+trace IDs, HTTPS result recording and cancellation. Requires CMake, C++17, OpenSSL
+and zlib development files. `bash tests/run-proxy-diagnostics-tests.sh` checks the
+new records in the bounded worker-written log. Real Vita DNS, TLS and MTProto
+connectivity still require the automatic proxy.log from a device run.
+
+Recovery comparison (0.39.19): `bash tests/run-transfer-tests.sh` verifies that
+production TDLib parameters disable all SQLite databases, as in 0.39.05, while
+retaining the account DB path. `bash tests/run-tdlib-disabled-db-tests.sh` compiles
+the pinned TDLib disable/migration branches for Vita and other platforms, checking
+that Vita preserves the existing file index and encryption key. Actual removal
+of the actor stalls requires a physical Vita comparison with the uploaded logs.
+
+Direct document downloads (0.39.62): the transfer suite checks a same-directory
+rename by inode identity, restoration of a 128 KiB confirmed prefix with a new
+TDLib file ID, priority changes and cleanup after cancellation. The bottom-panel
+suite exercises touch controls and controller routing. On Vita, compare the
+finished document with its source after interrupting and relaunching a download,
+and check priority changes with two active files on the same connection.
+
+Byte resume and panel polish (0.39.09; temporarily disabled in 0.39.19):
+`bash tests/run-tdlib-file-resume-tests.sh` builds selected pinned TDLib host targets
+and reopens SQLite in a separate process, checking the production partial-file
+codec, sparse ready masks, part sizes, holes and readable-prefix calculations.
+It needs CMake, host C/C++17, OpenSSL development files and the prepared TDLib
+headers; it does not simulate a live FileManager/network download.
+Vault and media-trash suites check that both TDLib temp trees survive migration,
+sealing and stale rotation flags. Bottom-panel/controller and chat-scroll suites
+verify the larger reserved edge, eight-row bounds and Triangle refresh routing.
+On Vita with the file database enabled, begin a NEW download, close after several chunks, relaunch and
+check reused progress and the final file contents; older versions did not save
+TDLib part maps. Light/dark/custom palettes, 130% fonts, actual swipes, network
+throughput and power-loss durability still require physical-device checks.
+
+Download recovery/panel (0.39.08): `bash tests/run-transfer-tests.sh` checks journal
+publication during interaction, waiting for live chats, transient errors/backoff,
+bounded attempts, late replies, persisted pause/resume and completion/preflight
+isolation. `bash tests/run-bottom-downloads-tests.sh` checks the shared panel/list
+geometry, stable file selection, carousel swipe ownership and cancellation.
+Run chat-scroll, audio-playback, i18n and performance suites for shared input,
+music controls, all 19 catalogs and the numeric document diagnostics.
+On Vita check two simultaneous downloads with music: vertical title/edge swipes,
+tap/list/controller pause/resume, completion while a row is pressed, app restart,
+Classic/Combined, bot toolbar, light/dark/custom palettes and all font sizes.
+Actual partial-byte reuse after TDLib exits and card/network speed remain device
+checks. The original 0.39.07 logs have no document restore events; they establish
+successful launches, not the specific cause of the failed download restoration.
+
+Performance and recovery (0.39.07): `bash tests/run-image-tests.sh` checks target
+sizes, JPEG RGBA output, scaled WebP alpha, per-variant retry cooldowns and
+preemption of neighboring-avatar work by visible requests without publishing a
+cancelled result. `bash tests/run-https-resume-tests.sh` uses the production HTTPS
+client against a local TLS server to check ranges, validators, redirects, safe
+full-download fallback, malformed headers and truncated transfers. Update core,
+updater lifecycle and WebKit add-on suites cover signature reset, saved-prefix
+verification and compatibility. Transfer checks cover the encrypted document job
+journal, account ownership, fresh file IDs on restoration and asynchronous export
+preflight. Host checks do not establish partial TDLib reuse after process exit,
+Vita image quality, CDRAM pressure, storage/network throughput or installation.
+
 `bash tests/run-video-tests.sh` also compiles the production video-note routing
 with fake decoders: navigation, independent GIF/sticker/upload previews, reopening
 without restarting, browsing another note before Play, background seek/volume and
@@ -251,7 +329,9 @@ select it explicitly through `tests/test_language.h`.
 
 `bash tests/run-proxy-tests.sh` checks proxy URLs, real QR decoding and mocked Vita camera lifecycle.
 It includes Telegram-style rounded finder rings and data modules with a central
-logo, mirrored frames, rotation, perspective and reduced contrast. The styled
+logo, mirrored frames, rotation, perspective, reduced contrast and a strong
+brightness gradient. It also checks capture between decode attempts and clearing
+stale non-proxy errors after the code leaves the frame. The styled
 renderer follows the radii in Telegram Android's `TelegramQRCodeWriter`;
 it is a synthetic regression, not a physical-camera test.
 
@@ -714,6 +794,8 @@ Folder drawer host coverage (`bash tests/run-chat-scroll-tests.sh`): easing and 
 `bash tests/run-chat-scroll-tests.sh` also checks consecutive-message grouping and
 bubble meshes: incoming/outgoing, first/middle/last, classic/combined widths and
 short/tall cards, including consecutive messages more than five minutes apart.
+Sender-avatar checks cover one icon per visible group, bottom alignment, viewport
+pinning, partially visible groups, empty history and date/service boundaries.
 Sampled triangle coverage verifies that translucent fills and
 focus outlines never overlap themselves or each other. Physical Vita checks are
 still needed for light/dark/custom palettes, font sizes, focus, media/replies,
@@ -1035,3 +1117,305 @@ and unchanged initial text. Run transfer, keyboard, i18n and chat-scroll suites.
 Physical Vita still needs menu/controller/touch flow in Classic/Combined,
 channels, topics and Saved Messages; expired edit rights, offline/reconnect,
 custom/native keyboard, all fonts/palettes and live edits from another device.
+
+VPK dialog lifecycle (0.39.06): `bash tests/run-vpk-tests.sh` also runs the production
+installer and promoter module preparation with mocked Vita APIs under ASan/UBSan.
+It checks worker-only preparation before native dialogs, reuse of preloaded PAF,
+module load/start failures, failed worker/dialog creation, cancelled confirmation,
+invalid metadata, promotion failure, ordinary success and self-update handoff.
+Module loads must never occur while a native dialog is active. Physical Vita
+still needs repeated installations, the final success message, helper installation,
+controller input and return to chat; this addresses the suspected lifecycle conflict,
+not a proven source of the corrupted PAF dimensions in the reported dump.
+
+`bash tests/run-web-proxy-tests.sh` checks the native WEB HTTPS adapter against a
+local Python TLS relay: concurrent binary streams, 503 retry, byte-identical
+replay after a lost acknowledgement, hostname verification, base paths, config
+replacement, cancellation, restart and session deletion. It needs host OpenSSL,
+zlib and Jansson headers/libraries (Jansson headers from `build-modern`), Python 3
+and the `openssl` command. DNS/service wrapping is confined to the test binary;
+production uses HTTPS/443 with the packaged CA bundle. This is a protocol fixture,
+not the official relay or a physical Vita test. `run-proxy-tests.sh` also covers
+WEB link import, real QR decoding and published capability test vectors.
+
+WEB proxy thread regression: the local TLS test intercepts native thread creation
+and requires an explicit 256 KiB stack for both the persistent worker and each
+downlink. Injected stack-attribute and thread-start failures must report a clean
+error; a failed downlink start must never publish a ready loopback port. This
+prevents reliance on Vita's 32 KiB default, which crashed during CA bundle loading.
+These are host checks; stack headroom and the reported crash still need a Vita retest.
+
+`bash tests/run-proxy-pool-tests.sh` checks bounded proxy-list policy, sequential
+probe results, sustained-failure grace, latency ranking, switch cooldown, offline
+and resume handling, stale results, empty lists and shared render/touch geometry
+including gaps, footer actions and the last page. The settings test covers legacy
+migration, duplicate import, active-entry deletion, atomic write failure, credential-encryption failure and
+worker-only file I/O, plus vault-sealed credentials. Requires the same host
+OpenSSL/Jansson headers and libraries as the existing vault tests. Transfer tests
+also exercise real TelegramClient measurement generations, malformed ping values
+and proxy-only failover. Real Vita UI, wireless failures and media transfers still
+need device checks.
+
+Proxy connection regressions: transfer tests verify that manual and list checks work once TDLib parameters are queued, without depending on a separate UI acknowledgement, proxy application stays FIFO with network controls and passes interaction/backlog gates, and DNS/secret failures are classified without revealing addresses or credentials. Device connectivity still requires a physical Vita retest.
+
+The WEB relay test forces system-DNS failure and verifies authenticated HTTPS DNS fallback, TTL-cache reuse by both stream directions, invalid/no-answer DNS rejection, cancellation and original proxy hostname certificate checks.
+
+`bash tests/run-proxy-diagnostics-tests.sh` verifies proxy logging starts automatically before menu access, can be explicitly disabled, accepts only fixed stages/numeric fields, bounds concurrent producers, rotates two bounded files, reports overflow/write loss and performs file I/O only on a background worker. It needs only a C++17 host compiler and pthreads.
+
+WEB relay tests additionally inspect emitted DNS/TCP/TLS/session events, hostname-verification error codes and HTTP 403 session rejection, and verify that hostnames, secrets, bearer tokens and response bodies are absent from the log. Transfer tests check correlated queued/dispatched operations, TDLib errors and logout cleanup of both proxy log files. Controller/touch access to the seventh diagnostic switch, Vita storage writes/rotation and real network failures still need physical-device checks.
+
+`bash tests/run-sqlite-vita-tests.sh` compiles the pinned SQLite/SQLCipher source with the Vita path/locking branch, no WAL or mmap, and POSIX record locks forced to fail with ENOSYS. It verifies both Vita volume path forms, bounded path output, encrypted transactions, lock contention and reopen without replacing Vita production libraries. Requires host C compiler, OpenSSL, zlib and pthreads. These are host checks; real Vita filesystem durability and crash recovery still need device verification.
+
+The WEB relay fixture rejects Content-Type on empty downlink and DELETE requests, matching the reference server. Transfer tests verify TDLib initialization rejection cancels pending checks, blocks further probe dispatch and records only a fixed failure classification, never private error text.
+
+
+Keyboard emoji/draft view (0.39.20): `bash tests/run-keyboard-tests.sh` covers
+picker input ownership, grid gaps, recent choices, held variants, complete-sequence
+insertion/deletion/cursor movement, byte limits and secret exclusion. Collapsed
+view checks cover expanded text, swipes/controller scrolling, quick-tap restore,
+long-hold magnification and release ownership. Existing rounded geometry,
+light/dark/custom palette, seven font-size and touch-history checks still run.
+`bash tests/run-font-tests.sh` verifies every generated sequence against the real
+packaged font, full-glyph rasterization, aliases, custom-text-font independence,
+shared widths and text presentation. It also extracts the actual message wrapping
+and clipping functions to check complete emoji boundaries.
+`bash tests/run-text-layout-tests.sh` checks cluster-preserving fitting;
+`bash tests/run-i18n-tests.sh` checks all 19 catalogs. These suites need the host
+HarfBuzz shared library to generate the catalog; font tests also need host FreeType.
+On Vita verify emoji centering, chosen/unfocused and focused/unchosen variants,
+empty recent and last pages, all palettes/font sizes, real touch scroll/hold timing,
+magnifier placement, CDRAM and frame latency. Host checks do not establish device
+rendering, touch feel or installation behavior.
+
+
+Emoji loading fix (0.39.22): font-suite frame-tail checks compile the production
+queue-drain condition and cover custom/native keyboards, input and decode cooldown.
+Keyboard palette/font checks compare used and unused tile fills; used items have
+no persistent highlight or check badge. Verify on Vita that initially missing
+emoji progressively appear while the custom keyboard is idle, including the
+variant popup and draft, without requiring the keyboard to close.
+
+
+Emoji variant gestures (0.39.24): keyboard checks exercise several emoji at the
+left, middle and right columns, horizontal selection while the finger remains on
+the original key row, moving into the popup, preserving the last variant under
+the initial contact, larger-set edge scrolling, release-only insertion and
+out-of-panel cancellation. Actual finger tracking and latency need a Vita check.
+
+
+Emoji controls/loading (0.39.26): keyboard tests verify variant prefetch at the
+first contact, emoji Send/Save with empty-message validation, lower-left collapse,
+upper-right close in expanded/collapsed views, and unchanged secret-field input.
+Font tests check bounded priority-queue promotion, deduplication, cache hits and
+actual rasterization. Frame-tail checks cover decoding throughout held custom
+keyboard gestures while protecting native IME and idle background cooldown.
+On Vita verify first-use variants appear during the initial hold, controller
+Circle icon placement, Send/Save and collapse/close in all palettes/font sizes;
+measure frame latency and memory on device.
+
+
+Emoji category list (0.39.27): keyboard checks verify short-press cycling,
+long-press opening, ignoring the opening release, vertical drag scrolling, the
+last page, row gaps/outside taps, underlying Send isolation, controller selection,
+Circle/touch return and all seven font sizes with light/dark/custom palettes.
+Run keyboard and i18n suites. Physical Vita checks remain for scroll feel,
+focus/text clipping, touch accuracy and opening/cancelling with held controls.
+
+Proxy auto-switch delay (0.39.27): run `bash tests/run-proxy-pool-tests.sh`,
+`bash tests/run-transfer-tests.sh` and `bash tests/run-i18n-tests.sh`. Policy tests
+cover each 5/10/15/30/60-second boundary, post-switch delay, disabled automatic
+mode, offline/resume and healthy-connection stability. Settings tests cover
+worker-written persistence, missing/invalid value defaults and protected secrets.
+Geometry tests cover interval cell borders and reject horizontal/vertical gaps.
+Physical Vita still needs controller/touch checks for empty/full/scrolled lists,
+chosen values with and without focus, light/dark/custom palettes, larger fonts,
+and reconnect/failover timing on a real network.
+
+
+Chat activity (0.39.28): `bash tests/run-transfer-tests.sh` covers unread-mention
+counts, oldest-first search parameters, stale and duplicate results, typing sender,
+cancel/expiry/topic isolation, visible-message read batching, grouped albums,
+offline/loading guards and restricting comment probes to presented messages.
+`python3 tests/chat_modal_test.py` compiles the shared mention-button geometry
+and checks the whole circular hit area, older/partial/latest/empty history and
+changed viewport height. `bash tests/run-i18n-tests.sh` checks all catalogs.
+Physical Vita must verify live Telegram mention navigation/read synchronization,
+touch ownership, typing latency and light/dark/custom palettes at every font size.
+
+Proxy delay visibility (0.39.29): `bash tests/run-proxy-pool-tests.sh` checks
+compact rendering/hit-test indices with the interval hidden, navigation in both
+directions, empty/full/scrolled lists, gaps and unused cells. Vita still needs
+checking for the Yes/No rendering and toggling the interval row on and off.
+
+
+Keyboard word wrapping (0.39.31): `bash tests/run-keyboard-tests.sh` checks
+whole-word wrapping for Latin/Cyrillic text and complete emoji sequences, caret
+and touch positions on both sides of a wrap, reflow after insertion/deletion,
+explicit newlines and existing oversized-word fallback. The suite uses
+ASan/UBSan; actual glyph placement and touch feel still require a Vita check.
+
+
+Typing placement (0.39.33): `python3 tests/chat_modal_test.py` compiles the
+production drawing block and checks the row below the date chip in Classic
+and Combined layouts, long names, no-date fallback and empty/hidden states.
+The preview in `build-modern/previews/typing-under-date.png` is an illustrative
+layout, not a Vita screenshot. Live Telegram typing delivery still needs a device check.
+
+VPK app progress (0.39.34): `bash tests/run-vpk-tests.sh` runs 16 installer
+scenarios and the production progress renderer under ASan/UBSan. A stalled
+promoter/helper must leave the UI callback responsive with no active native
+dialog; checks cover both confirmations, errors, repeated installs, extraction
+percentages and self-update handoff. Renderer checks cover bar bounds, sweep
+turnaround/wrap, long/Unicode labels, font scaling and palette lookups.
+Physical Vita must still check installation, the final result dialog, return to
+chat, a second install in the same session, helper handoff, actual font rendering
+and light/dark/custom palettes. This removes the observed overlap; it does not
+establish who originally corrupted PAF surface dimensions in the dump.
+
+Chat spacing and lower-edge cue (0.39.34): `bash tests/run-chat-scroll-tests.sh`
+checks the 28-pixel avatar gutter, the content inset and history touch bounds in
+Classic/Combined, and the lower-message predicate for clipped cards, later loaded
+rows, older history windows, empty history and the exact bottom boundary.
+Check glow visibility, avatar padding and upper clipping on a physical Vita with
+light/dark/custom palettes, all font sizes and music/download/bot panels.
+
+Top outline regression (0.39.35): chat-scroll checks keep the content inset
+inside the original clip and compare the actual outer bubble mesh against that
+clip in Classic/Combined, including joined cards. On Vita check first-message
+focus, upward scrolling and date/typing overlays.
+
+
+Unread counters (0.39.36): `bash tests/run-chat-scroll-tests.sh` checks the
+production counter/dot/@ renderer in Classic/Combined at all seven font sizes
+with light/dark/custom notification colors, full INT_MAX counts, marked-unread
+zero-count chats, bounded title space and sampled single-coverage rounded
+fill/AA geometry. Settings tests cover the Chats entry, toggle and save errors;
+vault tests cover persistence and old/malformed-file defaults. Run
+`bash tests/run-vault-tests.sh` and `bash tests/run-i18n-tests.sh` as well.
+Physical Vita still needs text/halo rendering, controller/touch navigation,
+restart persistence and live read/mention updates in both views and all palettes.
+
+
+Unread counter input fix (0.39.37): the settings test now runs the production
+input gate and menu-ID mapping before the toggle condition. Cross, Left, Right,
+repeated toggles, no input, Circle, save failure, touch-row selection and another
+menu section are covered. The regression fails against the previous handler.
+Run `bash tests/run-chat-scroll-tests.sh`; actual controller/touch input and
+persistence after restarting on Vita still need a device check.
+
+
+Muted chat badges (0.39.38): chat-scroll tests run both saved settings through
+actual menu-ID/input routing and check that muted/read/unread chats replace
+counts and dots with the existing speaker-with-cross control, retaining @,
+across both layouts and all font sizes. Transfer tests cover explicit overrides,
+private/group/channel scopes, absolute mute expiry, offline snapshots, live
+updates and stale query replies. Vault tests cover persistence/defaults; i18n
+tests cover all catalogs. Physical Vita must still check the icon, controller/
+touch toggles, restart/offline appearance and live mute/unmute/expiry updates.
+
+Attachment recovery/order (0.39.39): `bash tests/run-tdlib-upload-tests.sh` compiles
+the production Vita recheck branch with simulated file validation/registration:
+changed size/mtime, absent or forbidden files, registration failure, identity
+collisions, and active upload/download/remote/generation guards. It does not run
+TDLib actors or actual card I/O. `bash tests/run-transfer-tests.sh` checks mixed
+selection order, equal send priorities, separate progress for repeated paths,
+album response priority, and diagnostic tokens. `bash tests/run-upload-picker-tests.sh`
+checks marking/removing/re-adding, review and batch order. Physical Vita checks
+still need growing log uploads, mixed albums/documents, repeated sends, missing
+files, and completion/status behavior after reconnects.
+
+Upload network pressure (0.39.40): `bash tests/run-td-dns-tests.sh` checks
+production SocketFd/IPAddress with wrapped system calls: 512 KiB exact-byte
+transmission in at most 16 KiB writes, ENOBUFS retry without offset loss,
+read backpressure, retained connection-reset errors, numeric IPv4/port checks
+and no system DNS call for numeric addresses. The script also compiles the
+production resolver constructor for Vita and host, checking HTTPS-only policy
+for both default and fallback chains on Vita and unchanged host chains.
+`bash tests/run-i18n-tests.sh`
+also verifies that VitaNet provides its 4 MiB pool to sceNetInit. These are host
+checks; Vita Wi-Fi state, SDK network-pool recovery and real upload stability
+still require device testing. The Vita Telegram proxy resolver uses HTTPS DNS only;
+when it is unavailable, resolution fails without entering blocking system DNS.
+
+Premium emoji (0.39.41): `bash tests/run-keyboard-tests.sh` checks annotation
+positions beside identical emoji, insertion/deletion, UTF-16 boundaries, static
+draft rendering and byte limits. `bash tests/run-transfer-tests.sh` checks incoming
+custom emoji spans, outgoing entities, preview lookup, installed custom emoji
+packs and switching back to regular stickers. `bash tests/run-i18n-tests.sh` checks
+the new actions in every language. On physical Vita verify inline previews in
+messages/captions/drafts, spoilers, last/empty/loading pages, controller/touch,
+light/dark/custom palettes, font sizes, Premium permission errors and installation.
+
+Animated premium emoji (0.39.42): `bash tests/run-reaction-tests.sh` checks the
+production four-slot animation pool, shared instances, deferred source changes
+and uploads, offscreen/paused cancellation, chat/path scoping and pending downloads.
+`bash tests/run-transfer-tests.sh` checks TGS/WebM metadata, lazy full-file downloads,
+size limits, completion/reset updates and stale responses. TGS policy and WebM
+alpha suites cover the existing decoder helpers. Actual inline TGS/WebM timing,
+transparency, four simultaneous decoders, keyboard responsiveness, scrolling,
+video priority, fonts/palettes and memory consumption still require physical Vita.
+
+Inline animation continuity (0.39.43): the reaction suite runs 120 stable render
+frames and a pause/resume without reopening sources or replacing the frozen frame.
+The transfer suite covers thumbnail-less animation metadata beyond the retry
+timeout, foreground emoji reply routing, and Storage-validated file publication
+during an interactive keyboard frame. Performance logs include numeric emoji
+metadata, asset, source, thread-start failure, decoded-frame and GPU-upload counters.
+These host checks do not establish real Vita animation smoothness or GPU output.
+
+Sent premium emoji (0.39.44): transfer tests exercise a pending message, its
+confirmed replacement and a later content-only custom emoji upgrade without
+changing the Unicode text. The visible model updates before any network reload,
+retains sender/date/delivery metadata, scopes updates by chat, respects removal
+of custom entities by Telegram and returns detached cache copies. Uncached content
+updates still request the complete message. Actual rendering after send needs Vita.
+
+Single premium emoji wire type (0.39.45): transfer regressions use TDLib's actual
+`messageAnimatedEmoji.animated_emoji.sticker.full_type.custom_emoji_id` shape.
+They cover pending formatted text becoming an animated emoji on send confirmation,
+byte spans and media lookup, the compacted history wire route, later animated
+content changes, unchanged sender/date and ordinary animated emoji without a custom
+ID. This specifically catches the Unicode-only fallback for single premium emoji.
+Physical Vita rendering after installation remains a separate check.
+
+Dense premium emoji (0.39.46): transfer tests parse an 80-item, eight-line mosaic
+with distinct IDs and UTF-16 offsets, fetch metadata in 32/32/16 batches and
+complete all 80 missing-thumbnail assets with four concurrent downloads. Font
+tests exercise the production TextureCache demand collection for 80 distinct IDs,
+repeated IDs, existing previews and paused frames. For real TGS snapshot rendering,
+run `RLOTTIE_NATIVE_BUILD=/path/to/native/rlottie-build bash tests/run-image-tests.sh`
+with the pinned rlottie built natively as a static library. This checks transparent
+RGBA pixels, cancellation, JSON bounds and embedded-image rejection using the
+synthetic fixture. Host checks do not establish Vita rendering or memory/performance
+with dense posts; scrolling and replacing all fallback symbols need device checks.
+The video thumbnail regression accepts an optional WebM fixture and an `alpha`
+argument: `bash tests/run-video-thumbnail-tests.sh /path/to/alpha.webm alpha`.
+It exercises the actual image-worker prefix and checks transparent and opaque
+pixels. This reproduced the old MP4/GIF-only whitelist failure before the fix.
+
+VPK menus (0.39.47): the VPK suite checks the app confirmation and result
+screens, including held input, cancellation priority, touch gaps, drag-out,
+multiple contacts and acknowledgment. The installer test links without
+native message dialog stubs and verifies that both confirmations precede
+promotion. Check actual text and touch on Vita in light, dark and custom
+palettes, then install twice in the same session and dismiss each result.
+
+Premium emoji download recovery (0.39.47): the transfer regression exercises an
+80-emoji batch with a stalled file, an explicit TDLib error and a file that
+continues to receive bytes. It checks that fresh files take precedence over
+retries, all 80 eventually get previews, and a late error from an old attempt
+cannot interrupt a new attempt.
+
+`bash tests/run-telegram-call-tests.sh` checks the TDLib call protocol declaration,
+base64 key validation, 64-bit reflector ordering, separate STUN/TURN entries,
+and protocol negotiation. The call window, audio and interoperability
+with an official Telegram client require a call-enabled build on a physical Vita.
+The call update fixture covers updates received before `callId`, stale IDs,
+the transition to key exchange, numeric errors, incoming acceptance and history
+results. It verifies that unsolicited ready updates can't start incoming audio.
+It checks send-delay calculations with packet counter resets and missing samples.
+The sound fixture checks distinct waveforms, cancellation and audio-port release
+with a mocked output device.
+`python3 tests/chat_modal_test.py` also checks that the call window hides chat
+actions, that each call phase has the expected touch actions and that call-card
+edges match their touch area. Themes and font sizes require a physical Vita check.

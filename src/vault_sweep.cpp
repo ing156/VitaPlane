@@ -25,9 +25,20 @@ std::string normalized(std::string path) {
 
 bool has_prefix(const std::string& path, const std::string& prefix) { return !path.compare(0, prefix.size(), prefix); }
 
+// TDLib stores raw resumable parts here; changing their bytes invalidates its ready masks.
+bool is_tdlib_temp(const std::string& raw) {
+    const auto path = normalized(raw);
+    for (const char* root : {VITAGRAM_FILES_DIR, VITAGRAM_DB_DIR}) {
+        const std::string temp = std::string(root) + "/temp";
+        if (path == temp || has_prefix(path, temp + "/")) return true;
+    }
+    return false;
+}
+
 // `errors` counts what could not be listed (unreadable directory or entry, too deep): a migration
 // that could not see a file must not be reported as complete. Links are never followed.
 void walk(const std::string& directory, bool top_of_db, std::vector<std::string>& out, size_t& errors, int depth = 0) {
+    if (is_tdlib_temp(directory)) return;
     // The directory itself is checked too: a link put in place of a root is not followed.
     struct stat self{};
     if (lstat(directory.c_str(), &self) != 0) return;               // absent: nothing to convert
@@ -72,6 +83,7 @@ bool is_db_cache(const std::string& raw) {
 
 bool is_user_file(const std::string& raw) {
     std::string path = normalized(raw);
+    if (is_tdlib_temp(path)) return false;
     if (path.find("..") != std::string::npos || ends_with(path, ".vgs") || ends_with(path, ".tmp")) return false;
     const std::string files = std::string(VITAGRAM_FILES_DIR) + "/", db = std::string(VITAGRAM_DB_DIR) + "/";
     if (has_prefix(path, files)) return true;

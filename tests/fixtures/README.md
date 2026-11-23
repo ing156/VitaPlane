@@ -24,3 +24,9 @@ bash tests/run-tgs-policy-tests.sh /absolute/path/to/AnimatedSticker.tgs
 Локальные копии `alpha.webm` и `AnimatedSticker.tgs` перенесены в
 `tests/local/media/`; запуски без аргументов используют их, если они доступны.
 Если образца нет, скрипт сообщает об этом и завершает работу без пропуска проверки.
+
+`webproxy-qr.txt`: synthetic WEB import link with a public example host and test secret, encoded by `qr_encode` with a four-module quiet zone.
+
+`tgs-preview.json` is a synthetic Lottie red rectangle on a transparent canvas,
+authored for this project's tests (project license). Tests gzip it locally to
+verify actual TGS thumbnail rendering without account data or downloaded media.
